@@ -97,6 +97,16 @@ body{font-family:'Inter',sans-serif;background:var(--off-white);color:var(--ink)
 .badge-y{background:var(--gold);color:var(--navy);font-family:'Inter',sans-serif;font-weight:600;font-size:12px;padding:3px 12px;border-radius:20px;letter-spacing:.06em}
 .badge-w{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.03em}
 .hdr-date{font-size:10px;color:rgba(255,255,255,.35);font-family:'Inter',sans-serif}
+.refresh-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;transition:background .15s}
+.refresh-btn:hover{background:rgba(255,255,255,.18)}
+.refresh-btn:disabled{opacity:.55;cursor:default}
+.refresh-btn .ric{display:inline-block;transition:transform .5s}
+.refresh-btn.loading .ric{animation:spin .8s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+#loading-overlay{position:fixed;inset:0;background:rgba(248,250,254,.92);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#loading-overlay .spin{width:38px;height:38px;border:4px solid var(--light);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite}
+#loading-overlay .lo-txt{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+#loading-overlay.hidden{display:none}
 
 /* ── FILTER BAR ── */
 .fbar{background:var(--white);border-bottom:3px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:62px;z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
@@ -272,6 +282,10 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 </style>
 </head>
 <body>
+<div id="loading-overlay">
+  <div class="spin"></div>
+  <div class="lo-txt">Cargando datos desde SharePoint...</div>
+</div>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -286,6 +300,9 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <div class="hdr-right">
     <div class="badge-y">2026</div>
     <div class="badge-w">📅 Semana 26</div>
+    <button class="refresh-btn" id="refresh-btn" onclick="cargarDatos(true)" title="Recargar datos desde el Excel de SharePoint">
+      <span class="ric">🔄</span><span id="refresh-lbl">Actualizar</span>
+    </button>
     <div class="hdr-date" id="live-date"></div>
   </div>
 </div>
@@ -1017,18 +1034,37 @@ document.getElementById('live-date').textContent=new Date().toLocaleDateString('
 // ── CARGA DE DATOS DESDE POWER AUTOMATE (Excel SharePoint) ─────────────────
 const FLOW_URL='https://defaultfc8bd45f535140818eca55ef07ba2c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f78a376e4074404ca0578a5d6c0c3980/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=QYVUkOW1nkipMTquS5oXt3Oy81vjXPIf-_X-dTZl-S8';
 
-async function cargarDatos(){
+function setLoading(on){
+  const ov=document.getElementById('loading-overlay');
+  const btn=document.getElementById('refresh-btn');
+  const lbl=document.getElementById('refresh-lbl');
+  if(ov) ov.classList.toggle('hidden',!on);
+  if(btn){ btn.disabled=on; btn.classList.toggle('loading',on); }
+  if(lbl) lbl.textContent=on?'Actualizando...':'Actualizar';
+}
+
+async function cargarDatos(esManual){
   const main=document.querySelector('main');
+  setLoading(true);
   try{
-    const resp=await fetch(FLOW_URL);
+    // cache:'no-store' + parámetro de tiempo para evitar que el navegador reuse una respuesta vieja en caché
+    const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store'});
     if(!resp.ok) throw new Error('Error HTTP '+resp.status);
     ALL=await resp.json();
     MES_STATS=buildMesStats(ALL);
     updateClrBtn();
-    renderMensual();
+    refreshActive();
+    const now=new Date();
+    document.getElementById('live-date').textContent='Actualizado '+now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
   }catch(err){
     console.error('Error cargando datos desde SharePoint:',err);
-    if(main) main.innerHTML='<div style="padding:60px 40px;text-align:center;color:#C0392B;font-family:Inter,sans-serif"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-weight:700;font-size:15px;margin-bottom:6px">No se pudo cargar la información desde SharePoint</div><div style="font-size:12px;color:#6B7A99">Verifique la conexión o intente recargar la página. Detalle técnico: '+String(err.message||err)+'</div></div>';
+    if(esManual){
+      alert('No se pudo actualizar la información desde SharePoint.\n\nDetalle: '+String(err.message||err));
+    }else if(main){
+      main.innerHTML='<div style="padding:60px 40px;text-align:center;color:#C0392B;font-family:Inter,sans-serif"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-weight:700;font-size:15px;margin-bottom:6px">No se pudo cargar la información desde SharePoint</div><div style="font-size:12px;color:#6B7A99">Verifique la conexión o intente recargar la página. Detalle técnico: '+String(err.message||err)+'</div></div>';
+    }
+  }finally{
+    setLoading(false);
   }
 }
 cargarDatos();
