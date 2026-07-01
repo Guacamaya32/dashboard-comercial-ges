@@ -298,7 +298,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     </div>
   </div>
   <div class="hdr-right">
-    <div class="badge-y">2026</div>
+    <div class="badge-y" id="badge-anio">2026</div>
     <div class="badge-w">📅 Semana 26</div>
     <button class="refresh-btn" id="refresh-btn" onclick="cargarDatos(true)" title="Recargar datos desde el Excel de SharePoint">
       <span class="ric">🔄</span><span id="refresh-lbl">Actualizar</span>
@@ -309,15 +309,20 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 
 <!-- FILTER BAR -->
 <div class="fbar">
+  <span class="fl">Año</span>
+  <select id="g-anio" onchange="applyFilters()" style="min-width:90px">
+    <option value="">Todos</option>
+  </select>
+  <div class="fsep"></div>
   <span class="fl">Mes</span>
   <select id="g-mes" onchange="applyFilters()" style="min-width:120px">
-    <option value="">Todo 2026</option>
+    <option value="">Todo el año</option>
     <option value="enero">Enero</option><option value="febrero">Febrero</option>
     <option value="marzo">Marzo</option><option value="abril">Abril</option>
     <option value="mayo">Mayo</option><option value="junio" selected>Junio</option>
     <option value="julio">Julio</option><option value="agosto">Agosto</option>
     <option value="septiembre">Septiembre</option><option value="octubre">Octubre</option>
-    <option value="noviembre">Noviembre</option>
+    <option value="noviembre">Noviembre</option><option value="diciembre">Diciembre</option>
   </select>
   <div class="fsep"></div>
   <span class="fl">Rep.</span>
@@ -493,16 +498,16 @@ const ALERTS={
   }
 };
 
-let G_MES='junio', G_REP='', sCol='c', sDir=1;
+let G_MES='junio', G_REP='', G_ANIO='', sCol='c', sDir=1;
 let CH={};
 const dc=id=>{if(CH[id]){CH[id].destroy();delete CH[id];}};
 const fmt=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v).toLocaleString();
 const fmtM=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v;
 
-function buildMesStats(all){
+function buildMesStats(all,anio){
   const stats={};
   MES_ORDER_ALL.forEach(mes=>{
-    const active=all.filter(r=>r.m===mes&&r.s!=='CANCELADO');
+    const active=all.filter(r=>r.m===mes&&(!anio||String(r.anio)===String(anio))&&r.s!=='CANCELADO');
     if(!active.length)return;
     const asigRows=active.filter(r=>r.t==='A'),oporRows=active.filter(r=>r.t==='O');
     const asig=asigRows.reduce((s,r)=>s+r.v,0),opor=oporRows.reduce((s,r)=>s+r.v,0);
@@ -518,20 +523,37 @@ function buildMesStats(all){
   return stats;
 }
 
-function getBase(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&r.s!=='CANCELADO');}
+function getBase(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
 function getAsig(){return getBase().filter(r=>r.t==='A');}
 function getOpor(){return getBase().filter(r=>r.t==='O');}
 function getAll(){return getBase();}
-function getCancelled(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&r.s==='CANCELADO');}
+function getCancelled(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s==='CANCELADO');}
+
+function updateBadgeAnio(){const el=document.getElementById('badge-anio');if(el)el.textContent=G_ANIO||'Todos';}
+
+function populateAnioFilter(){
+  const sel=document.getElementById('g-anio');
+  const anios=[...new Set(ALL.map(r=>r.anio).filter(a=>a!==null&&a!==undefined&&a!==''))].sort((a,b)=>b-a);
+  const prevValue=sel.value;
+  sel.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(anios.includes(Number(prevValue))||anios.map(String).includes(prevValue)){
+    sel.value=prevValue;
+    G_ANIO=prevValue;
+  }else if(anios.length){
+    sel.value=String(anios[0]);
+    G_ANIO=String(anios[0]);
+  }
+  updateBadgeAnio();
+}
 
 function setTipo(t,btn){
   TIPO=t;
   
   updateClrBtn();refreshActive();
 }
-function applyFilters(){G_MES=document.getElementById('g-mes').value;G_REP=document.getElementById('g-rep').value;updateClrBtn();refreshActive();}
-function clearFilters(){G_MES='';G_REP='';document.getElementById('g-mes').value='';document.getElementById('g-rep').value='';updateClrBtn();refreshActive();}
-function updateClrBtn(){const el=document.getElementById('clr-btn');const p=[];if(G_MES)p.push(G_MES);if(G_REP)p.push(G_REP);el.textContent=p.length?'✕ Limpiar: '+p.join(' · '):'';}
+function applyFilters(){G_MES=document.getElementById('g-mes').value;G_REP=document.getElementById('g-rep').value;G_ANIO=document.getElementById('g-anio').value;updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(ALL,G_ANIO);refreshActive();}
+function clearFilters(){G_MES='';G_REP='';G_ANIO='';document.getElementById('g-mes').value='';document.getElementById('g-rep').value='';document.getElementById('g-anio').value='';updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(ALL,G_ANIO);refreshActive();}
+function updateClrBtn(){const el=document.getElementById('clr-btn');const p=[];if(G_ANIO)p.push(G_ANIO);if(G_MES)p.push(G_MES);if(G_REP)p.push(G_REP);el.textContent=p.length?'✕ Limpiar: '+p.join(' · '):'';}
 function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='anual')renderAnual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();}
 function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');refreshActive();}
 
@@ -548,7 +570,7 @@ function renderMensual(){
   const real=D.filter(r=>r.s==='FINALIZADO').reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
   const fin=D.filter(r=>r.s==='FINALIZADO').length,ejec=D.filter(r=>r.s==='EN EJECUCION').length;
   const vCan=CAN.reduce((s,r)=>s+r.v,0);
-  const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+' 2026'):'2026 Completo';
+  const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+(G_ANIO?' '+G_ANIO:'')):((G_ANIO||'Todos')+' Completo');
 
   // alerts-box removed
 
@@ -720,7 +742,7 @@ function renderExecSummary(A, O, D, CAN, mes){
     <div style="background:var(--navy);padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
       <div>
         <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold)">Resumen Ejecutivo</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">${mes[0].toUpperCase()+mes.slice(1)} 2026 vs ${prevLabel} 2026</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">${mes[0].toUpperCase()+mes.slice(1)}${G_ANIO?' '+G_ANIO:''} vs ${prevLabel}${G_ANIO?' '+G_ANIO:''}</div>
       </div>
       <div style="font-size:10px;color:rgba(255,255,255,.45);font-style:italic">Pipeline activo = Asignado + Oportunidades (excl. cancelados)</div>
     </div>
@@ -858,7 +880,7 @@ function renderReps(){
   const totPip=tA+tO;
   const pctA=totPip>0?Math.round(tA/totPip*100):0;
   const pctO=100-pctA;
-  const mesL2=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+' 2026'):'2026 Completo';
+  const mesL2=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+(G_ANIO?' '+G_ANIO:'')):((G_ANIO||'Todos')+' Completo');
   const allActive=getAll();
   const realTotal=allActive.filter(r=>r.s==='FINALIZADO').reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
   const finTotal=allActive.filter(r=>r.s==='FINALIZADO').length;
@@ -905,7 +927,7 @@ function renderReps(){
     const can=CAN.filter(r=>r.r===rp).length;
     const cliA=[...new Set(ra.map(r=>r.c))];
     const cliO=[...new Set(ro.map(r=>r.c))];
-    const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)):'2026';
+    const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)):(G_ANIO||'Todos');
     return `<div class="rc">
       <div class="rc-head" style="background:${REP_BG[rp]};border-bottom:3px solid ${REP_COL[rp]}">
         <div class="rc-name" style="color:${REP_COL[rp]}">${rp}</div>
@@ -1023,10 +1045,10 @@ function renderTable(){
 function ts(col){if(sCol===col)sDir*=-1;else{sCol=col;sDir=1;}renderTable();}
 
 function exportCSV(){
-  const D=ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&true);
+  const D=ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&true);
   const h=['TIPO','CLIENTE','REPRESENTANTE','MES','POZO','SERVICIO','VALOR_EFECTIVO','INGRESO_ESTIMADO','INGRESO_REAL','LINEA','STATUS','COMENTARIOS'];
   const rows=[h.join(','),...D.map(r=>[r.t==='A'?'ASIGNACION':'OPORTUNIDAD',r.c,r.r,r.m,r.pz,r.sv,r.v,r.ie,r.ir,r.l,r.s,r.co].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))];
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_2026_${G_MES||'anual'}.csv`;a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_${G_ANIO||'Todos'}_${G_MES||'anual'}.csv`;a.click();
 }
 
 document.getElementById('live-date').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
@@ -1051,7 +1073,8 @@ async function cargarDatos(esManual){
     const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store'});
     if(!resp.ok) throw new Error('Error HTTP '+resp.status);
     ALL=await resp.json();
-    MES_STATS=buildMesStats(ALL);
+    populateAnioFilter();
+    MES_STATS=buildMesStats(ALL,G_ANIO);
     updateClrBtn();
     refreshActive();
     const now=new Date();
