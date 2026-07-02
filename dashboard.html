@@ -24,7 +24,7 @@ const pctLabelPlugin = {
     if(!lastDS) return;
     const meta = chart.getDatasetMeta(data.datasets.indexOf(lastDS));
     ctx.save();
-    ctx.font = 'bold 9px Hanken Grotesk, sans-serif';
+    ctx.font = 'bold 9px Inter, sans-serif';
     ctx.fillStyle = opts.color || '#002060';
     ctx.textBaseline = 'middle';
     meta.data.forEach((bar, i) => {
@@ -48,14 +48,14 @@ const pctLabelPlugin = {
 Chart.register(pctLabelPlugin);
 
 </script>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600;700&family=Hanken+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   /* Colores presentación Ejecutiva Guacamaya */
-  --navy:#00429B;       /* Azul guacamaya principal */
-  --navy-d:#002B6B;     /* Azul marino oscuro */
-  --navy-m:#123B6B;     /* Azul marino medio */
+  --navy:#002060;       /* Azul marino principal */
+  --navy-d:#001040;     /* Azul marino oscuro */
+  --navy-m:#0E2A47;     /* Azul marino medio */
   --gold:#FFC000;       /* Dorado/Amarillo acento */
   --gold-d:#CC9A00;     /* Dorado oscuro */
   --gold-bg:#FFF8DC;    /* Dorado claro bg */
@@ -84,56 +84,47 @@ Chart.register(pctLabelPlugin);
   --sh:0 1px 4px rgba(0,32,96,.08),0 4px 16px rgba(0,32,96,.06);
   --sh2:0 2px 8px rgba(0,32,96,.12),0 8px 24px rgba(0,32,96,.1);
 }
-body{font-family:'Hanken Grotesk',sans-serif;background:radial-gradient(ellipse 1400px 900px at 50% -8%,#EEF3FC 0%,var(--off-white) 55%),var(--off-white);color:var(--ink);font-size:13px;line-height:1.5;min-height:100vh}
+body{font-family:'Inter',sans-serif;background:var(--off-white);color:var(--ink);font-size:13px;line-height:1.5;min-height:100vh}
 
 /* ── HEADER ── */
-.hdr{background:linear-gradient(115deg,var(--navy-d) 0%,var(--navy) 55%,var(--navy-m) 100%);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,32,96,.35);border-bottom:1px solid rgba(255,193,0,.25)}
+.hdr{background:var(--navy);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,32,96,.3)}
 .hdr-logo{display:flex;align-items:center;gap:14px}
 .hdr-img{height:40px;width:auto;filter:drop-shadow(0 1px 4px rgba(0,0,0,.3))}
 .hdr-divider{width:1px;height:32px;background:rgba(255,255,255,.2)}
-.hdr-name{font-family:'EB Garamond',serif;font-size:16px;font-weight:600;color:#fff;letter-spacing:.01em;line-height:1.2}
+.hdr-name{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#fff;letter-spacing:.01em;line-height:1.2}
 .hdr-sub{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.04em;font-weight:500;margin-top:1px}
 .hdr-right{display:flex;align-items:center;gap:8px}
-.badge-y{background:var(--gold);color:var(--navy);font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:12px;padding:3px 12px;border-radius:20px;letter-spacing:.06em}
+.badge-y{background:var(--gold);color:var(--navy);font-family:'Inter',sans-serif;font-weight:600;font-size:12px;padding:3px 12px;border-radius:20px;letter-spacing:.06em}
 .badge-w{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.03em}
-.hdr-date{font-size:10px;color:rgba(255,255,255,.35);font-family:'Hanken Grotesk',sans-serif}
-.refresh-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;transition:background .15s,transform .15s}
+.hdr-date{font-size:10px;color:rgba(255,255,255,.35);font-family:'Inter',sans-serif}
+
+/* ── FILTER BAR ── */
+.fbar{background:var(--white);border-bottom:3px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:62px;z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
+.fl{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);white-space:nowrap}
+.fsep{width:1px;height:18px;background:var(--light);flex-shrink:0}
+select{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;background:var(--white);border:1.5px solid var(--light);color:var(--ink);border-radius:var(--r);padding:5px 9px;outline:none;height:30px}
+select:focus{border-color:var(--navy)}
+.refresh-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;transition:background .15s,transform .15s}
 .refresh-btn:active{transform:scale(.96)}
 .refresh-btn:hover{background:rgba(255,255,255,.18)}
 .refresh-btn:disabled{opacity:.55;cursor:default}
 .refresh-btn .ric{display:inline-block;transition:transform .5s}
 .refresh-btn.loading .ric{animation:spin .8s linear infinite}
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-#loading-overlay{position:fixed;inset:0;background:rgba(248,250,254,.92);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-#loading-overlay .spin{width:38px;height:38px;border:4px solid var(--light);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite}
-#loading-overlay .lo-txt{font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
-#loading-overlay.hidden{display:none}
-
-/* ── FILTER BAR ── */
-.fbar{background:rgba(255,255,255,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:2.5px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:62px;z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
-.fl{font-family:'Hanken Grotesk',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);white-space:nowrap}
-.fsep{width:1px;height:18px;background:var(--light);flex-shrink:0}
-select{font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:500;background:var(--white);border:1.5px solid var(--light);color:var(--ink);border-radius:var(--r);padding:5px 9px;outline:none;height:30px;transition:border-color .15s,box-shadow .15s}
-select:hover{border-color:var(--dim)}
-select:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,66,155,.1)}
-select:focus{border-color:var(--navy)}
-.clr-btn{font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--can);cursor:pointer;margin-left:auto;background:none;border:none}
+.clr-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--can);cursor:pointer;margin-left:auto;background:none;border:none}
 .clr-btn:hover{text-decoration:underline}
 
 /* ── MAIN NAV ── */
-.mnav{background:rgba(255,255,255,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--light);padding:0 32px;display:flex;gap:0;box-shadow:0 1px 4px rgba(0,32,96,.04);position:sticky;top:108px;z-index:180}
-.mb{padding:11px 18px;border:none;background:transparent;color:var(--muted);font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:3px solid transparent;cursor:pointer;transition:color .18s,border-color .25s cubic-bezier(.22,.8,.28,1);margin-bottom:-1px}
+.mnav{background:var(--white);border-bottom:1px solid var(--light);padding:0 32px;display:flex;gap:0;box-shadow:0 1px 4px rgba(0,32,96,.04);position:sticky;top:108px;z-index:180}
+.mb{padding:11px 18px;border:none;background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:3px solid transparent;cursor:pointer;transition:all .12s;margin-bottom:-1px}
 .mb:hover{color:var(--navy)}
 .mb.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
-.mb:hover:not(.active){color:var(--navy-m)}
 
 main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 .view{display:none}.view.active{display:block}
 
 /* ── KPI ── */
 .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
-.kpi{background:linear-gradient(180deg,#fff 0%,#fff 60%,var(--off-white) 160%);border:1px solid var(--light);border-top:1px solid rgba(255,255,255,.9);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--gold) 0%,var(--navy) 100%);opacity:.85}
+.kpi{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
 .kpi::before{content:'';position:absolute;top:0;left:0;bottom:0;width:5px;border-radius:4px 0 0 4px}
 .kpi.ka::before{background:var(--navy)}
 .kpi.ko::before{background:var(--gold)}
@@ -141,8 +132,8 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 .kpi.kg::before{background:var(--gold-d)}
 .kpi.kr::before{background:var(--can)}
 .kpi.ks::before{background:var(--navy-m)}
-.kpi-l{font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:5px}
-.kpi-v{font-family:'EB Garamond',serif;font-size:29px;font-weight:600;letter-spacing:-.01em;color:var(--navy);font-variant-numeric:tabular-nums}
+.kpi-l{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:5px}
+.kpi-v{font-family:'Inter',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.01em;color:var(--navy)}
 .kpi-s{font-size:10px;color:var(--muted);margin-top:3px;font-weight:500}
 .kpi-i{position:absolute;top:12px;right:12px;font-size:18px;opacity:.1}
 
@@ -152,9 +143,9 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 .sc-col{padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
 .sc-col.a{background:var(--asig-bg);border-bottom:3px solid var(--navy)}
 .sc-col.o{background:var(--opor-bg);border-bottom:3px solid var(--gold);border-left:1px solid var(--light)}
-.sc-l{font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+.sc-l{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
 .sc-col.a .sc-l{color:var(--navy)}.sc-col.o .sc-l{color:var(--opor-d)}
-.sc-v{font-family:'EB Garamond',serif;font-size:27px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.sc-v{font-family:'Inter',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.01em}
 .sc-col.a .sc-v{color:var(--navy)}.sc-col.o .sc-v{color:var(--gold-d)}
 .sc-sub{font-size:10px;color:var(--muted);margin-top:1px;font-weight:500}
 .sc-body{padding:16px 18px}
@@ -164,7 +155,7 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 .alert.blue{background:var(--asig-bg);border-color:var(--navy);color:var(--navy)}
 .alert.red{background:var(--can-bg);border-color:var(--can);color:#7A1A0A}
 .alert.amber{background:var(--opor-bg);border-color:var(--gold);color:var(--opor-d)}
-.alert strong{font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.alert strong{font-family:'Inter',sans-serif;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
 .alert-row{display:flex;align-items:flex-start;gap:7px;margin-top:5px}
 .adot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
 .a-can-section{background:var(--can-bg);border:1px solid #F5B0B0;border-left:4px solid var(--can);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:11px;color:#7A1A0A}
@@ -172,33 +163,33 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 /* ── CARDS ── */
 .g2{display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px}
 .g22{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.card{background:var(--white);border:1px solid var(--light);border-top:1px solid rgba(255,255,255,.9);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--sh)}
-.ct{font-family:'Hanken Grotesk',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--navy-m);margin-bottom:12px}
-.slbl{font-family:'Hanken Grotesk',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--sh)}
+.ct{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--navy-m);margin-bottom:12px}
+.slbl{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .slbl::after{content:'';flex:1;height:1px;background:var(--light)}
 
 /* ── STATUS ITEMS ── */
 .si-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:5px;margin-bottom:5px}
-.si-lbl{font-size:12px;font-weight:600;font-family:'Hanken Grotesk',sans-serif}
-.si-n{font-family:'Hanken Grotesk',sans-serif;font-size:18px;font-weight:700}
+.si-lbl{font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
+.si-n{font-family:'Inter',sans-serif;font-size:18px;font-weight:700}
 .si-usd{font-size:10px;font-family:'JetBrains Mono',monospace;opacity:.75;font-weight:600}
 
 /* ── PROG BARS ── */
 .pr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.pl{font-size:11px;color:var(--ink);width:120px;flex-shrink:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Hanken Grotesk',sans-serif}
-.pw{flex:1;height:7px;background:var(--light);border-radius:4px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,32,96,.06)}
+.pl{font-size:11px;color:var(--ink);width:120px;flex-shrink:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Inter',sans-serif}
+.pw{flex:1;height:6px;background:var(--light);border-radius:3px;overflow:hidden}
 .pf{height:100%;border-radius:3px;transition:width .5s}
-.pv{font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--muted);width:62px;text-align:right;flex-shrink:0}
+.pv{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--muted);width:62px;text-align:right;flex-shrink:0}
 
 /* ── LEGEND ── */
 .dl{display:flex;flex-direction:column;gap:5px;margin-top:8px}
 .dlr{display:flex;justify-content:space-between;align-items:center;font-size:11px}
 .dld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .dln{color:var(--slate);display:flex;align-items:center;gap:6px;font-weight:500}
-.dlv{font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--muted)}
+.dlv{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--muted)}
 
 /* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:'Hanken Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .b-fin{background:var(--fin-bg);color:var(--fin)}
 .b-ej{background:var(--ejec-bg);color:var(--ejec)}
 .b-can{background:var(--can-bg);color:var(--can)}
@@ -206,26 +197,24 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 .b-vac{background:var(--light);color:var(--muted)}
 .b-asig{background:var(--asig-bg);color:var(--navy)}
 .b-opor{background:var(--opor-bg);color:var(--opor-d)}
-.rep-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:'Hanken Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.rep-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
 
 /* ── TABLE ── */
 .tt-bar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:8px}
 .sw{position:relative;flex:1;min-width:180px}
-.sw input{padding-left:28px;width:100%;height:30px;font-size:12px;font-family:'Hanken Grotesk',sans-serif;font-weight:500;background:var(--white);border:1.5px solid var(--light);color:var(--ink);border-radius:var(--r);outline:none}
+.sw input{padding-left:28px;width:100%;height:30px;font-size:12px;font-family:'Inter',sans-serif;font-weight:500;background:var(--white);border:1.5px solid var(--light);color:var(--ink);border-radius:var(--r);outline:none}
 .sw input:focus{border-color:var(--navy)}
 .sico{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--dim)}
-.btn-exp{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-d) 100%);color:#fff;border:none;padding:0 14px;height:30px;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);cursor:pointer;transition:filter .15s,transform .15s}
-.btn-exp:hover{filter:brightness(1.12)}
-.btn-exp:active{transform:scale(.97)}
+.btn-exp{background:var(--navy);color:#fff;border:none;padding:0 14px;height:30px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);cursor:pointer}
 .btn-exp:hover{background:var(--navy-d)}
 .tbl-meta{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:500}
 .tbl-wrap{border:1px solid var(--light);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .tbl-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:11.5px}
 thead tr{background:var(--navy)}
-th{padding:9px 11px;text-align:left;font-family:'Hanken Grotesk',sans-serif;font-weight:600;color:rgba(255,255,255,.75);font-size:9px;text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;cursor:pointer;user-select:none}
+th{padding:9px 11px;text-align:left;font-family:'Inter',sans-serif;font-weight:600;color:rgba(255,255,255,.75);font-size:9px;text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;cursor:pointer;user-select:none}
 th:hover{color:#fff}
-td{padding:7px 11px;border-bottom:1px solid var(--light);vertical-align:middle;font-family:'Hanken Grotesk',sans-serif}
+td{padding:7px 11px;border-bottom:1px solid var(--light);vertical-align:middle;font-family:'Inter',sans-serif}
 tr:last-child td{border-bottom:none}
 tr.ra:hover td{background:var(--asig-bg)}
 tr.ro:hover td{background:var(--opor-bg)}
@@ -236,24 +225,24 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 .rc{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .rc-head{padding:14px 17px;position:relative}
 .rc-head::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gold)}
-.rc-name{font-family:'Hanken Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:.04em;text-transform:uppercase}
+.rc-name{font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:.04em;text-transform:uppercase}
 .rc-tot{font-size:10px;color:rgba(255,255,255,.6);margin-top:2px;font-weight:600}
 .rc-split{display:grid;grid-template-columns:1fr 1fr}
 .rc-h{padding:9px 13px;text-align:center}
 .rc-h.ra{background:var(--asig-bg);border-top:1px solid var(--light)}
 .rc-h.ro{background:var(--opor-bg);border-top:1px solid var(--light);border-left:1px solid var(--light)}
-.rc-hl{font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;margin-bottom:2px}
+.rc-hl{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;margin-bottom:2px}
 .rc-h.ra .rc-hl{color:var(--navy)}.rc-h.ro .rc-hl{color:var(--opor-d)}
-.rc-hv{font-family:'EB Garamond',serif;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.rc-hv{font-family:'Inter',sans-serif;font-size:15px;font-weight:700}
 .rc-h.ra .rc-hv{color:var(--navy)}.rc-h.ro .rc-hv{color:var(--gold-d)}
 .rc-hs{font-size:9px;color:var(--muted);font-weight:500}
 .rc-body{padding:11px 17px}
 .rc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:9px}
 .rcs{text-align:center;padding:5px 3px;border-radius:4px}
-.rcs-n{font-family:'Hanken Grotesk',sans-serif;font-size:15px;font-weight:700}
-.rcs-l{font-size:8px;color:var(--muted);font-family:'Hanken Grotesk',sans-serif;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.rcs-n{font-family:'Inter',sans-serif;font-size:15px;font-weight:700}
+.rcs-l{font-size:8px;color:var(--muted);font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
 .ctags{display:flex;flex-wrap:wrap;gap:3px}
-.ctag{padding:1px 6px;border-radius:3px;font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.ctag{padding:1px 6px;border-radius:3px;font-family:'Inter',sans-serif;font-size:9px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
 
 /* ── MONTH GRID ── */
 .month-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:9px;margin-bottom:16px}
@@ -262,57 +251,25 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 .mc.past{border-left-color:var(--fin)}
 .mc.current{border-left-color:var(--gold);background:var(--gold-bg)}
 .mc.future{border-left-color:var(--navy-m)}
-.mc-name{font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
-.mc-tag{font-family:'Hanken Grotesk',sans-serif;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-.mc-total{font-family:'EB Garamond',serif;font-size:23px;font-weight:600;color:var(--navy);margin-bottom:4px;font-variant-numeric:tabular-nums}
+.mc-name{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.mc-tag{font-family:'Inter',sans-serif;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.mc-total{font-family:'Inter',sans-serif;font-size:19px;font-weight:700;color:var(--navy);margin-bottom:4px}
 .mc-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:2px;font-weight:500}
-.mc-val{font-family:'Hanken Grotesk',sans-serif;font-size:10px;font-weight:600}
+.mc-val{font-family:'Inter',sans-serif;font-size:10px;font-weight:600}
 
 /* ── FORECAST TABLE ── */
 .fct{width:100%;border-collapse:collapse;font-size:11px}
-.fct th{padding:8px 11px;font-family:'Hanken Grotesk',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:9px;color:rgba(255,255,255,.75);background:linear-gradient(135deg,var(--navy) 0%,var(--navy-d) 100%);border-bottom:1px solid rgba(255,255,255,.1)}
+.fct th{padding:8px 11px;font-family:'Inter',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:9px;color:rgba(255,255,255,.75);background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1)}
 .fct th:first-child{text-align:left}
 .fct th{text-align:right}
-.fct td{padding:7px 11px;border-bottom:1px solid var(--light);text-align:right;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;transition:background .12s}
-.fct tbody tr:hover td{background:var(--off-white)}
-.fct td:first-child{text-align:left;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--navy)}
+.fct td{padding:7px 11px;border-bottom:1px solid var(--light);text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700}
+.fct td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--navy)}
 .fct tr:hover td{background:var(--pale)}
 .fct tr.tr-tot td{background:var(--navy);color:#fff;font-weight:600;border:none}
 .fct tr.tr-tot td:first-child{color:var(--gold)}
 
 /* ── EMPTY ── */
-.empty-s{padding:32px;text-align:center;color:var(--muted);font-family:'Hanken Grotesk',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:11px}
-
-/* ── MOTION: entrance choreography + hover elevation ── */
-@keyframes fadeSlideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
-.hdr{animation:fadeSlideDown .5s cubic-bezier(.22,.8,.28,1) both}
-.fbar{animation:fadeSlideDown .5s cubic-bezier(.22,.8,.28,1) .06s both}
-.mnav{animation:fadeSlideDown .5s cubic-bezier(.22,.8,.28,1) .1s both}
-
-.kpi,.card,.sc,.rc,.mc{transition:box-shadow .25s cubic-bezier(.22,.8,.28,1),transform .25s cubic-bezier(.22,.8,.28,1),border-color .25s}
-.kpi:hover,.card:hover,.sc:hover,.rc:hover{box-shadow:var(--sh2);transform:translateY(-2px);border-color:rgba(0,32,96,.14)}
-
-.view.active .krow>.kpi,.view.active .rep-grid>.rc,.view.active .month-grid>.mc{animation:fadeSlideUp .5s cubic-bezier(.22,.8,.28,1) both}
-.view.active .krow>.kpi:nth-child(1),.view.active .rep-grid>.rc:nth-child(1),.view.active .month-grid>.mc:nth-child(1){animation-delay:.02s}
-.view.active .krow>.kpi:nth-child(2),.view.active .rep-grid>.rc:nth-child(2),.view.active .month-grid>.mc:nth-child(2){animation-delay:.07s}
-.view.active .krow>.kpi:nth-child(3),.view.active .rep-grid>.rc:nth-child(3),.view.active .month-grid>.mc:nth-child(3){animation-delay:.12s}
-.view.active .krow>.kpi:nth-child(4),.view.active .rep-grid>.rc:nth-child(4),.view.active .month-grid>.mc:nth-child(4){animation-delay:.17s}
-.view.active .krow>.kpi:nth-child(5),.view.active .month-grid>.mc:nth-child(5){animation-delay:.22s}
-.view.active .krow>.kpi:nth-child(6),.view.active .month-grid>.mc:nth-child(6){animation-delay:.27s}
-.view.active .month-grid>.mc:nth-child(n+7){animation-delay:.3s}
-
-.view.active .g2>*,.view.active .g22>*,.view.active .sc{animation:fadeSlideUp .55s cubic-bezier(.22,.8,.28,1) .08s both}
-.view.active .tbl-wrap{animation:fadeSlideUp .5s cubic-bezier(.22,.8,.28,1) .1s both}
-
-.pf{transition:width .8s cubic-bezier(.22,.8,.28,1)}
-
-@media (prefers-reduced-motion: reduce){
-  .hdr,.fbar,.mnav,.kpi,.card,.sc,.rc,.mc,.view.active .krow>.kpi,.view.active .rep-grid>.rc,.view.active .month-grid>.mc,.view.active .g2>*,.view.active .g22>*,.view.active .sc,.view.active .tbl-wrap{animation:none!important;transition:none!important}
-  .kpi:hover,.card:hover,.sc:hover,.rc:hover{transform:none}
-}
+.empty-s{padding:32px;text-align:center;color:var(--muted);font-family:'Inter',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:11px}
 
 @media(max-width:800px){.g2,.g22{grid-template-columns:1fr}main{padding:14px}
 .hdr,.mnav,.fbar{padding-left:14px;padding-right:14px}
@@ -321,12 +278,13 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 </style>
 </head>
 <body>
+
+<!-- HEADER -->
 <div id="loading-overlay">
   <div class="spin"></div>
   <div class="lo-txt">Cargando datos desde SharePoint...</div>
 </div>
 
-<!-- HEADER -->
 <div class="hdr">
   <div class="hdr-logo">
     <img class="hdr-img" src="data:image/png;base64,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" alt="Guacamaya GEnergys">
@@ -355,13 +313,13 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <div class="fsep"></div>
   <span class="fl">Mes</span>
   <select id="g-mes" onchange="applyFilters()" style="min-width:120px">
-    <option value="">Todo el año</option>
+    <option value="">Todo 2026</option>
     <option value="enero">Enero</option><option value="febrero">Febrero</option>
     <option value="marzo">Marzo</option><option value="abril">Abril</option>
     <option value="mayo">Mayo</option><option value="junio" selected>Junio</option>
     <option value="julio">Julio</option><option value="agosto">Agosto</option>
     <option value="septiembre">Septiembre</option><option value="octubre">Octubre</option>
-    <option value="noviembre">Noviembre</option><option value="diciembre">Diciembre</option>
+    <option value="noviembre">Noviembre</option>
   </select>
   <div class="fsep"></div>
   <span class="fl">Rep.</span>
@@ -440,10 +398,283 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 </div>
 </main>
 <script>
-let ALL=[];
+let ALL=[{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'LAS MARACAS 6',sv:'ABANDONO INTEGRADO',ie:130000.0,ir:130941.08,v:130941.08,l:'CT -ES - AZ - TT - CW',s:'FINALIZADO',co:''},
+{c:'ECP CASTILLA',t:'A',r:'JOHAN',m:'enero',pz:'RENTA MES WL',sv:'RENTA MES UNIDAD CONVENCIONAL ILT (FRACCIÓN ENERO)',ie:50000.0,ir:53433.69,v:53433.69,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP APIAY',t:'A',r:'JOHAN',m:'enero',pz:'SURIA 106',sv:'MOLIENDA & CORTE',ie:240000.0,ir:270992.39,v:270992.39,l:'CT - TT',s:'FINALIZADO',co:''},
+{c:'ECP VRC GMA',t:'A',r:'JUAN',m:'enero',pz:'TISQUIRAMA I2',sv:'RENTA MENSUAL INYECTIVIDAD',ie:170000.0,ir:0.0,v:170000.0,l:'WT',s:'EN EJECUCION',co:''},
+{c:'ECP VRC',t:'A',r:'JUAN',m:'enero',pz:'LISAMA 134',sv:'SEGUNDA INTERVENCIÓN REABANDONO',ie:290000.0,ir:0.0,v:290000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'ECP VRC',t:'O',r:'JUAN',m:'enero',pz:'PETROLEA 232',sv:'EJECUTADO ENERO',ie:210000.0,ir:0.0,v:210000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'O',r:'JUAN',m:'enero',pz:'BALLENA 15',sv:'EJECUTADO ENERO WELLS',ie:209000.0,ir:0.0,v:209000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP VRC GRI',t:'A',r:'JUAN',m:'enero',pz:'CASABE 810',sv:'LIMPIEZA DE SÓLIDOS',ie:75000.0,ir:0.0,v:75000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'A',r:'JUAN',m:'enero',pz:'ARRECIFE 5 Y CORALINO',sv:'BOMBEO DE N2 BH',ie:27000.0,ir:0.0,v:27000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'LEONA B5H',sv:'ABANDONO DEFINITIVO',ie:38543.17,ir:0.0,v:38543.17,l:'AZ',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'enero',pz:'TORO SENTADO 2A',sv:'ESTIMULACION CT',ie:167072.0,ir:0.0,v:167072.0,l:'',s:'CANCELADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'PRADERA SUR 1A',sv:'ESTIMULACION BH',ie:25000.0,ir:27867.61,v:27867.61,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'AGUAS BLANCAS 3',sv:'ABANDONO INTEGRADO + ADICIONALES',ie:216000.0,ir:240444.4,v:240444.4,l:'AI',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'O',r:'JUAN',m:'enero',pz:'MAMEY 2',sv:'ESTIMULACIÓN CON CT',ie:110000.0,ir:0.0,v:110000.0,l:'CT-ES',s:'CANCELADO',co:'APLAZADO POR EXTENSION DE OPERACIONES EN MAMEY 4 Y DISPONIBILIDAD BAJA DE CT'},
+{c:'ECP VRC GTA',t:'A',r:'JUAN',m:'enero',pz:'JAZMIN H3',sv:'LIMPIEZA DE SÓLIDOS',ie:65000.0,ir:0.0,v:65000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'LORO 16',sv:'INSTALACION EMPAQUE Y BOMBEO CEMENTO (CORTE ENERO)',ie:200000.0,ir:331693.42,v:331693.42,l:'CT - TT - AZ',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'DOROTEA W2',sv:'ABANDONO DEFINITIVO',ie:37896.72,ir:0.0,v:37896.72,l:'AZ',s:'FINALIZADO',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'enero',pz:'CEBÚ 04',sv:'LIMPIEZA DE POZO',ie:178000.0,ir:160000.0,v:160000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'DOROTEA C6ST2',sv:'ABANDONO DEFINITIVO',ie:33576.05,ir:0.0,v:33576.05,l:'AZ',s:'FINALIZADO',co:''},
+{c:'ECP VRC GTA',t:'A',r:'JUAN',m:'enero',pz:'JAZMIN H4',sv:'LIMPIEZA DE SÓLIDOS',ie:65000.0,ir:0.0,v:65000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'DOROTEA C4EST',sv:'ABANDONO DEFINITIVO',ie:31950.8,ir:0.0,v:31950.8,l:'AZ',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'enero',pz:'QF-DW14H',sv:'LIMPIEZA ARENA CT 2 3/8"',ie:230000.0,ir:276000.0,v:276000.0,l:'CT-TT-ES',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'LEONA B4A',sv:'ABANDONO DEFINITIVO',ie:42016.89,ir:0.0,v:42016.89,l:'AZ',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'enero',pz:'WELL SERVICES',sv:'WELL SERVICES',ie:120000.0,ir:60000.0,v:60000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP PPH',t:'O',r:'MICHELL',m:'enero',pz:'SANTA CLARA',sv:'estimulación mediante ct',ie:102000.0,ir:0.0,v:102000.0,l:'ES',s:'CANCELADO',co:'PRECIO'},
+{c:'ECP VAO PPU',t:'O',r:'JUAN',m:'enero',pz:'ORITO 65',sv:'ABANDONO CON CT',ie:193000.0,ir:0.0,v:193000.0,l:'CT - AZ - TT',s:'CANCELADO',co:''},
+{c:'ECP VRC GTA',t:'O',r:'JUAN',m:'enero',pz:'JAZMIN H3',sv:'LIMPIEZA DE SÓLIDOS',ie:65000.0,ir:0.0,v:65000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'ECP APIAY',t:'A',r:'JOHAN',m:'enero',pz:'SURIA 6',sv:'ESTIMULACION CT - FLUIDOS PROPIOS',ie:230000.0,ir:198000.0,v:198000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'DOROTEA C9ST2H',sv:'ABANDONO DEFINITIVO',ie:28726.3,ir:0.0,v:28726.3,l:'AZ',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'AGUAS BLANCAS 3',sv:'MOVILIZACION INGRESO ABANDONOS INTEGRADOS',ie:100000.0,ir:90210.0,v:90210.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'enero',pz:'JAGUAR 11',sv:'LIMPIEZA DE ARENA CON CT',ie:60150.47,ir:0.0,v:60150.47,l:'CT,TT,ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'enero',pz:'QUIFA WL',sv:'CAMPAÑA REGISTROS CEMENTO',ie:32000.0,ir:24000.0,v:24000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP VRC GRI',t:'O',r:'JUAN',m:'enero',pz:'CARDALES 6',sv:'INDUCCIÓN CON N2',ie:90000.0,ir:0.0,v:90000.0,l:'CT',s:'CANCELADO',co:'cancelado por diseño del pozo'},
+{c:'HOCOL',t:'O',r:'JUAN',m:'enero',pz:'CICUCO',sv:'RETROACTIVO',ie:200000.0,ir:0.0,v:200000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP VRC GTA',t:'O',r:'JUAN',m:'enero',pz:'JAZMIN H4',sv:'LIMPIEZA DE SÓLIDOS',ie:65000.0,ir:0.0,v:65000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'AZOGUE 14',sv:'ESTIMULACION BH (FRACCION ENERO)',ie:30000.0,ir:30000.0,v:30000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'enero',pz:'JAGUAR 31',sv:'LIMPIEZA QUIMICA CON CT',ie:71827.64,ir:0.0,v:71827.64,l:'',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'enero',pz:'DOROTEA C4H',sv:'ABANDONO DEFINITIVO',ie:28352.65,ir:0.0,v:28352.65,l:'AZ',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'LORO 16',sv:'FACTURACION COMPLEMENTARIA FEBRERO',ie:599861.0,ir:599861.0,v:599861.0,l:'CT - TT- WT - AZ',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'AZOGUE 14',sv:'ESTIMULACION BH (FRACCION FEBRERO)',ie:60565.0,ir:60565.0,v:60565.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'ECP VRC GTO',t:'A',r:'JUAN',m:'febrero',pz:'GALA 1K',sv:'COMPLETAMIENTO DE POZO',ie:300000.0,ir:0.0,v:300000.0,l:'CT, ES, WL, TT',s:'EN EJECUCION',co:''},
+{c:'ECP VRC GMA',t:'O',r:'JUAN',m:'febrero',pz:'TISQUIRAMA I2',sv:'RENTA MENSUAL INYECTIVIDAD',ie:170000.0,ir:0.0,v:170000.0,l:'WT',s:'CANCELADO',co:'CANCELADO POR PRESUPUESTO Y CONDICIÓN DE POZO'},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'febrero',pz:'JAGUAR 31',sv:'LIMPIEZA QUIMICA CON CT',ie:60000.0,ir:60000.0,v:60000.0,l:'CT-ES',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'febrero',pz:'LEONA B3S',sv:'ABANDONO DEFINITIVO',ie:42216.4,ir:42216.4,v:42216.4,l:'AZ',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'BACANO OESTE 14',sv:'PRUEBA INYECTIVIDAD',ie:85000.0,ir:9860.45,v:9860.45,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'febrero',pz:'CAMPAÑA WELL SERVICES',sv:'PULLING BES',ie:260000.0,ir:0.0,v:260000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'AGUAS BLANCAS 16',sv:'ABANDONO INTEGRADO',ie:130000.0,ir:183382.0,v:183382.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'febrero',pz:'DOROTEA C7H',sv:'ABANDONO DEFINITIVO',ie:22564.54,ir:0.0,v:22564.54,l:'AZ',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'febrero',pz:'JAGUAR 52',sv:'LIMPIEZA QUIMICA CON CT',ie:120991.2,ir:0.0,v:120991.2,l:'',s:'FINALIZADO',co:''},
+{c:'GRAN TIERRA',t:'A',r:'JULIANA',m:'febrero',pz:'RAJU 2',sv:'DISPONIBILIDAD FREE POINT',ie:94000.0,ir:0.0,v:94000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'A',r:'JUAN',m:'febrero',pz:'ARRECIFE 5',sv:'BOMBEO DE N2 BH',ie:20000.0,ir:54483.11,v:54483.11,l:'CT',s:'FINALIZADO',co:'APLAZADO POR TIMEPOS DE RADICACION PM'},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'febrero',pz:'DOROTEA C3S',sv:'ABANDONO DEFINITIVO',ie:31124.56,ir:31124.56,v:31124.56,l:'AZ',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'febrero',pz:'QF DW16H',sv:'LIMPIEZA ARENA CT 2 3/8"',ie:221000.0,ir:221000.0,v:221000.0,l:'CT-TT-ES',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'AGUAS BLANCAS 17',sv:'ABANDONO INTEGRADO',ie:185000.0,ir:174228.16,v:174228.16,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'febrero',pz:'ABANDONOS INTEGRADOS',sv:'ABANDONO INTEGRADO',ie:110000.0,ir:0.0,v:110000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'febrero',pz:'QUIFA 1071H',sv:'REGISTROS ELECTRICOS',ie:12038.0,ir:0.0,v:12038.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'BACANO SUR 1',sv:'LIMPIEZA Y ESTIMULACIÓN CON CT',ie:219000.0,ir:219000.0,v:219000.0,l:'CT - TT -ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'febrero',pz:'QUIFA 1060H',sv:'REGISTROS ELECTRICOS',ie:11300.0,ir:0.0,v:11300.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'febrero',pz:'RENTA MES CT',sv:'LIMPEIZAS & ESTIMULACIONES (FRACCION FEBRERO)',ie:200000.0,ir:192484.0,v:192484.0,l:'CT - ES - TT',s:'FINALIZADO',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'febrero',pz:'GIBRALTAR 1',sv:'AISLAMIENTO DE ZONA CT (FRACCION FEBRERO)',ie:400000.0,ir:400000.0,v:400000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'febrero',pz:'HAMACA 28H',sv:'ABANDONO INTEGRADO HAMACA',ie:122500.0,ir:0.0,v:122500.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'AGUAS BLANCAS 19',sv:'ABANDONO INTEGRADO',ie:185000.0,ir:188000.0,v:188000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'KITARO 3',sv:'ESTIMULACION CT',ie:120000.0,ir:123702.03,v:123702.03,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'GRAN TIERRA',t:'A',r:'JULIANA',m:'febrero',pz:'ACORDIONERO 6i',sv:'HERRAMIENTA DE CORTE',ie:68000.0,ir:0.0,v:68000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'O',r:'JOHAN',m:'febrero',pz:'TIGANA HORIZONTAL 1',sv:'HERRAMIENTAS PLT',ie:36000.0,ir:0.0,v:36000.0,l:'WL',s:'CANCELADO',co:'ASIGNACION PENDIENTE POR YACIMIENTO. SIGUEN EN BUSQUEDA DE HERRAMIENTA QUE MIDA HOLD UP'},
+{c:'PAREX',t:'A',r:'JOHAN',m:'febrero',pz:'BACANO OESTE 12',sv:'PRUEBA INYECTIVIDAD',ie:10000.0,ir:0.0,v:10000.0,l:'CT',s:'CANCELADO',co:''},
+{c:'ECP APIAY',t:'A',r:'JOHAN',m:'febrero',pz:'SURIA 68',sv:'SUMINISTRO ACIDO SINTETICO',ie:70000.0,ir:62500.0,v:62500.0,l:'ES',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'marzo',pz:'AGUAS BLANCAS 27',sv:'ABANDONO INTEGRADO',ie:236555.0,ir:270525.51,v:270525.51,l:'AI',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'marzo',pz:'LORO 16',sv:'FACTURACION FRACCION MARZO',ie:181000.0,ir:181000.0,v:181000.0,l:'CT - TT- WT - AZ',s:'FINALIZADO',co:''},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'marzo',pz:'RENTA MES CT',sv:'LIMPEIZAS & ESTIMULACIONES (FRACCION MARZO)',ie:400000.0,ir:423153.5,v:423153.5,l:'CT - ES - TT',s:'FINALIZADO',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'marzo',pz:'GIBRALTAR 1',sv:'AISLAMIENTO DE ZONA CT (FRACCION MARZO)',ie:53000.0,ir:53000.0,v:53000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'ECP VRC GTO',t:'A',r:'JUAN',m:'marzo',pz:'GALA 1K',sv:'PRUEBA DE POZO',ie:950000.0,ir:0.0,v:950000.0,l:'CT, WL, AZ',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'QUIFA 1059H',sv:'REGISTROS ELECTRICOS',ie:11200.0,ir:0.0,v:11200.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'QUIFA 1066H',sv:'REGISTRO CEMENTO',ie:11790.7,ir:11790.7,v:11790.7,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP VAO PPU',t:'A',r:'JULIANA',m:'marzo',pz:'ALQAMARI 2',sv:'FORMIATO DE POTASIO LIQUIDO',ie:19000.0,ir:19000.0,v:19000.0,l:'ES',s:'FINALIZADO',co:'NO SE HACE  USO DEL FORMIATO'},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'HAMACA 45H',sv:'WELL SERVICES',ie:76367.37,ir:0.0,v:76367.37,l:'AI',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'marzo',pz:'TIGUI 70',sv:'ESTIMULACION CON CT',ie:210000.0,ir:210000.0,v:210000.0,l:'CT - TT- ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'HAMACA 99H',sv:'WELL SERVICES',ie:152721.58,ir:0.0,v:152721.58,l:'WS',s:'FINALIZADO',co:''},
+{c:'GRAN TIERRA',t:'A',r:'JULIANA',m:'marzo',pz:'COHEMBI 29',sv:'UNIDAD DE WIRELINE Y UBHO',ie:23438.07,ir:23438.07,v:23438.07,l:'WL',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'marzo',pz:'DOROTEA B4N',sv:'AISLAMIENTO ZONAL',ie:35428.89,ir:35428.89,v:35428.89,l:'AZ',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'QUIFA 1007H',sv:'REGISTRO CEMENTO',ie:11000.0,ir:0.0,v:11000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP VRC GMA',t:'A',r:'JUAN',m:'marzo',pz:'YARIGUI 540',sv:'SUMINISTRO DE POZOS',ie:10000.0,ir:10000.0,v:10000.0,l:'ES',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'marzo',pz:'TIGUI 72',sv:'ESTIMULACION CON CT',ie:186000.0,ir:186000.0,v:186000.0,l:'CT - TT- ES',s:'FINALIZADO',co:''},
+{c:'HUPECOL',t:'O',r:'JOHAN',m:'marzo',pz:'VENUS 2',sv:'LIMPIEZA Y ESTIMULACIÓN CON CT',ie:130000.0,ir:0.0,v:130000.0,l:'CT,ES',s:'CANCELADO',co:''},
+{c:'ECP CASTILLA',t:'O',r:'JOHAN',m:'marzo',pz:'RENTA MES CONVENCIONAL',sv:'RENTA MES CONVENCIONAL',ie:210000.0,ir:0.0,v:210000.0,l:'WL',s:'CANCELADO',co:''},
+{c:'ECP CASTILLA',t:'O',r:'JOHAN',m:'marzo',pz:'AISLAMIENTO DE ZONA CT',sv:'AISLAMIENTO DE ZONA CT',ie:140000.0,ir:0.0,v:140000.0,l:'CT - AZ',s:'CANCELADO',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'marzo',pz:'CUPIAGUA NW 40',sv:'BOMBEO DE FLUIDOS',ie:35000.0,ir:10200.0,v:10200.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'marzo',pz:'AGUAS BLANCAS 04',sv:'ABANDONO INTEGRADO',ie:200000.0,ir:316000.0,v:316000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'marzo',pz:'TIGANA NORTE 3',sv:'ESTIMULACION CT',ie:120000.0,ir:140000.0,v:140000.0,l:'CT - TT- ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'HAMACA 167H',sv:'WELL SERVICES',ie:80000.0,ir:0.0,v:80000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'marzo',pz:'JAGUAR SW 02',sv:'SERVICIO DE CT PARA LIMPIEZA QUIMICA',ie:122700.0,ir:122700.0,v:122700.0,l:'CT, ES',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'marzo',pz:'BACANO OESTE 10',sv:'ESTIMULACION BH',ie:80000.0,ir:81174.0,v:81174.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'O',r:'JOHAN',m:'marzo',pz:'TIGANA SUR 19',sv:'ESTIMULACION INYECTOR CONTINGENTE',ie:150000.0,ir:23000.0,v:23000.0,l:'CT - ES',s:'FINALIZADO',co:'ESTIMULACION NO EJECUTADA. SOLO BOMBEO. BUENA ADMISION DEL POZO'},
+{c:'ECP GOR',t:'A',r:'MICHELL',m:'marzo',pz:'RUBIALES',sv:'FREE POINT - CORTE TUBERÍA',ie:55000.0,ir:0.0,v:55000.0,l:'WL',s:'CANCELADO',co:'CANCELADO POR DISPONIBILIDAD'},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'QUIFA 1044H',sv:'REGISTRO CEMENTO',ie:12000.0,ir:0.0,v:12000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'QUIFA DW18H',sv:'REGISTRO CEMENTO E INTEGRIDAD',ie:68000.0,ir:0.0,v:68000.0,l:'WL',s:'CANCELADO',co:'NPT Y NO SE PAGÓ EL SERVICIO'},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'QUIFA 1006H',sv:'REGISTRO CEMENTO',ie:12000.0,ir:0.0,v:12000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'BASTIDAS 5',sv:'LIMPIEZA DE ARENA CON CT',ie:40000.0,ir:0.0,v:40000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'marzo',pz:'JAGUAR SW 007W',sv:'FLUSHING CON UNIDAD DE BOMBEO',ie:0.0,ir:0.0,v:0.0,l:'CT',s:'CANCELADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'marzo',pz:'HAMACA',sv:'WELL SERVICES',ie:30000.0,ir:0.0,v:30000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'abril',pz:'RENTA MES CT',sv:'LIMPEIZAS & ESTIMULACIONES (FRACCION ABRIL)',ie:400000.0,ir:460827.0,v:460827.0,l:'CT - ES - TT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'abril',pz:'AGUAS BLANCAS 08',sv:'ABANDONO INTEGRADO',ie:163300.0,ir:218000.0,v:218000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'abril',pz:'CUPIAGUA E7',sv:'ABANDONO',ie:500000.0,ir:552516.0,v:552516.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'ECP APIAY',t:'A',r:'JOHAN',m:'abril',pz:'SURIA 68',sv:'LIMPIEZA PESCADO',ie:55000.0,ir:52442.0,v:52442.0,l:'CT - TT',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'abril',pz:'JAGUAR 49H',sv:'SERVICIO DE CT PARA LIMPIEZA QUIMICA',ie:275827.94,ir:275827.94,v:275827.94,l:'CT, ES',s:'FINALIZADO',co:''},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'abril',pz:'AKACIAS 135',sv:'SUMINISTRO QUIMICA RENTA CT WFT',ie:43000.0,ir:26180.63,v:26180.63,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'abril',pz:'CARACARA SUR B009H',sv:'FLUSHING CON UNIDAD DE BOMBEO',ie:0.0,ir:3000.0,v:3000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'HAMACA 45H',sv:'WELL SERVICES',ie:72971.05,ir:0.0,v:72971.05,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'abril',pz:'RIC 67',sv:'BOMBEO DE FLUIDOS SLB',ie:90000.0,ir:0.0,v:90000.0,l:'ES',s:'FINALIZADO',co:''},
+{c:'NEW GRANADA',t:'A',r:'JULIANA',m:'abril',pz:'LEONA W1',sv:'AISLAMIENTO ZONAL',ie:20000.0,ir:0.0,v:20000.0,l:'AZ',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'abril',pz:'TIGANA 8',sv:'LIMPIEZA + ESTIMULACION',ie:285000.0,ir:292000.0,v:292000.0,l:'CT - TT- ES',s:'FINALIZADO',co:''},
+{c:'ECP CASTILLA',t:'O',r:'JOHAN',m:'abril',pz:'CASTILLA NORTE 189',sv:'CAMBIO DE ZONAS',ie:75000.0,ir:0.0,v:75000.0,l:'CT',s:'CANCELADO',co:'SIN DISPONIBILIDAD'},
+{c:'ECP PPU',t:'A',r:'JULIANA',m:'abril',pz:'QURIYANA 3',sv:'SUMINISTRO DE EDTA',ie:72291.0,ir:0.0,v:72291.0,l:'ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'CORCEL CSWD02',sv:'LIMPIEZA DE ARENA CON CT',ie:209564.19,ir:209564.19,v:209564.19,l:'CT',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'abril',pz:'TUA 2',sv:'BOMBEO DE FLUIDOS',ie:15000.0,ir:24600.0,v:24600.0,l:'AZ',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'abril',pz:'AGUAS BLANCAS 33',sv:'ABANDONO INTEGRADO',ie:252000.0,ir:286000.0,v:286000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'HAMACA 161H',sv:'WELL SERVICES',ie:88945.41,ir:0.0,v:88945.41,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP APIAY',t:'A',r:'JOHAN',m:'abril',pz:'SURIA 52',sv:'LIMPIEZA POST FRACTURA CONTINGENTE',ie:70000.0,ir:0.0,v:70000.0,l:'CT - TT',s:'CANCELADO',co:'ASIGNACIÓN A OTRA COMPAÑÍA'},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'abril',pz:'RENTA MENSUAL WL',sv:'REGISTROS INTEGRIDAD (FRACCION ABRIL)',ie:105000.0,ir:105000.0,v:105000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'QF-286HST2',sv:'ABANDONO INTEGRADO',ie:112000.0,ir:0.0,v:112000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'abril',pz:'RANCHO QUEMADO D1',sv:'ESTIMULACIÓN BH',ie:103000.0,ir:0.0,v:103000.0,l:'CT-ES',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'abril',pz:'TIGANA HORIZONTAL 1',sv:'MPLT + CAMBIO DE ZONAS',ie:75000.0,ir:168000.0,v:168000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'ECP VRC GRI',t:'O',r:'JUAN',m:'abril',pz:'CASABE',sv:'HOT TAP',ie:11000.0,ir:0.0,v:11000.0,l:'CW',s:'PLANEACION',co:'APLAZADO POR DEUDA CON 3ER GRADO Y PLANEACIÓN ECP'},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'CORCEL ASWD03',sv:'LIMPIEZA DE ARENA CON CT',ie:192756.76,ir:0.0,v:192756.76,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'CORCEL ASWD03',sv:'REEMBOLSABLES',ie:15328.65,ir:0.0,v:15328.65,l:'CT',s:'FINALIZADO',co:''},
+{c:'ERAZO VALENCIA',t:'A',r:'MICHELL',m:'abril',pz:'ERAZO',sv:'RENTA DE EQUIPO CONTROL P',ie:5500.0,ir:0.0,v:5500.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'O',r:'JOHAN',m:'abril',pz:'AKIRA 33',sv:'ESTIMULACION BH',ie:100000.0,ir:0.0,v:100000.0,l:'CT -ES',s:'CANCELADO',co:''},
+{c:'GRAN TIERRA',t:'A',r:'JULIANA',m:'abril',pz:'COHEMBI 30',sv:'UNIDAD DE WIRELINE Y UBHO',ie:35000.0,ir:0.0,v:35000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'abril',pz:'AZOGUE 16',sv:'ESTIMULACION BH',ie:60000.0,ir:51051.0,v:51051.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'QF 474H',sv:'ABANDONO INTEGRADO',ie:112000.0,ir:0.0,v:112000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'HAMACA 131H',sv:'WELL SERVICES',ie:64246.89,ir:0.0,v:64246.89,l:'WS',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'abril',pz:'TIGANA HZ 3',sv:'MPLT',ie:80000.0,ir:88300.0,v:88300.0,l:'',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'O',r:'JUAN',m:'abril',pz:'BONGA 2',sv:'INDUCCIÓN CON N2 Y SERVICIOS DE WT',ie:80000.0,ir:0.0,v:80000.0,l:'CT, WT',s:'PLANEACION',co:''},
+{c:'ECP VRC GRI',t:'O',r:'JUAN',m:'abril',pz:'CASABE 834',sv:'RE ABANDONO TÉCNICO',ie:115000.0,ir:0.0,v:115000.0,l:'CT, TT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'CORCEL CSWD03',sv:'LIMPIEZA DE ARENA CON CT',ie:102281.01,ir:0.0,v:102281.01,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'CORCEL CSWD03',sv:'REEMBOLSABLES',ie:21464.86,ir:0.0,v:21464.86,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'QF 712H',sv:'ABANDONO INTEGRADO',ie:112000.0,ir:0.0,v:112000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'abril',pz:'CORCEL CSWD02',sv:'REEMBOLSABLES',ie:24888.24,ir:0.0,v:24888.24,l:'CT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'abril',pz:'AGUAS BLANCAS 2',sv:'ABANDONO INTEGRADO',ie:241600.0,ir:251000.0,v:251000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'ECP VRC GMA',t:'A',r:'JUAN',m:'abril',pz:'TENERIFE 1',sv:'ABANDONO',ie:180000.0,ir:0.0,v:180000.0,l:'AZ, CT, WL',s:'PLANEACION',co:'APLAZADO POR OBRAS CIVILES DE ECP'},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'abril',pz:'TIGANA SUR 3',sv:'CORRELACIÓN GR-CCL',ie:13400.0,ir:0.0,v:13400.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'mayo',pz:'RENTA MENSUAL WL',sv:'REGISTROS INTEGRIDAD (FRACCION MAYO)',ie:82000.0,ir:82000.0,v:82000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'ECP APIAY',t:'O',r:'JOHAN',m:'mayo',pz:'SURIA 24',sv:'ABANDONO INTEGRADO',ie:500000.0,ir:0.0,v:500000.0,l:'AI',s:'CANCELADO',co:'OPERACIÓN EJECUTADA CON WO'},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'mayo',pz:'RENTA MES CT',sv:'LIMPEIZAS & ESTIMULACIONES (FRACCION MAYO)',ie:100000.0,ir:357143.0,v:357143.0,l:'CT - ES - TT',s:'FINALIZADO',co:'SUSPENSION RENTA PARO DE COMUNIDAD'},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'QF -712H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:0.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'mayo',pz:'TORO SENTADO 02',sv:'ESTIMULACIÓN BULLHEADING',ie:76567.6,ir:0.0,v:76567.6,l:'CT, ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'HAMACA 131H',sv:'WELL SERVICES',ie:64246.89,ir:0.0,v:64246.89,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'mayo',pz:'CUPIAGUA E7',sv:'ABANDONO - 2 INT',ie:250000.0,ir:233463.0,v:233463.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'mayo',pz:'TUA 3',sv:'BOMBEO DE FLUIDOS',ie:10200.0,ir:10200.0,v:10200.0,l:'AZ',s:'FINALIZADO',co:''},
+{c:'ESTRELLA',t:'A',r:'MICHELL',m:'mayo',pz:'RENTA UC-ESTRELLA',sv:'RENTA UNIDAD DE CEMENTACIÓN PRIMARIAS',ie:5500.0,ir:0.0,v:5500.0,l:'AZ',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'mayo',pz:'SABANERO 52H',sv:'REGISTRO CBL',ie:14000.0,ir:0.0,v:14000.0,l:'WL',s:'CANCELADO',co:'PARO BASE VILLAVICENCIO'},
+{c:'HOCOL',t:'O',r:'JUAN',m:'mayo',pz:'CICUCO 26',sv:'ABANDONO MEDIANTE RIG 350',ie:180000.0,ir:0.0,v:180000.0,l:'WS',s:'CANCELADO',co:'RECHAZADA POR FALTA DE RIG'},
+{c:'PAREX',t:'A',r:'JOHAN',m:'mayo',pz:'CAPACHOS SUR 3',sv:'LIMPIEZA',ie:120000.0,ir:56000.0,v:56000.0,l:'CT - TT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'HAMACA 182H',sv:'WELL SERVICES',ie:77683.78,ir:0.0,v:77683.78,l:'WS',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'YAGUAZO 2ST',sv:'PESCA Y MOLIENDA MEDIANTE CT',ie:353397.63,ir:0.0,v:353397.63,l:'CT-TT',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'mayo',pz:'CARACARA SUR A013',sv:'LIMPIEZA DE ARENA EN REVERESA',ie:97439.7,ir:0.0,v:97439.7,l:'CT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'mayo',pz:'AGUAS BLANCAS 31',sv:'ABANDONO INTEGRADO',ie:215000.0,ir:220000.0,v:220000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'ECP PPH',t:'O',r:'MICHELL',m:'mayo',pz:'DT 68',sv:'BOMBEO DE ORGÁNICO',ie:70000.0,ir:0.0,v:70000.0,l:'ES',s:'CANCELADO',co:'CANCELADO POR PRECIOS'},
+{c:'PAREX',t:'A',r:'JOHAN',m:'mayo',pz:'CALONA 1',sv:'ESTIMULACION BH',ie:55000.0,ir:52000.0,v:52000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'mayo',pz:'KANANASKIS 4',sv:'ESTIMULACION BH',ie:60000.0,ir:59817.0,v:59817.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'mayo',pz:'CORALILLO 7ST',sv:'MOLIENDA',ie:230000.0,ir:0.0,v:230000.0,l:'CT-TT',s:'CANCELADO',co:'PRESUPUESTO'},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'mayo',pz:'TILODIRAN 11',sv:'SERVICIO DE CT PARA LIMPIEZA Y ESTIMULACION',ie:139339.0,ir:0.0,v:139339.0,l:'CT-ES-TT',s:'CANCELADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'QUIFA 633H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:0.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'QF -540H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:0.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'A',r:'JUAN',m:'mayo',pz:'ARRECIFE 4',sv:'BOMBEO DE N2 BH',ie:25000.0,ir:24110.09,v:24110.09,l:'CT',s:'FINALIZADO',co:''},
+{c:'HOCOL',t:'A',r:'JUAN',m:'mayo',pz:'CORALINO 2',sv:'BOMBEO DE N2 BH',ie:25000.0,ir:17600.09,v:17600.09,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'mayo',pz:'YAGUAZO 3',sv:'LIMPIEZA DE ARENA CON CT',ie:125000.0,ir:0.0,v:125000.0,l:'CT-TT',s:'CANCELADO',co:'PRESUPUESTO'},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'mayo',pz:'YAGUAZO 8',sv:'LIMPIEZA DE ARENA CON CT',ie:150000.0,ir:0.0,v:150000.0,l:'CT-TT',s:'CANCELADO',co:'PRESUPUESTO'},
+{c:'ECP PPH',t:'O',r:'MICHELL',m:'junio',pz:'PALOGRANDE 113',sv:'CAÑONEO CSG GUN',ie:30000.0,ir:0.0,v:30000.0,l:'WL',s:'CANCELADO',co:'CANCELADO POR PRECIOS'},
+{c:'HOCOL',t:'A',r:'JUAN',m:'mayo',pz:'ARRECIFE 1',sv:'BOMBEO DE N2 BH',ie:25000.0,ir:16010.09,v:16010.09,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'YAGUAZO 2ST3',sv:'LIMPIEZA, MOLIENDA',ie:150000.0,ir:150000.0,v:150000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'HAMACA 22HST',sv:'ABANDONO INTEGRADO',ie:116000.0,ir:0.0,v:116000.0,l:'WS',s:'FINALIZADO',co:''},
+{c:'ECP PPU',t:'A',r:'JULIANA',m:'mayo',pz:'ACAE 11',sv:'ESTIMULACION BH',ie:148979.0,ir:0.0,v:148979.0,l:'ES',s:'FINALIZADO',co:''},
+{c:'PERENCO',t:'A',r:'JUAN',m:'mayo',pz:'TOCARÍA 12',sv:'LIMPIEZA DE SARTA MEDANTE CT Y QUIMICA',ie:200000.0,ir:189000.0,v:189000.0,l:'CT, ES',s:'FINALIZADO',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'mayo',pz:'RIO CHITAMENA E2',sv:'CTGL (FRACCIÓN MAYO)',ie:300000.0,ir:0.0,v:300000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'mayo',pz:'ANDINA 1',sv:'ESTIMULACION CT',ie:20000.0,ir:197000.0,v:197000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'QUIFA 224',sv:'ABANDONO INTEGRADO',ie:150000.0,ir:150000.0,v:150000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'mayo',pz:'QF -796D',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:0.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'mayo',pz:'CAPACHOS SUR 3',sv:'ESTIMULACION CT (FRACCIÓN MAYO)',ie:200000.0,ir:114000.0,v:114000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'ECP VRC GMA',t:'A',r:'JUAN',m:'mayo',pz:'YARIGUI 55',sv:'ABANDONO TECNICO',ie:110000.0,ir:0.0,v:110000.0,l:'',s:'PLANEACION',co:''},
+{c:'ERAZO VALENCIA',t:'A',r:'MICHELL',m:'mayo',pz:'PERFORADOR HM CASABE',sv:'PERFORADOR HM',ie:16240.0,ir:0.0,v:16240.0,l:'TT',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'O',r:'JOHAN',m:'junio',pz:'TORITOS ESTE 1',sv:'PBU',ie:75000.0,ir:0.0,v:75000.0,l:'WL',s:'CANCELADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'QUIFA 795H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:119000.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'junio',pz:'RENTA MES CT',sv:'LIMPEIZAS & ESTIMULACIONES (FRACCION JUNIO)',ie:40000.0,ir:0.0,v:40000.0,l:'CT - ES - TT',s:'EN EJECUCION',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'junio',pz:'RIO CHITAMENA E2',sv:'CTGL (FRACCION JUNIO)',ie:309000.0,ir:309000.0,v:309000.0,l:'CT',s:'FINALIZADO',co:''},
+{c:'ECP PPH',t:'O',r:'MICHELL',m:'julio',pz:'SAN FRANCISCO-186',sv:'ESTIMULACIÓN ORGÁNICA',ie:60000.0,ir:0.0,v:60000.0,l:'ES',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'QUIFA 587H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:119000.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'junio',pz:'SILFIDE 1',sv:'ABANDONO INTEGRADO',ie:200000.0,ir:0.0,v:200000.0,l:'CT -ES - AZ - TT - WT',s:'EN EJECUCION',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'junio',pz:'CAPACHOS SUR 3',sv:'ESTIMULACION CT (FRACCIÓN JUNIO)',ie:100000.0,ir:100000.0,v:100000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'junio',pz:'BORAL 2',sv:'CT PARA LIMPIEZA Y SAND JETTING',ie:51300.0,ir:51300.0,v:51300.0,l:'CT-TT-ES',s:'FINALIZADO',co:''},
+{c:'ECP CASTILLA',t:'O',r:'JOHAN',m:'junio',pz:'RENTA MES F.O',sv:'RENTA MES F.O.',ie:215000.0,ir:0.0,v:215000.0,l:'WL',s:'CANCELADO',co:'ASIGNADO A MAXIM FISHING'},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'junio',pz:'TIGANA 6',sv:'ESTIMULACION RPM + CAMBIO DE ZONAS',ie:100000.0,ir:157000.0,v:157000.0,l:'CT - ES - TT',s:'FINALIZADO',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'junio',pz:'ANDINA LIMON 1',sv:'ABANDONO',ie:180000.0,ir:200000.0,v:200000.0,l:'CT -ES - AZ - TT - WT',s:'FINALIZADO',co:''},
+{c:'ECP PPU',t:'A',r:'JULIANA',m:'junio',pz:'ACAE 11',sv:'ESTIMULACION BH',ie:268021.0,ir:268021.0,v:268021.0,l:'ES',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'junio',pz:'JAGUAR 31',sv:'LIMPIEZA DE ARENA EN REVERESA',ie:86393.8,ir:86393.8,v:86393.8,l:'CT',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'HAMACA 171H',sv:'REGISTRO CEMENTO',ie:14000.0,ir:14000.0,v:14000.0,l:'WL',s:'FINALIZADO',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'QUIFA 587H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:119000.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'junio',pz:'TIGANA NORTE 2',sv:'BOMBEO DE FLUIDOS',ie:12000.0,ir:12000.0,v:12000.0,l:'CT - ES',s:'FINALIZADO',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'junio',pz:'JAGUAR 35H',sv:'SAND JETTING Y ESTIMULACION',ie:500000.0,ir:0.0,v:500000.0,l:'CT-TT-AZ-ES-WT',s:'EN EJECUCION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'julio',pz:'EL DÍFICIL',sv:'INDUCCIÓN CON N2',ie:160000.0,ir:0.0,v:160000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'junio',pz:'QUIFA RELINER',sv:'COILED TUBING',ie:200000.0,ir:0.0,v:200000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'junio',pz:'TILODIRAN 2',sv:'SERVICIO DE LIMPIEZA',ie:121000.0,ir:0.0,v:121000.0,l:'CT-ES-TT',s:'CANCELADO',co:'ASIGNADO A OTRA COMPAÑÍA POR DISPONIBILIDAD'},
+{c:'ECP VRC GTO',t:'A',r:'JUAN',m:'junio',pz:'CASABE 1638',sv:'CAMBIO DE FLUIDO CON CT',ie:68000.0,ir:119000.74,v:119000.74,l:'CT',s:'FINALIZADO',co:'APLAZADO POR DEMORAS EN LA LLEGADA DEL EQUIPO'},
+{c:'ECP GOR',t:'A',r:'MICHELL',m:'junio',pz:'WDCS 0015H',sv:'LIMPIEZA DE ARENA CON CT',ie:250000.0,ir:0.0,v:250000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'junio',pz:'QUIFA 799D',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:119000.0,v:119000.0,l:'AI',s:'FINALIZADO',co:''},
+{c:'ECP VRC GTO',t:'A',r:'JUAN',m:'junio',pz:'MORITO 1',sv:'ABANDONO DEFINITIVO',ie:100000.0,ir:0.0,v:100000.0,l:'AZ, WL',s:'FINALIZADO',co:'APLAZADO POR DEMORAS EN YARIGUI 55 POZO PREVIO'},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'junio',pz:'ESPADARTE 1',sv:'ABANDONO',ie:180000.0,ir:0.0,v:180000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'junio',pz:'RIC 50',sv:'ESTIMULACIÓN BH',ie:68000.0,ir:0.0,v:68000.0,l:'CT',s:'EN EJECUCION',co:''},
+{c:'ECP PPH',t:'O',r:'MICHELL',m:'julio',pz:'DK 34',sv:'ESTIMULACIÓN MEDIANTE CT',ie:200000.0,ir:0.0,v:200000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP VRC GRI',t:'A',r:'JUAN',m:'julio',pz:'CASABE 252',sv:'RE ABANDONO TÉCNICO',ie:280000.0,ir:0.0,v:280000.0,l:'CT, TT',s:'PLANEACION',co:'APLAZADO POR DOCUMENTACIÓN DE EQUIPOS Y NOVEDADES EN CABEZALES DE POZOS'},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'julio',pz:'CARACARA SUR A13',sv:'CORRIDA DE EMPAQUE',ie:50000.0,ir:0.0,v:50000.0,l:'CT-TT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'julio',pz:'QUIFA 521H',sv:'ABANDONO INTEGRADO',ie:119000.0,ir:0.0,v:119000.0,l:'AI',s:'PLANEACION',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'julio',pz:'RIC 23',sv:'BOMBEO DE FLUIDOS SLB',ie:67000.0,ir:0.0,v:67000.0,l:'ES',s:'PLANEACION',co:''},
+{c:'ONGC',t:'O',r:'JUAN',m:'julio',pz:'PERICO 1',sv:'LIMPIEZA MEDIANTE CT',ie:100000.0,ir:0.0,v:100000.0,l:'CT, ES , TT',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'julio',pz:'JAGUAR 052',sv:'CAMBIO DE ZONAS',ie:70000.0,ir:0.0,v:70000.0,l:'CT-TT',s:'PLANEACION',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'julio',pz:'PG-005',sv:'ABANDONO DE POZO',ie:260000.0,ir:0.0,v:260000.0,l:'AZ,CT,WL',s:'PLANEACION',co:''},
+{c:'ECP VRC GRI',t:'A',r:'JUAN',m:'julio',pz:'CASABE 897',sv:'RE ABANDONO TÉCNICO',ie:280000.0,ir:0.0,v:280000.0,l:'CT, TT',s:'PLANEACION',co:''},
+{c:'ECP VRC GMA',t:'A',r:'JUAN',m:'julio',pz:'RENTA MENSUAL YARIGUI',sv:'RENTA MENSUAL LIMPIEZAS',ie:500000.0,ir:0.0,v:500000.0,l:'CT, TT, ES',s:'PLANEACION',co:'APLAZADO POR EQUIPO RETENIDO EN CPO 09 Y TEMAS CON WPRKING REEL'},
+{c:'ECP GOR',t:'A',r:'MICHELL',m:'julio',pz:'CASE 285H',sv:'LIMPIEZA DE ARENA CON CT',ie:250000.0,ir:0.0,v:250000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ONGC',t:'O',r:'JUAN',m:'julio',pz:'YARICO 1X',sv:'ESTIMULACIÓN MEDIANTE CT',ie:110000.0,ir:0.0,v:110000.0,l:'CT, ES, TT',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'julio',pz:'JAGUAR 043',sv:'CAMBIO DE ZONAS + ESTIMULACIÓN',ie:120000.0,ir:0.0,v:120000.0,l:'CT-TT+ES',s:'PLANEACION',co:''},
+{c:'ECP CPO/GCH',t:'A',r:'JOHAN',m:'julio',pz:'RENTA MES CT',sv:'LIMPEIZAS & ESTIMULACIONES (FRACCION JULIO)',ie:400000.0,ir:0.0,v:400000.0,l:'CT - ES - TT',s:'PLANEACION',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'julio',pz:'CUPIAGUA T32',sv:'CTGL',ie:250000.0,ir:0.0,v:250000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'julio',pz:'TIGANA HZ 3',sv:'CAMBIO DE ZONAS',ie:120000.0,ir:0.0,v:120000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP PIEDEMONTE',t:'A',r:'JOHAN',m:'julio',pz:'LIRIA YB3',sv:'ABANDONO',ie:500000.0,ir:0.0,v:500000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'O',r:'JOHAN',m:'julio',pz:'TIGANA SW 24',sv:'ESTIMULACION BH',ie:150000.0,ir:0.0,v:150000.0,l:'CT - ES',s:'PLANEACION',co:''},
+{c:'ECP VRC GMA',t:'A',r:'JUAN',m:'agosto',pz:'RENTA MENSUAL YARIGUI',sv:'RENTA MENSUAL LIMPIEZAS',ie:500000.0,ir:0.0,v:500000.0,l:'CT, ES, TT',s:'PLANEACION',co:''},
+{c:'PAREX',t:'A',r:'JOHAN',m:'junio',pz:'CAYENA 1',sv:'ABANDONO INTEGRADO',ie:233000.0,ir:0.0,v:233000.0,l:'CT -ES - AZ - TT - WT',s:'EN EJECUCION',co:''},
+{c:'ECP PPH',t:'O',r:'MICHELL',m:'julio',pz:'DN 0024',sv:'MOLIENDA DE TAPÓN MEDIANTE CT 1.75',ie:189000.0,ir:0.0,v:189000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP VRC GMA',t:'O',r:'JUAN',m:'julio',pz:'GARZAS 6',sv:'CAÑONEO UDP',ie:100000.0,ir:0.0,v:100000.0,l:'WL',s:'PLANEACION',co:'APLAZADO POR LLEGADA TAR´DIA DE CARGAS'},
+{c:'ECP VRC GRI',t:'A',r:'JUAN',m:'julio',pz:'CASABE 898',sv:'RE ABANDONO TÉCNICO',ie:280000.0,ir:0.0,v:280000.0,l:'CT, TT',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'julio',pz:'JAGUAR 033',sv:'CAMBIO DE ZONAS',ie:70000.0,ir:0.0,v:70000.0,l:'CT-TT',s:'PLANEACION',co:''},
+{c:'ONGC',t:'O',r:'JUAN',m:'julio',pz:'INDICO 3',sv:'LIMPIEZA MEDIANTE CT',ie:100000.0,ir:0.0,v:100000.0,l:'CT, ES, TT',s:'PLANEACION',co:''},
+{c:'HOCOL',t:'A',r:'JUAN',m:'julio',pz:'IBAMACA 8',sv:'ESTIMULACIÓN MEDIANTE CT',ie:80000.0,ir:0.0,v:80000.0,l:'CT, TT',s:'CANCELADO',co:'CANCELADO POR DISPONIBILIDAD DE EQUIPO'},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'julio',pz:'JACANA 50',sv:'LIMPIEZA + ESTIMULACION CT',ie:350000.0,ir:0.0,v:350000.0,l:'CT - ES',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'A',r:'JULIANA',m:'julio',pz:'CARACARA SUR A 003',sv:'CAMBIO DE ZONAS',ie:70000.0,ir:0.0,v:70000.0,l:'CT-TT',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'julio',pz:'JACANA 92',sv:'ESTIMULACION BH',ie:135000.0,ir:0.0,v:135000.0,l:'CT - ES',s:'PLANEACION',co:''},
+{c:'ECP VRC GRI',t:'O',r:'JUAN',m:'julio',pz:'RENTA MENSUAL CASABE LIMPIEZAS',sv:'LIMPIEZA DE POZO',ie:420000.0,ir:0.0,v:420000.0,l:'CT, ES',s:'PLANEACION',co:''},
+{c:'ECP GOR',t:'O',r:'MICHELL',m:'agosto',pz:'RUBIALES DW15',sv:'LIMPIEZA RELINER',ie:250000.0,ir:0.0,v:250000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP PPU',t:'A',r:'JULIANA',m:'julio',pz:'ORITO 19',sv:'REABANDONO DE POZOS',ie:300000.0,ir:0.0,v:300000.0,l:'CT-AZ-TT-ES',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'O',r:'JOHAN',m:'julio',pz:'JACANA 56',sv:'ESTIMULACION PRODUCTOR',ie:150000.0,ir:0.0,v:150000.0,l:'CT - ES',s:'PLANEACION',co:'PENDIENTE RECEPCION DE MUESTRAS PARA CORRER PRUEBAS'},
+{c:'PAREX',t:'O',r:'JOHAN',m:'julio',pz:'ORITO XX',sv:'RE ENTRY',ie:160000.0,ir:0.0,v:160000.0,l:'CT -ES - AZ - TT - WT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'julio',pz:'Yenac 2',sv:'WELL SERVICES',ie:60000.0,ir:0.0,v:60000.0,l:'WS',s:'PLANEACION',co:''},
+{c:'HOCOL',t:'O',r:'JUAN',m:'julio',pz:'RANCHO HERMOSO 14',sv:'RE ACTIVACIÓN DE POZO ABANDONADO',ie:200000.0,ir:0.0,v:200000.0,l:'WS',s:'CANCELADO',co:'A AL ESPERA DE DISPONIBILIDAD DEL RIG'},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'julio',pz:'2 POZOS CAÑO LIMON',sv:'ABANDONOS CAÑO LIMON Y CARICARE',ie:300000.0,ir:0.0,v:300000.0,l:'CT-AZ-CWB-ES',s:'PLANEACION',co:''},
+{c:'PERENCO',t:'O',r:'JUAN',m:'julio',pz:'TOCARIA 07',sv:'PESCA DE SARTA DE VELOCIDAD MEDIANTE CT',ie:210000.0,ir:0.0,v:210000.0,l:'CT, TT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'julio',pz:'LIMPIEZA RELINER',sv:'QUIFA REVERSA',ie:230000.0,ir:0.0,v:230000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'julio',pz:'TIGUI 09',sv:'ESTIMULACION BH',ie:150000.0,ir:0.0,v:150000.0,l:'CT - ES',s:'PLANEACION',co:''},
+{c:'NEW GRANADA',t:'O',r:'JULIANA',m:'agosto',pz:'LEONA B5H',sv:'LIMPIEZA DE POZO INYECTOR CON COILED TUBING',ie:100000.0,ir:0.0,v:100000.0,l:'CT-TT-ES',s:'PLANEACION',co:''},
+{c:'ECP GOR',t:'A',r:'MICHELL',m:'septiembre',pz:'DW39H',sv:'REGISTRO INTEGRIDAD TRACTOR',ie:37000.0,ir:0.0,v:37000.0,l:'WL',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'agosto',pz:'TIGUI ESTE 1',sv:'ESTIMULACION BH',ie:100000.0,ir:0.0,v:100000.0,l:'CT - ES',s:'PLANEACION',co:''},
+{c:'NEW GRANADA',t:'O',r:'JULIANA',m:'agosto',pz:'DOROTEA W3',sv:'LIMPIEZA DE POZO CON CT',ie:150000.0,ir:0.0,v:150000.0,l:'CT-TT-ES',s:'PLANEACION',co:''},
+{c:'ECP GOR',t:'A',r:'MICHELL',m:'septiembre',pz:'WDCS-26h',sv:'REGISTRO INTEGRIDAD TRACTOR',ie:50000.0,ir:0.0,v:50000.0,l:'WL',s:'PLANEACION',co:''},
+{c:'ECP GOR',t:'A',r:'MICHELL',m:'septiembre',pz:'MITO 2',sv:'REGISTRO FIBRA OPTICA',ie:36000.0,ir:0.0,v:36000.0,l:'WL',s:'PLANEACION',co:''},
+{c:'GEOPARK',t:'A',r:'JOHAN',m:'agosto',pz:'JACANA 90',sv:'ESTIMULACION BH',ie:130000.0,ir:0.0,v:130000.0,l:'CT - ES',s:'PLANEACION',co:''},
+{c:'ECP PPU',t:'O',r:'JULIANA',m:'agosto',pz:'ORITO 65',sv:'ABANDONO DE POZO',ie:180000.0,ir:0.0,v:180000.0,l:'CT-AZ-TT-ES',s:'PLANEACION',co:''},
+{c:'NEW GRANADA',t:'O',r:'JULIANA',m:'agosto',pz:'DOROTEA W1',sv:'ABANDONO CON CT',ie:150000.0,ir:0.0,v:150000.0,l:'CT-TT-ES',s:'PLANEACION',co:''},
+{c:'NEW GRANADA',t:'O',r:'JULIANA',m:'agosto',pz:'CABIONA 7W',sv:'LIMPIEZA MECANICA Y QUIMICA CON CT',ie:93417.36,ir:0.0,v:93417.36,l:'CT-TT-ES',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'agosto',pz:'5 POZOS CAÑO LIMON',sv:'ABANDONOS CAÑO LIMON Y CARICARE',ie:750000.0,ir:0.0,v:750000.0,l:'CT-AZ-CWB-ES',s:'PLANEACION',co:''},
+{c:'GRAN TIERRA',t:'O',r:'JULIANA',m:'septiembre',pz:'JUANAMBU 03',sv:'LIMPIEZA DE POZO',ie:108000.0,ir:0.0,v:108000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP VRC GRI',t:'O',r:'JUAN',m:'septiembre',pz:'RENTA MES REFINERÍA',sv:'ABANDONOS MEDIANTE CT',ie:500000.0,ir:0.0,v:500000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'septiembre',pz:'5 POZOS CAÑO LIMON',sv:'ABANDONOS CAÑO LIMON Y CARICARE',ie:750000.0,ir:0.0,v:750000.0,l:'CT-AZ-CWB-ES',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'octubre',pz:'3 POZOS CAÑO LIMON',sv:'ABANDONOS CAÑO LIMON Y CARICARE',ie:450000.0,ir:0.0,v:450000.0,l:'CT-AZ-CWB-ES',s:'PLANEACION',co:''},
+{c:'SIERRACOL',t:'O',r:'JULIANA',m:'noviembre',pz:'5 POZOS CAÑO LIMON',sv:'ABANDONOS CAÑO LIMON Y CARICARE',ie:750000.0,ir:0.0,v:750000.0,l:'CT-AZ-CWB-ES',s:'PLANEACION',co:''},
+{c:'PAREX',t:'O',r:'JOHAN',m:'julio',pz:'ORITO XX',sv:'RE ENTRY',ie:160000.0,ir:0.0,v:160000.0,l:'CT -ES - AZ - TT - WT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'julio',pz:'QUIFA 927H',sv:'LIMPIEZA RELINER',ie:187000.0,ir:0.0,v:187000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'julio',pz:'QUIFA 995H',sv:'LIMPIEZA RELINER',ie:190000.0,ir:0.0,v:190000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'agosto',pz:'QUIFA 956H',sv:'LIMPIEZA RELINER',ie:190000.0,ir:0.0,v:190000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'O',r:'MICHELL',m:'agosto',pz:'QUIFA 960H',sv:'LIMPIEZA RELINER',ie:190000.0,ir:0.0,v:190000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'julio',pz:'RIC 89',sv:'ESTIMULACIÓN BH',ie:68000.0,ir:0.0,v:68000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP PPH',t:'A',r:'MICHELL',m:'julio',pz:'RIC 49',sv:'ESTIMULACIÓN BH',ie:68000.0,ir:0.0,v:68000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'ECP GOR',t:'O',r:'MICHELL',m:'agosto',pz:'CASE 314D',sv:'BOMBEO ÁCIDO BH',ie:78000.0,ir:0.0,v:78000.0,l:'CT',s:'PLANEACION',co:''},
+{c:'FRONTERA',t:'A',r:'MICHELL',m:'agosto',pz:'Mantis',sv:'WELL SERVICES',ie:79000.0,ir:0.0,v:79000.0,l:'WS',s:'PLANEACION',co:''},
+{c:'ECP VRC HOT TAP',t:'A',r:'JUAN',m:'junio',pz:'YARIGUI CANTAGALLO',sv:'INSPECCIÓN DE CABEZALES HOT TAP',ie:19000.0,ir:19605.12,v:19605.12,l:'CW',s:'FINALIZADO',co:''}];
 
 // ── MONTHLY STATS (pre-computed, active only, no cancelled) ───────────────
-let MES_STATS={};
+const MES_STATS={"enero": {"total": 3707623, "asig": 2958623, "opor": 749000, "real": 3537623, "n": 33, "n_asig": 28, "n_opor": 5, "by_cli": {"PAREX": 851157, "ECP CASTILLA": 53434, "ECP APIAY": 468992, "ECP VRC GMA": 170000, "ECP VRC": 500000, "HOCOL": 436000, "ECP VRC GRI": 75000, "NEW GRANADA": 241063, "ECP VRC GTA": 260000, "ECP PPH": 160000, "FRONTERA": 360000, "SIERRACOL": 131978}, "by_rep": {"JOHAN": 1373583, "JUAN": 1441000, "JULIANA": 373041, "MICHELL": 520000}, "by_linea": {"CT": 2137645, "ES": 722959, "AZ": 703697, "TT": 1069777, "CW": 130941, "WL": 77434, "WT": 170000, "AI": 540654, "WS": 469000}}, "febrero": {"total": 3743800, "asig": 3743800, "opor": 0, "real": 3443800, "n": 26, "n_asig": 26, "n_opor": 0, "by_cli": {"PAREX": 1558599, "ECP VRC GTO": 300000, "SIERRACOL": 180991, "NEW GRANADA": 95906, "FRONTERA": 736838, "GRAN TIERRA": 162000, "HOCOL": 54483, "ECP CPO/GCH": 192484, "ECP PIEDEMONTE": 400000, "ECP APIAY": 62500}, "by_rep": {"JOHAN": 2213583, "JUAN": 354483, "JULIANA": 438897, "MICHELL": 736838}, "by_linea": {"CT": 2240956, "TT": 1532345, "WT": 599861, "AZ": 695767, "ES": 1239251, "WL": 485338, "WS": 382500, "AI": 655610}}, "marzo": {"total": 3491700, "asig": 3468700, "opor": 23000, "real": 3491700, "n": 27, "n_asig": 26, "n_opor": 1, "by_cli": {"PAREX": 848700, "ECP CPO/GCH": 423154, "ECP PIEDEMONTE": 63200, "ECP VRC GTO": 950000, "FRONTERA": 437080, "ECP VAO PPU": 19000, "GEOPARK": 559000, "GRAN TIERRA": 23438, "NEW GRANADA": 35429, "ECP VRC GMA": 10000, "SIERRACOL": 122700}, "by_rep": {"JOHAN": 1894053, "JUAN": 960000, "MICHELL": 437080, "JULIANA": 200567}, "by_linea": {"AI": 662893, "CT": 2380228, "TT": 1140154, "WT": 181000, "AZ": 1166429, "ES": 1215028, "WL": 1071429, "WS": 262722}}, "abril": {"total": 4708383, "asig": 4502383, "opor": 206000, "real": 4322383, "n": 38, "n_asig": 35, "n_opor": 3, "by_cli": {"ECP CPO/GCH": 487008, "PAREX": 806051, "ECP PIEDEMONTE": 552516, "ECP APIAY": 52442, "SIERRACOL": 381828, "FRONTERA": 1128447, "ECP PPH": 90000, "NEW GRANADA": 20000, "GEOPARK": 691300, "ECP PPU": 72291, "ECP VRC GRI": 126000, "ERAZO VALENCIA": 5500, "GRAN TIERRA": 35000, "HOCOL": 80000, "ECP VRC GMA": 180000}, "by_rep": {"JOHAN": 2589317, "JULIANA": 509119, "MICHELL": 1223947, "JUAN": 386000}, "by_linea": {"CT": 2926128, "ES": 1371178, "TT": 920269, "AI": 1091000, "WL": 411871, "AZ": 224600, "WS": 153192, "CW": 11000, "WT": 80000}}, "mayo": {"total": 3470398, "asig": 3470398, "opor": 0, "real": 3060398, "n": 29, "n_asig": 29, "n_opor": 0, "by_cli": {"GEOPARK": 92200, "ECP CPO/GCH": 357143, "FRONTERA": 1087328, "SIERRACOL": 174007, "ECP PIEDEMONTE": 533463, "ESTRELLA": 5500, "PAREX": 698817, "HOCOL": 57720, "ECP PPU": 148979, "PERENCO": 189000, "ECP VRC GMA": 110000, "ERAZO VALENCIA": 16240}, "by_rep": {"JOHAN": 1681623, "MICHELL": 1109068, "JULIANA": 322986, "JUAN": 356720}, "by_linea": {"WL": 82000, "CT": 2143548, "ES": 1194507, "TT": 782781, "AI": 696000, "WS": 257931, "AZ": 15700}}, "junio": {"total": 3883321, "asig": 3503321, "opor": 380000, "real": 2212321, "n": 26, "n_asig": 24, "n_opor": 2, "by_cli": {"FRONTERA": 1170000, "ECP CPO/GCH": 40000, "ECP PIEDEMONTE": 309000, "PAREX": 733000, "SIERRACOL": 637694, "GEOPARK": 169000, "ECP PPU": 268021, "ECP VRC GTO": 219001, "ECP GOR": 250000, "ECP PPH": 68000, "ECP VRC HOT TAP": 19605}, "by_rep": {"MICHELL": 1488000, "JOHAN": 1251000, "JULIANA": 905715, "JUAN": 238606}, "by_linea": {"CT": 2855695, "AI": 626000, "ES": 1761321, "TT": 1381300, "AZ": 1233000, "WT": 1133000, "WL": 114000, "CW": 19605}}, "julio": {"total": 7993000, "asig": 4817000, "opor": 3176000, "real": 0, "n": 42, "n_asig": 24, "n_opor": 18, "by_cli": {"ECP PPH": 912000, "FRONTERA": 946000, "ECP VRC GRI": 1260000, "SIERRACOL": 680000, "ONGC": 310000, "ECP VRC GMA": 600000, "ECP GOR": 250000, "ECP CPO/GCH": 400000, "ECP PIEDEMONTE": 750000, "GEOPARK": 1055000, "ECP PPU": 300000, "PAREX": 320000, "PERENCO": 210000}, "by_rep": {"MICHELL": 2108000, "JUAN": 2380000, "JULIANA": 980000, "JOHAN": 2525000}, "by_linea": {"ES": 3732000, "CT": 7587000, "TT": 3260000, "AI": 119000, "AZ": 1180000, "WL": 360000, "WT": 320000, "WS": 60000, "CWB": 300000}}, "agosto": {"total": 2940417, "asig": 809000, "opor": 2131417, "real": 0, "n": 14, "n_asig": 4, "n_opor": 10, "by_cli": {"ECP VRC GMA": 500000, "ECP GOR": 328000, "NEW GRANADA": 493417, "GEOPARK": 230000, "ECP PPU": 180000, "SIERRACOL": 750000, "FRONTERA": 459000}, "by_rep": {"JUAN": 500000, "MICHELL": 787000, "JULIANA": 1423417, "JOHAN": 230000}, "by_linea": {"CT": 2861417, "ES": 2153417, "TT": 1173417, "AZ": 930000, "CWB": 750000, "WS": 79000}}, "septiembre": {"total": 1481000, "asig": 123000, "opor": 1358000, "real": 0, "n": 6, "n_asig": 3, "n_opor": 3, "by_cli": {"ECP GOR": 123000, "GRAN TIERRA": 108000, "ECP VRC GRI": 500000, "SIERRACOL": 750000}, "by_rep": {"MICHELL": 123000, "JULIANA": 858000, "JUAN": 500000}, "by_linea": {"WL": 123000, "CT": 1358000, "AZ": 750000, "CWB": 750000, "ES": 750000}}, "octubre": {"total": 450000, "asig": 0, "opor": 450000, "real": 0, "n": 1, "n_asig": 0, "n_opor": 1, "by_cli": {"SIERRACOL": 450000}, "by_rep": {"JULIANA": 450000}, "by_linea": {"CT": 450000, "AZ": 450000, "CWB": 450000, "ES": 450000}}, "noviembre": {"total": 750000, "asig": 0, "opor": 750000, "real": 0, "n": 1, "n_asig": 0, "n_opor": 1, "by_cli": {"SIERRACOL": 750000}, "by_rep": {"JULIANA": 750000}, "by_linea": {"CT": 750000, "AZ": 750000, "CWB": 750000, "ES": 750000}}};
 
 const MES_ORDER_ALL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 // ── BRAND (Presentación Ejecutiva Guacamaya) ──────────────────────────────
@@ -537,7 +768,7 @@ const ALERTS={
   }
 };
 
-let G_MES='junio', G_REP='', G_ANIO='', sCol='c', sDir=1;
+let G_MES='junio', G_REP='', G_ANIO='2026', sCol='c', sDir=1;
 let CH={};
 const dc=id=>{if(CH[id]){CH[id].destroy();delete CH[id];}};
 const fmt=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v).toLocaleString();
@@ -546,11 +777,12 @@ const fmtM=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K
 function buildMesStats(all,anio){
   const stats={};
   MES_ORDER_ALL.forEach(mes=>{
-    const active=all.filter(r=>r.m===mes&&(!anio||String(r.anio)===String(anio))&&r.s!=='CANCELADO');
+    const active=all.filter(r=>r.m===mes&&(!anio||String(r.anio||2026)===String(anio))&&r.s!=='CANCELADO');
     if(!active.length)return;
     const asigRows=active.filter(r=>r.t==='A'),oporRows=active.filter(r=>r.t==='O');
     const asig=asigRows.reduce((s,r)=>s+r.v,0),opor=oporRows.reduce((s,r)=>s+r.v,0);
-    const real=active.reduce((s,r)=>s+(r.ir||0),0);
+    const fin=active.filter(r=>r.s==='FINALIZADO');
+    const real=fin.reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
     const by_cli={},by_rep={},by_linea={};
     active.forEach(r=>{
       by_cli[r.c]=(by_cli[r.c]||0)+r.v;
@@ -562,26 +794,20 @@ function buildMesStats(all,anio){
   return stats;
 }
 
-function getBase(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
+function getBase(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&r.s!=='CANCELADO');}
 function getAsig(){return getBase().filter(r=>r.t==='A');}
 function getOpor(){return getBase().filter(r=>r.t==='O');}
 function getAll(){return getBase();}
-function getCancelled(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s==='CANCELADO');}
+function getCancelled(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&r.s==='CANCELADO');}
 
 function updateBadgeAnio(){const el=document.getElementById('badge-anio');if(el)el.textContent=G_ANIO||'Todos';}
 
 function populateAnioFilter(){
   const sel=document.getElementById('g-anio');
-  const anios=[...new Set(ALL.map(r=>r.anio).filter(a=>a!==null&&a!==undefined&&a!==''))].sort((a,b)=>b-a);
-  const prevValue=sel.value;
+  if(!sel)return;
+  const anios=[...new Set(ALL.map(r=>r.anio||2026).filter(a=>a))].sort((a,b)=>b-a);
   sel.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
-  if(anios.includes(Number(prevValue))||anios.map(String).includes(prevValue)){
-    sel.value=prevValue;
-    G_ANIO=prevValue;
-  }else if(anios.length){
-    sel.value=String(anios[0]);
-    G_ANIO=String(anios[0]);
-  }
+  if(anios.includes(2026)){sel.value='2026';G_ANIO='2026';}
   updateBadgeAnio();
 }
 
@@ -590,41 +816,32 @@ function setTipo(t,btn){
   
   updateClrBtn();refreshActive();
 }
-function applyFilters(){G_MES=document.getElementById('g-mes').value;G_REP=document.getElementById('g-rep').value;G_ANIO=document.getElementById('g-anio').value;updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(ALL,G_ANIO);refreshActive();}
-function clearFilters(){G_MES='';G_REP='';G_ANIO='';document.getElementById('g-mes').value='';document.getElementById('g-rep').value='';document.getElementById('g-anio').value='';updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(ALL,G_ANIO);refreshActive();}
+function applyFilters(){G_MES=document.getElementById('g-mes').value;G_REP=document.getElementById('g-rep').value;updateClrBtn();refreshActive();}
+function clearFilters(){G_MES='';G_REP='';document.getElementById('g-mes').value='';document.getElementById('g-rep').value='';updateClrBtn();refreshActive();}
 function updateClrBtn(){const el=document.getElementById('clr-btn');const p=[];if(G_ANIO)p.push(G_ANIO);if(G_MES)p.push(G_MES);if(G_REP)p.push(G_REP);el.textContent=p.length?'✕ Limpiar: '+p.join(' · '):'';}
 function animateCounters(){
-  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const nodes=document.querySelectorAll('.view.active .kpi-v, .view.active .sc-v, .view.active .mc-total, .view.active .rc-hv');
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const nodes=document.querySelectorAll('.view.active .kpi-v,.view.active .sc-v,.view.active .rc-hv');
   nodes.forEach(el=>{
     const raw=el.textContent.trim();
     const m=raw.match(/-?[\d.,]+/);
     if(!m)return;
-    const numStr=m[0].replace(/,/g,'');
-    const num=parseFloat(numStr);
+    const num=parseFloat(m[0].replace(/,/g,''));
     if(isNaN(num))return;
     const prefix=raw.slice(0,m.index),suffix=raw.slice(m.index+m[0].length);
-    const decimals=(numStr.split('.')[1]||'').length;
     const dur=650,start=performance.now();
-    function tick(now){
-      const p=Math.min(1,(now-start)/dur);
-      const eased=1-Math.pow(1-p,3);
-      const cur=num*eased;
-      const curStr=decimals?cur.toFixed(decimals):Math.round(cur).toLocaleString('en-US');
-      el.textContent=prefix+curStr+suffix;
-      if(p<1)requestAnimationFrame(tick);else el.textContent=raw;
-    }
+    function tick(now){const p=Math.min(1,(now-start)/dur);const eased=1-Math.pow(1-p,3);const cur=num*eased;el.textContent=prefix+Math.round(cur).toLocaleString('en-US')+suffix;if(p<1)requestAnimationFrame(tick);else el.textContent=raw;}
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='anual')renderAnual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();animateCounters();}
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();animateCounters();}
 function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');refreshActive();}
 
 const CLIENT_LOGOS={"FRONTERA": "fronteraenergy.ca", "PAREX": "parexresources.com", "SIERRACOL": "sierracol.com", "GEOPARK": "geo-park.com", "HOCOL": "hocol.com.co", "NEW GRANADA": "nuevagranada.com.co", "ONGC": "ongcindia.com", "ECP PIEDEMONTE": "ecopetrol.com.co", "ECP CPO/GCH": "ecopetrol.com.co", "ECP VRC GRI": "ecopetrol.com.co", "ECP VRC GMA": "ecopetrol.com.co", "ECP VRC GTO": "ecopetrol.com.co", "ECP GOR": "ecopetrol.com.co", "ECP VAO PPH": "ecopetrol.com.co", "ECP PPU": "ecopetrol.com.co", "ECP PPH": "ecopetrol.com.co", "ECP CASTILLA": "ecopetrol.com.co", "ECP APIAY": "ecopetrol.com.co", "GRAN TIERRA": "grantierra.com"};
 
 // chart base options
-const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Hanken Grotesk',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Hanken Grotesk',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Hanken Grotesk'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
-const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Hanken Grotesk'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Hanken Grotesk',weight:'700'}},grid:{display:false},border:{display:false}}}});
+const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
+const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}}});
 
 // ── MENSUAL ──────────────────────────────────────────────────────────────
 function renderMensual(){
@@ -633,7 +850,7 @@ function renderMensual(){
   const real=D.filter(r=>r.s==='FINALIZADO').reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
   const fin=D.filter(r=>r.s==='FINALIZADO').length,ejec=D.filter(r=>r.s==='EN EJECUCION').length;
   const vCan=CAN.reduce((s,r)=>s+r.v,0);
-  const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+(G_ANIO?' '+G_ANIO:'')):((G_ANIO||'Todos')+' Completo');
+  const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+' 2026'):'2026 Completo';
 
   // alerts-box removed
 
@@ -660,14 +877,14 @@ function renderMensual(){
           <div><div class="si-lbl" style="color:${col}">${lbl}</div><div class="si-usd" style="color:${col}">${fmt(rows.reduce((s,r)=>s+r.v,0))}</div></div>
           <div class="si-n" style="color:${col}">${rows.length}</div>
         </div>`).join('')}
-        <div style="font-size:10px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--light);font-weight:600">Finalizado acumulado: <strong style="color:var(--fin);font-family:'Hanken Grotesk',sans-serif">${fmt(real)}</strong></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--light);font-weight:600">Finalizado acumulado: <strong style="color:var(--fin);font-family:'Inter',sans-serif">${fmt(real)}</strong></div>
       </div>
       <div>
         <div class="ct">Oportunidades Activas</div>
         ${O.length?O.sort((a,b)=>b.v-a.v).map(r=>`
         <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--light)">
-          <span><strong style="font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:12px;color:var(--navy)">${r.c}</strong><span style="font-size:10px;color:var(--muted);font-weight:500"> · ${r.pz}</span></span>
-          <span style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:13px;color:var(--gold-d)">${fmt(r.v)}</span>
+          <span><strong style="font-family:'Inter',sans-serif;font-weight:600;font-size:12px;color:var(--navy)">${r.c}</strong><span style="font-size:10px;color:var(--muted);font-weight:500"> · ${r.pz}</span></span>
+          <span style="font-family:'Inter',sans-serif;font-weight:700;font-size:13px;color:var(--gold-d)">${fmt(r.v)}</span>
         </div>`).join(''):`<div class="empty-s" style="padding:16px">Sin oportunidades activas</div>`}
       </div>
     </div></div>
@@ -692,10 +909,10 @@ function renderMensual(){
           return `<div style="background:var(--white);border:1px solid #F5B0B0;border-left:5px solid ${rankCol};border-radius:var(--rl);padding:13px 15px;box-shadow:var(--sh);position:relative;overflow:hidden">
             <div style="position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:${rankCol};opacity:.12">#${i+1}</div>
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-              <span style="background:${rankCol};color:#fff;font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase">#${i+1}</span>
+              <span style="background:${rankCol};color:#fff;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase">#${i+1}</span>
               <span class="rep-pill" style="background:${REP_BG[r.r]};color:${REP_COL[r.r]}">${r.r}</span>
             </div>
-            <div style="font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px">${r.c}</div>
+            <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px">${r.c}</div>
             <div style="font-size:10px;color:var(--muted);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.pz} · ${r.sv||'—'}</div>
             <div style="display:flex;justify-content:space-between;align-items:flex-end">
               <div>
@@ -721,7 +938,7 @@ function renderMensual(){
 
   const td=[{l:'Asignado',v:tA,c:B.NAVY},{l:'Oportunidad',v:tO,c:B.GOLD}].filter(x=>x.v>0);
   dc('cTipo');
-  CH.cTipo=new Chart(document.getElementById('cTipo'),{type:'doughnut',data:{labels:td.map(x=>x.l),datasets:[{data:td.map(x=>x.v),backgroundColor:td.map(x=>x.c),borderWidth:2,borderColor:'#fff',hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',layout:{padding:{top:18,bottom:18,left:28,right:28}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/(td.reduce((s,x)=>s+x.v,0)||1)*100)+'%)'}},datalabels:{display:false}},animation:{animateRotate:true}},plugins:[{id:'outsideLabels',afterDraw(chart){const{ctx,chartArea:{top,bottom,left,right,width,height}}=chart;const cx=left+width/2,cy=top+height/2;const total=td.reduce((s,x)=>s+x.v,0)||1;chart.data.datasets[0].data.forEach((_,i)=>{const meta=chart.getDatasetMeta(0);const arc=meta.data[i];const pct=Math.round(_/total*100);if(pct<2)return;const midAngle=(arc.startAngle+arc.endAngle)/2;const outerR=arc.outerRadius;const lineStart=outerR+6;const lineEnd=outerR+18;const labelR=outerR+26;const x1=cx+Math.cos(midAngle)*lineStart,y1=cy+Math.sin(midAngle)*lineStart;const x2=cx+Math.cos(midAngle)*lineEnd,y2=cy+Math.sin(midAngle)*lineEnd;const x3=cx+Math.cos(midAngle)*labelR,y3=cy+Math.sin(midAngle)*labelR;ctx.save();ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=chart.data.datasets[0].backgroundColor[i];ctx.lineWidth=1.5;ctx.stroke();ctx.font='bold 9px Hanken Grotesk,sans-serif';ctx.fillStyle='#3D4D63';ctx.textAlign=Math.cos(midAngle)>0?'left':'right';ctx.textBaseline='middle';ctx.fillText(pct+'%',x2+(Math.cos(midAngle)>0?4:-4),y2);ctx.restore();});}}]});
+  CH.cTipo=new Chart(document.getElementById('cTipo'),{type:'doughnut',data:{labels:td.map(x=>x.l),datasets:[{data:td.map(x=>x.v),backgroundColor:td.map(x=>x.c),borderWidth:2,borderColor:'#fff',hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',layout:{padding:{top:18,bottom:18,left:28,right:28}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/(td.reduce((s,x)=>s+x.v,0)||1)*100)+'%)'}},datalabels:{display:false}},animation:{animateRotate:true}},plugins:[{id:'outsideLabels',afterDraw(chart){const{ctx,chartArea:{top,bottom,left,right,width,height}}=chart;const cx=left+width/2,cy=top+height/2;const total=td.reduce((s,x)=>s+x.v,0)||1;chart.data.datasets[0].data.forEach((_,i)=>{const meta=chart.getDatasetMeta(0);const arc=meta.data[i];const pct=Math.round(_/total*100);if(pct<2)return;const midAngle=(arc.startAngle+arc.endAngle)/2;const outerR=arc.outerRadius;const lineStart=outerR+6;const lineEnd=outerR+18;const labelR=outerR+26;const x1=cx+Math.cos(midAngle)*lineStart,y1=cy+Math.sin(midAngle)*lineStart;const x2=cx+Math.cos(midAngle)*lineEnd,y2=cy+Math.sin(midAngle)*lineEnd;const x3=cx+Math.cos(midAngle)*labelR,y3=cy+Math.sin(midAngle)*labelR;ctx.save();ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=chart.data.datasets[0].backgroundColor[i];ctx.lineWidth=1.5;ctx.stroke();ctx.font='bold 9px Inter,sans-serif';ctx.fillStyle='#3D4D63';ctx.textAlign=Math.cos(midAngle)>0?'left':'right';ctx.textBaseline='middle';ctx.fillText(pct+'%',x2+(Math.cos(midAngle)>0?4:-4),y2);ctx.restore();});}}]});
   document.getElementById('leg-tipo').innerHTML=td.map(x=>`<div class="dlr"><span class="dln"><span class="dld" style="background:${x.c}"></span>${x.l}</span><span class="dlv">${fmt(x.v)}</span></div>`).join('');
 
   const bA={},bO={};A.forEach(r=>{bA[r.c]=(bA[r.c]||0)+r.v;});O.forEach(r=>{bO[r.c]=(bO[r.c]||0)+r.v;});
@@ -804,8 +1021,8 @@ function renderExecSummary(A, O, D, CAN, mes){
     <!-- Header -->
     <div style="background:var(--navy);padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <div style="font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold)">Resumen Ejecutivo</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">${mes[0].toUpperCase()+mes.slice(1)}${G_ANIO?' '+G_ANIO:''} vs ${prevLabel}${G_ANIO?' '+G_ANIO:''}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold)">Resumen Ejecutivo</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">${mes[0].toUpperCase()+mes.slice(1)} 2026 vs ${prevLabel} 2026</div>
       </div>
       <div style="font-size:10px;color:rgba(255,255,255,.45);font-style:italic">Pipeline activo = Asignado + Oportunidades (excl. cancelados)</div>
     </div>
@@ -943,7 +1160,7 @@ function renderReps(){
   const totPip=tA+tO;
   const pctA=totPip>0?Math.round(tA/totPip*100):0;
   const pctO=100-pctA;
-  const mesL2=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+(G_ANIO?' '+G_ANIO:'')):((G_ANIO||'Todos')+' Completo');
+  const mesL2=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+' 2026'):'2026 Completo';
   const allActive=getAll();
   const realTotal=allActive.filter(r=>r.s==='FINALIZADO').reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
   const finTotal=allActive.filter(r=>r.s==='FINALIZADO').length;
@@ -990,7 +1207,7 @@ function renderReps(){
     const can=CAN.filter(r=>r.r===rp).length;
     const cliA=[...new Set(ra.map(r=>r.c))];
     const cliO=[...new Set(ro.map(r=>r.c))];
-    const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)):(G_ANIO||'Todos');
+    const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)):'2026';
     return `<div class="rc">
       <div class="rc-head" style="background:${REP_BG[rp]};border-bottom:3px solid ${REP_COL[rp]}">
         <div class="rc-name" style="color:${REP_COL[rp]}">${rp}</div>
@@ -1010,11 +1227,11 @@ function renderReps(){
           <div class="rcs" style="background:var(--can-bg)"><div class="rcs-n" style="color:var(--can)">${can}</div><div class="rcs-l">Cancel.</div></div>
         </div>
         ${real>0?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">Finalizado: <strong style="color:var(--fin)">${fmt(real)}</strong></div>`:''}
-        <div style="font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Clientes Asignados</div>
+        <div style="font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Clientes Asignados</div>
         <div class="ctags" style="margin-bottom:${cliO.length?'7px':'0'}">
           ${cliA.map(c=>`<span class="ctag" style="background:${REP_BG[rp]};color:${REP_COL[rp]}">${c}</span>`).join('')}
         </div>
-        ${cliO.length?`<div style="font-family:'Hanken Grotesk',sans-serif;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Oportunidades</div>
+        ${cliO.length?`<div style="font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Oportunidades</div>
         <div class="ctags">${cliO.map(c=>`<span class="ctag" style="background:var(--gold-bg);color:var(--gold-d)">${c}</span>`).join('')}</div>`:''}
       </div>
     </div>`;
@@ -1053,13 +1270,13 @@ function renderClientes(){
   }
   document.getElementById('cli-tbl').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="background:var(--navy)">
-      ${['Cliente','Rep.','Asignado','Oportunidad','Total','Finalizado','% Ejec.'].map((h,i)=>`<th style="padding:8px 11px;text-align:${i>1?'right':'left'};font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:${i===2?'#A0C8FF':i===3?'#FFE08A':'rgba(255,255,255,.65)'}">${h}</th>`).join('')}
+      ${['Cliente','Rep.','Asignado','Oportunidad','Total','Finalizado','% Ejec.'].map((h,i)=>`<th style="padding:8px 11px;text-align:${i>1?'right':'left'};font-family:'Inter',sans-serif;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:${i===2?'#A0C8FF':i===3?'#FFE08A':'rgba(255,255,255,.65)'}">${h}</th>`).join('')}
     </tr></thead>
     <tbody>${Object.entries(allC).sort((a,b)=>(b[1].asig+b[1].opor)-(a[1].asig+a[1].opor)).map(([n,v])=>{
       const lu=getLogoUrl(n);
       const li=lu?`<img src="${lu}" alt="" style="width:22px;height:22px;object-fit:contain;border-radius:3px;margin-right:8px;flex-shrink:0;vertical-align:middle" onerror="this.style.display='none'">`:'<span style="display:inline-block;width:22px;height:22px;border-radius:3px;background:var(--asig-bg);margin-right:8px;flex-shrink:0;vertical-align:middle"></span>';
       return `<tr style="border-bottom:1px solid var(--light)">
-        <td style="padding:7px 11px"><div style="display:flex;align-items:center">${li}<span style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:12px;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)">${n}</span></div></td>
+        <td style="padding:7px 11px"><div style="display:flex;align-items:center">${li}<span style="font-family:'Inter',sans-serif;font-weight:700;font-size:12px;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)">${n}</span></div></td>
         <td style="padding:7px 11px">${[...v.reps].map(r=>`<span class="rep-pill" style="background:${REP_BG[r]};color:${REP_COL[r]}">${r}</span>`).join(' ')}</td>
         <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--navy)">${v.asig>0?fmt(v.asig):'—'}</td>
         <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--gold-d)">${v.opor>0?fmt(v.opor):'—'}</td>
@@ -1091,15 +1308,15 @@ function renderTable(){
   tbody.innerHTML=D.map(r=>{
     const isCan=r.s==='CANCELADO';
     return`<tr class="${isCan?'rcan':r.t==='A'?'ra':'ro'}">
-      <td style="font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--navy)">${r.c}</td>
+      <td style="font-family:'Inter',sans-serif;font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--navy)">${r.c}</td>
       <td><span class="rep-pill" style="background:${REP_BG[r.r]};color:${REP_COL[r.r]}">${r.r}</span></td>
-      <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Hanken Grotesk',sans-serif">${r.m}</td>
+      <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Inter',sans-serif">${r.m}</td>
       <td style="color:var(--slate);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.pz}">${r.pz}</td>
       <td style="color:var(--slate);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.sv}">${r.sv}</td>
       <td style="color:var(--muted);font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.l||'—'}</td>
-      <td style="text-align:right;font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:13px;color:${isCan?'var(--can)':r.t==='A'?'var(--navy)':'var(--gold-d)'}">${isCan?'<s>'+fmt(r.v)+'</s>':fmt(r.v)}</td>
-      <td style="text-align:right;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--dim)">${fmt(r.ie)}</td>
-      <td style="text-align:right;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;color:${r.ir>0?'var(--fin)':'var(--dim)'}">${r.ir>0?fmt(r.ir):'—'}</td>
+      <td style="text-align:right;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;color:${isCan?'var(--can)':r.t==='A'?'var(--navy)':'var(--gold-d)'}">${isCan?'<s>'+fmt(r.v)+'</s>':fmt(r.v)}</td>
+      <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--dim)">${fmt(r.ie)}</td>
+      <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:${r.ir>0?'var(--fin)':'var(--dim)'}">${r.ir>0?fmt(r.ir):'—'}</td>
       <td>${sb(r.s)}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:${r.co?'var(--gold-d)':'var(--muted)'};font-weight:500" title="${r.co||''}">${r.co||'—'}</td>
     </tr>`;
@@ -1108,13 +1325,14 @@ function renderTable(){
 function ts(col){if(sCol===col)sDir*=-1;else{sCol=col;sDir=1;}renderTable();}
 
 function exportCSV(){
-  const D=ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&true);
+  const D=ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&true);
   const h=['TIPO','CLIENTE','REPRESENTANTE','MES','POZO','SERVICIO','VALOR_EFECTIVO','INGRESO_ESTIMADO','INGRESO_REAL','LINEA','STATUS','COMENTARIOS'];
   const rows=[h.join(','),...D.map(r=>[r.t==='A'?'ASIGNACION':'OPORTUNIDAD',r.c,r.r,r.m,r.pz,r.sv,r.v,r.ie,r.ir,r.l,r.s,r.co].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))];
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_${G_ANIO||'Todos'}_${G_MES||'anual'}.csv`;a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_2026_${G_MES||'anual'}.csv`;a.click();
 }
 
 document.getElementById('live-date').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
+updateClrBtn();renderMensual();
 
 // ── CARGA DE DATOS DESDE POWER AUTOMATE (Excel SharePoint) ─────────────────
 const FLOW_URL='https://defaultfc8bd45f535140818eca55ef07ba2c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f78a376e4074404ca0578a5d6c0c3980/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=QYVUkOW1nkipMTquS5oXt3Oy81vjXPIf-_X-dTZl-S8';
@@ -1123,18 +1341,17 @@ function setLoading(on){
   const ov=document.getElementById('loading-overlay');
   const btn=document.getElementById('refresh-btn');
   const lbl=document.getElementById('refresh-lbl');
-  if(ov) ov.classList.toggle('hidden',!on);
-  if(btn){ btn.disabled=on; btn.classList.toggle('loading',on); }
-  if(lbl) lbl.textContent=on?'Actualizando...':'Actualizar';
+  if(ov)ov.classList.toggle('hidden',!on);
+  if(btn){btn.disabled=on;btn.classList.toggle('loading',on);}
+  if(lbl)lbl.textContent=on?'Actualizando...':'Actualizar';
 }
 
 async function cargarDatos(esManual){
   const main=document.querySelector('main');
   setLoading(true);
   try{
-    // cache:'no-store' + parámetro de tiempo para evitar que el navegador reuse una respuesta vieja en caché
     const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store'});
-    if(!resp.ok) throw new Error('Error HTTP '+resp.status);
+    if(!resp.ok)throw new Error('Error HTTP '+resp.status);
     ALL=await resp.json();
     populateAnioFilter();
     MES_STATS=buildMesStats(ALL,G_ANIO);
@@ -1147,7 +1364,7 @@ async function cargarDatos(esManual){
     if(esManual){
       alert('No se pudo actualizar la información desde SharePoint.\n\nDetalle: '+String(err.message||err));
     }else if(main){
-      main.innerHTML='<div style="padding:60px 40px;text-align:center;color:#C0392B;font-family:Hanken Grotesk,sans-serif"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-weight:700;font-size:15px;margin-bottom:6px">No se pudo cargar la información desde SharePoint</div><div style="font-size:12px;color:#6B7A99">Verifique la conexión o intente recargar la página. Detalle técnico: '+String(err.message||err)+'</div></div>';
+      main.innerHTML='<div style="padding:60px 40px;text-align:center;color:#C0392B;font-family:Inter,sans-serif"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-weight:700;font-size:15px;margin-bottom:6px">No se pudo cargar la información desde SharePoint</div><div style="font-size:12px;color:#6B7A99">Verifique la conexión o intente recargar la página.</div></div>';
     }
   }finally{
     setLoading(false);
