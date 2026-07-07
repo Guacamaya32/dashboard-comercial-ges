@@ -936,24 +936,21 @@ function renderClientes(){
     else allC[r.c].opor+=r.v;
     allC[r.c].real+=r.ir;allC[r.c].reps.add(r.r);
   });
-  const LOGO_MAP={
-    FRONTERA:'fronteraenergy.ca', PAREX:'parexresources.com',
-    SIERRACOL:'sierracol.com', GEOPARK:'geo-park.com',
-    HOCOL:'hocol.com.co', 'NEW GRANADA':'nuevagranada.com.co',
-    ONGC:'ongcindia.com', 'GRAN TIERRA':'grantierra.com',
-  };
-  function getLogoUrl(n){
-    if(LOGO_MAP[n]) return `https://logo.clearbit.com/${LOGO_MAP[n]}?size=28`;
-    if(n.startsWith('ECP')) return `https://logo.clearbit.com/ecopetrol.com.co?size=28`;
-    return null;
+  // Avatar con iniciales del cliente en color derivado del nombre (sin depender de logos externos)
+  const AVATAR_COLORS=['#002060','#006B3C','#1A5276','#7A5500','#6B2050','#0E6655','#7D3C98','#B9770E','#C0392B','#1F618D'];
+  function clientAvatar(n){
+    let hash=0;for(let i=0;i<n.length;i++)hash=n.charCodeAt(i)+((hash<<5)-hash);
+    const col=AVATAR_COLORS[Math.abs(hash)%AVATAR_COLORS.length];
+    const words=n.trim().split(/\s+/);
+    const initials=(words.length>=2?words[0][0]+words[1][0]:n.slice(0,2)).toUpperCase();
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;margin-right:8px;flex-shrink:0;letter-spacing:.02em">${initials}</span>`;
   }
   document.getElementById('cli-tbl').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="background:var(--navy)">
       ${['Cliente','Rep.','Asignado','Oportunidad','Total','Finalizado','% Ejec.'].map((h,i)=>`<th style="padding:8px 11px;text-align:${i>1?'right':'left'};font-family:'Inter',sans-serif;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:${i===2?'#A0C8FF':i===3?'#FFE08A':'rgba(255,255,255,.65)'}">${h}</th>`).join('')}
     </tr></thead>
     <tbody>${Object.entries(allC).sort((a,b)=>(b[1].asig+b[1].opor)-(a[1].asig+a[1].opor)).map(([n,v])=>{
-      const lu=getLogoUrl(n);
-      const li=lu?`<img src="${lu}" alt="" style="width:22px;height:22px;object-fit:contain;border-radius:3px;margin-right:8px;flex-shrink:0;vertical-align:middle" onerror="this.style.display='none'">`:'<span style="display:inline-block;width:22px;height:22px;border-radius:3px;background:var(--asig-bg);margin-right:8px;flex-shrink:0;vertical-align:middle"></span>';
+      const li=clientAvatar(n);
       return `<tr style="border-bottom:1px solid var(--light)">
         <td style="padding:7px 11px"><div style="display:flex;align-items:center">${li}<span style="font-family:'Inter',sans-serif;font-weight:700;font-size:12px;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)">${n}</span></div></td>
         <td style="padding:7px 11px">${[...v.reps].map(r=>`<span class="rep-pill" style="background:${REP_BG[r]};color:${REP_COL[r]}">${r}</span>`).join(' ')}</td>
