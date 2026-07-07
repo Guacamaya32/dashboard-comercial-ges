@@ -619,8 +619,7 @@ function renderMensual(){
         plugins:[{
           id:'canOutsideLabels',
           afterDraw(chart){
-            const {ctx,chartArea:{width,height}}=chart;
-            const cx=chartArea.left+width/2-(chartArea?0:0),cy=chartArea.top+height/2;
+            const {ctx}=chart;
             // recompute center
             const ca=chart.chartArea;
             const ccx=ca.left+(ca.right-ca.left)/2, ccy=ca.top+(ca.bottom-ca.top)/2;
