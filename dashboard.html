@@ -488,38 +488,163 @@ function renderMensual(){
   if(CAN.length){
     const canSorted=CAN.slice().sort((a,b)=>b.v-a.v);
     const totalCan=canSorted.reduce((s,r)=>s+r.v,0);
+
+    // ── Tipificación por comentario ──────────────────────────────────────
+    function tipificar(r){
+      const co=(r.co||'').toUpperCase();
+      // Subtipo detallado
+      if(/PRECIO|PRECIOS/.test(co))           return {tipo:'RECHAZADO', sub:'Precio',        col:'#C0392B', bg:'#FDECEA'};
+      if(/PRESUPUESTO/.test(co))              return {tipo:'RECHAZADO', sub:'Presupuesto',   col:'#C0392B', bg:'#FDECEA'};
+      if(/DISPONIBILIDAD|RIG|EQUIPO/.test(co)) return {tipo:'RECHAZADO', sub:'Disponibilidad',col:'#C0392B', bg:'#FDECEA'};
+      if(/DISEÑO|CONDICI/.test(co))           return {tipo:'RECHAZADO', sub:'Diseño/Condición',col:'#C0392B', bg:'#FDECEA'};
+      if(/NPT|NO SE PAG/.test(co))            return {tipo:'RECHAZADO', sub:'NPT/Operacional',col:'#C0392B', bg:'#FDECEA'};
+      if(/EXTENSION|APLAZADO|EXTENSI/.test(co)) return {tipo:'CANCELADO', sub:'Aplazado',    col:'#7D3C98', bg:'#F5EEF8'};
+      if(/OTRA COMPA|ASIGNADO|ASIGNACI|MAXIM|COMPETENCIA/.test(co)) return {tipo:'CANCELADO', sub:'Competencia', col:'#7D3C98', bg:'#F5EEF8'};
+      if(/PARO|WO|YACIMIENTO|BUSQUEDA|EJECUTADA/.test(co)) return {tipo:'CANCELADO', sub:'Operacional',col:'#7D3C98', bg:'#F5EEF8'};
+      return {tipo:'CANCELADO', sub:'Sin información', col:'#7D3C98', bg:'#F5EEF8'};
+    }
+
+    // ── Agrupar para la gráfica ──────────────────────────────────────────
+    const tipMap={};
+    canSorted.forEach(r=>{
+      const t=tipificar(r);
+      const key=t.tipo+':'+t.sub;
+      if(!tipMap[key]) tipMap[key]={tipo:t.tipo,sub:t.sub,col:t.col,bg:t.bg,v:0,n:0};
+      tipMap[key].v+=r.v; tipMap[key].n++;
+    });
+    const tipRows=Object.values(tipMap).sort((a,b)=>b.v-a.v);
+    const nRech=canSorted.filter(r=>tipificar(r).tipo==='RECHAZADO').length;
+    const nCan=canSorted.filter(r=>tipificar(r).tipo==='CANCELADO').length;
+    const vRech=canSorted.filter(r=>tipificar(r).tipo==='RECHAZADO').reduce((s,r)=>s+r.v,0);
+    const vCan=canSorted.filter(r=>tipificar(r).tipo==='CANCELADO').reduce((s,r)=>s+r.v,0);
+
+    // Build chart data string for outsideLabels plugin
+    const canChartId='cCan_'+Date.now();
+
+    // Build card HTML with string concat (no nested template literals)
+    const cardsHtml=canSorted.map((r,i)=>{
+      const t=tipificar(r);
+      const share=Math.round(r.v/totalCan*100);
+      const tipBadge='<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;background:'+t.col+';color:#fff;letter-spacing:.05em;text-transform:uppercase">'+t.tipo+'</span>'
+        +'<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;background:'+t.bg+';color:'+t.col+';margin-left:4px">'+t.sub+'</span>';
+      return '<div style="background:var(--white);border:1px solid '+t.col+'33;border-left:4px solid '+t.col+';border-radius:var(--rl);padding:12px 14px;box-shadow:var(--sh)">'
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
+        +'<span style="font-family:'Inter',sans-serif;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+t.col+'22;color:'+t.col+'">#'+(i+1)+'</span>'
+        +'<span class="rep-pill" style="background:'+REP_BG[r.r]+';color:'+REP_COL[r.r]+'">'+r.r+'</span>'
+        +tipBadge
+        +'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:1px">'+r.c+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);margin-bottom:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.pz+' · '+(r.sv||'—')+'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
+        +'<span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:'+t.col+'">'+fmt(r.v)+'</span>'
+        +'<span style="font-size:10px;color:var(--muted)">'+share+'% del total</span>'
+        +'</div>'
+        +'<div style="margin-top:6px;height:3px;background:var(--light);border-radius:2px;overflow:hidden">'
+        +'<div style="height:100%;background:'+t.col+';border-radius:2px;width:'+share+'%"></div>'
+        +'</div>'
+        +(r.co?'<div style="margin-top:5px;font-size:10px;color:var(--muted);font-style:italic;border-top:1px solid var(--light);padding-top:4px">💬 '+r.co+'</div>':'')
+        +'</div>';
+    }).join('');
+
+    const summaryRow='<div style="display:flex;gap:10px;margin-bottom:12px">'
+      +'<div style="flex:1;background:#FDECEA;border:1px solid #F5B0B0;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:20px">🚫</span>'
+      +'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C0392B;margin-bottom:2px">Rechazado</div>'
+      +'<div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#C0392B">'+fmt(vRech)+'</div>'
+      +'<div style="font-size:10px;color:var(--muted)">'+nRech+' oportunidad'+(nRech!==1?'es':'')+'</div></div>'
+      +'</div>'
+      +'<div style="flex:1;background:#F5EEF8;border:1px solid #D2B4DE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:20px">↩️</span>'
+      +'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7D3C98;margin-bottom:2px">Cancelado</div>'
+      +'<div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#7D3C98">'+fmt(vCan)+'</div>'
+      +'<div style="font-size:10px;color:var(--muted)">'+nCan+' oportunidad'+(nCan!==1?'es':'')+'</div></div>'
+      +'</div>'
+      +'</div>';
+
     canEl.innerHTML=`<div style="margin-top:22px">
-      <div class="slbl" style="margin-bottom:12px">
-        🚫 Pipeline Perdido — Cancelaciones del Mes
-        <span style="background:var(--can-bg);color:var(--can);border-radius:4px;padding:2px 10px;font-size:10px;font-weight:700;margin-left:6px;border:1px solid #F5B0B0">${CAN.length} cancelados · ${fmt(totalCan)} excluido</span>
+      <div class="slbl" style="margin-bottom:10px">
+        🚫 Pipeline Perdido — ${CAN.length} cancelaciones · ${fmt(totalCan)} excluido
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
-        ${canSorted.map((r,i)=>{
-          const share=Math.round(r.v/totalCan*100);
-          const rankColors=['#C0392B','#E74C3C','#EC7063','#F1948A','#F5B7B1'];
-          const rankCol=rankColors[Math.min(i,rankColors.length-1)];
-          return `<div style="background:var(--white);border:1px solid #F5B0B0;border-left:5px solid ${rankCol};border-radius:var(--rl);padding:13px 15px;box-shadow:var(--sh);position:relative;overflow:hidden">
-            <div style="position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:${rankCol};opacity:.12">#${i+1}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-              <span style="background:${rankCol};color:#fff;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase">#${i+1}</span>
-              <span class="rep-pill" style="background:${REP_BG[r.r]};color:${REP_COL[r.r]}">${r.r}</span>
-            </div>
-            <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px">${r.c}</div>
-            <div style="font-size:10px;color:var(--muted);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.pz} · ${r.sv||'—'}</div>
-            <div style="display:flex;justify-content:space-between;align-items:flex-end">
-              <div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${rankCol};line-height:1">${fmt(r.v)}</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:2px">${share}% del pipeline cancelado</div>
-              </div>
-            </div>
-            <div style="margin-top:8px;height:3px;background:var(--can-bg);border-radius:2px;overflow:hidden">
-              <div style="height:100%;background:${rankCol};border-radius:2px;width:${share}%"></div>
-            </div>
-            ${r.co?`<div style="margin-top:6px;font-size:10px;color:var(--muted);font-style:italic;border-top:1px solid var(--light);padding-top:5px">💬 ${r.co}</div>`:''}
-          </div>`;
-        }).join('')}
+      ${summaryRow}
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:14px;align-items:start">
+        <!-- Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">
+          ${cardsHtml}
+        </div>
+        <!-- Chart -->
+        <div style="background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:14px;box-shadow:var(--sh);position:sticky;top:180px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px">Motivo de cancelación</div>
+          <div style="height:200px"><canvas id="${canChartId}"></canvas></div>
+          <div style="margin-top:10px">
+            ${tipRows.map(t=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--light)">'
+              +'<div style="display:flex;align-items:center;gap:6px">'
+              +'<div style="width:8px;height:8px;border-radius:50%;background:'+t.col+';flex-shrink:0"></div>'
+              +'<span style="font-size:10px;color:var(--slate)">'+t.sub+'</span>'
+              +'</div>'
+              +'<div style="text-align:right">'
+              +'<span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--navy)">'+fmt(t.v)+'</span>'
+              +'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+t.n+'x</span>'
+              +'</div>'
+              +'</div>').join('')}
+          </div>
+        </div>
       </div>
     </div>`;
+
+    // Render donut chart after innerHTML is set
+    setTimeout(()=>{
+      const ctx=document.getElementById(canChartId);
+      if(!ctx)return;
+      new Chart(ctx,{
+        type:'doughnut',
+        data:{
+          labels:tipRows.map(t=>t.sub),
+          datasets:[{
+            data:tipRows.map(t=>t.v),
+            backgroundColor:tipRows.map(t=>t.col+'CC'),
+            borderColor:tipRows.map(t=>t.col),
+            borderWidth:2,
+            hoverOffset:6
+          }]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,cutout:'55%',
+          layout:{padding:{top:14,bottom:14,left:14,right:14}},
+          plugins:{
+            legend:{display:false},
+            tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/totalCan*100)+'%)'}}
+          },
+          animation:{animateRotate:true}
+        },
+        plugins:[{
+          id:'canOutsideLabels',
+          afterDraw(chart){
+            const {ctx,chartArea:{width,height}}=chart;
+            const cx=chartArea.left+width/2-(chartArea?0:0),cy=chartArea.top+height/2;
+            // recompute center
+            const ca=chart.chartArea;
+            const ccx=ca.left+(ca.right-ca.left)/2, ccy=ca.top+(ca.bottom-ca.top)/2;
+            chart.data.datasets[0].data.forEach((_,i)=>{
+              const meta=chart.getDatasetMeta(0);
+              const arc=meta.data[i];
+              const pct=Math.round(_/totalCan*100);
+              if(pct<4)return;
+              const mid=(arc.startAngle+arc.endAngle)/2;
+              const r=arc.outerRadius+14;
+              const x=ccx+Math.cos(mid)*r, y=ccy+Math.sin(mid)*r;
+              ctx.save();
+              ctx.font='bold 10px Inter,sans-serif';
+              ctx.fillStyle='#3D4D63';
+              ctx.textAlign=Math.cos(mid)>0?'left':'right';
+              ctx.textBaseline='middle';
+              ctx.fillText(pct+'%',x,y);
+              ctx.restore();
+            });
+          }
+        }]
+      });
+    },0);
+
   } else { canEl.innerHTML=''; }
 
   dc('cRep');
