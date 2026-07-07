@@ -556,7 +556,7 @@ function renderMensual(){
       +'<div style="flex:1;background:#F5EEF8;border:1px solid #D2B4DE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">'
       +'<span style="font-size:20px">↩️</span>'
       +'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7D3C98;margin-bottom:2px">Cancelado</div>'
-      +'<div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#7D3C98">'+fmt(vCan)+'</div>'
+      +'<div style="font-family:JetBrains Mono,monospace;font-size:16px;font-weight:700;color:#7D3C98">'+fmt(vCan)+'</div>'
       +'<div style="font-size:10px;color:var(--muted)">'+nCan+' oportunidad'+(nCan!==1?'es':'')+'</div></div>'
       +'</div>'
       +'</div>';
@@ -582,7 +582,7 @@ function renderMensual(){
               +'<span style="font-size:10px;color:var(--slate)">'+t.sub+'</span>'
               +'</div>'
               +'<div style="text-align:right">'
-              +'<span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--navy)">'+fmt(t.v)+'</span>'
+              +'<span style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700;color:var(--navy)">'+fmt(t.v)+'</span>'
               +'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+t.n+'x</span>'
               +'</div>'
               +'</div>').join('')}
@@ -733,7 +733,7 @@ function renderExecSummary(A, O, D, CAN, mes){
       ].map((k,i)=>`
         <div style="padding:12px 16px;${i<4?'border-right:1px solid var(--light)':''}">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px">${k.lbl}</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--navy)">${k.isCnt?k.cur:fmtS(k.cur)}</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:17px;font-weight:700;color:var(--navy)">${k.isCnt?k.cur:fmtS(k.cur)}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
             ${arrow(k.p)}
             ${k.prev!=null?`<span style="font-size:10px;color:var(--dim)">ant. ${k.isCnt?k.prev:fmtS(k.prev)}</span>`:''}
@@ -760,11 +760,11 @@ function renderExecSummary(A, O, D, CAN, mes){
                   return `<tr style="border-bottom:1px solid var(--light);${i%2===1?'background:var(--pale)':''}">
                     <td style="padding:4px 8px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px">${r.c}</td>
                     <td style="padding:4px 8px;text-align:right;white-space:nowrap">
-                      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--navy)">${fmtS(r.cv)}</span>
+                      <span style="font-family:JetBrains Mono,monospace;font-weight:700;color:var(--navy)">${fmtS(r.cv)}</span>
                       <span style="font-size:9px;color:var(--muted);margin-left:3px">${sharePct}%</span>
                     </td>
                     <td style="padding:4px 8px;text-align:right;white-space:nowrap">
-                      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)">${r.pv>0?fmtS(r.pv):'—'}</span>
+                      <span style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim)">${r.pv>0?fmtS(r.pv):'—'}</span>
                       <span style="margin-left:4px">${r.pv===0?'<span style="color:var(--fin);font-size:9px;font-weight:700">NUEVO</span>':arrow(r.p)}</span>
                     </td>
                   </tr>`;
@@ -790,7 +790,7 @@ function renderExecSummary(A, O, D, CAN, mes){
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
                   <span style="font-size:11px;font-weight:700;color:${col}">${r.r}</span>
                   <div style="text-align:right;line-height:1.2">
-                    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${col}">${fmtS(r.cv)}</span>
+                    <span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:${col}">${fmtS(r.cv)}</span>
                     <span style="font-size:9px;color:var(--muted);margin-left:3px">${sharePct}%</span>
                     <span style="display:block;font-size:10px;text-align:right">${arrow(r.p)}</span>
                   </div>
@@ -820,7 +820,7 @@ function renderExecSummary(A, O, D, CAN, mes){
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
                   <span style="font-size:11px;font-weight:700;color:${lc};background:${lc}1A;padding:1px 7px;border-radius:3px">${r.l}</span>
                   <div style="text-align:right;line-height:1.2">
-                    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--navy)">${fmtS(r.cv)}</span>
+                    <span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--navy)">${fmtS(r.cv)}</span>
                     <span style="font-size:9px;color:var(--muted);margin-left:3px">${sharePct}%</span>
                     <span style="display:block;text-align:right;font-size:10px">${arrow(r.p)}</span>
                   </div>
@@ -858,13 +858,13 @@ function renderReps(){
     <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;padding:14px 24px;gap:22px">
       <div style="flex-shrink:0">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">Pipeline Total</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--navy);line-height:1">${fmt(totPip)}</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:28px;font-weight:700;color:var(--navy);line-height:1">${fmt(totPip)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:3px">${A.length+O.length} registros activos</div>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:11px;font-weight:700;color:var(--navy)">📋 Asignado &nbsp;<span style="font-family:'JetBrains Mono',monospace;font-size:13px">${fmt(tA)} &nbsp; ${pctA}%</span></span>
-          <span style="font-size:11px;font-weight:700;color:var(--gold-d)">🎯 Oportunidad &nbsp;<span style="font-family:'JetBrains Mono',monospace;font-size:13px">${fmt(tO)} &nbsp; ${pctO}%</span></span>
+          <span style="font-size:11px;font-weight:700;color:var(--navy)">📋 Asignado &nbsp;<span style="font-family:JetBrains Mono,monospace;font-size:13px">${fmt(tA)} &nbsp; ${pctA}%</span></span>
+          <span style="font-size:11px;font-weight:700;color:var(--gold-d)">🎯 Oportunidad &nbsp;<span style="font-family:JetBrains Mono,monospace;font-size:13px">${fmt(tO)} &nbsp; ${pctO}%</span></span>
         </div>
         <div style="height:14px;background:var(--light);border-radius:7px;overflow:hidden;position:relative">
           <div style="position:absolute;left:0;top:0;bottom:0;width:${pctA}%;background:var(--navy);border-radius:7px 0 0 7px"></div>
@@ -873,7 +873,7 @@ function renderReps(){
       </div>
       <div style="flex-shrink:0;text-align:right">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">Finalizado</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--fin);line-height:1">${fmt(realTotal)}</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:22px;font-weight:700;color:var(--fin);line-height:1">${fmt(realTotal)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:3px">${finTotal} finalizados</div>
       </div>
     </div>
@@ -892,9 +892,9 @@ function renderReps(){
     return `<div class="rc">
       <div class="rc-head" style="background:${REP_BG[rp]};border-bottom:3px solid ${REP_COL[rp]}">
         <div class="rc-name" style="color:${REP_COL[rp]}">${rp}</div>
-        <div class="rc-tot" style="color:${REP_COL[rp]};opacity:.75">${mesL} · <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${REP_COL[rp]}">${fmt(tAT+tOT)}</span></div>
+        <div class="rc-tot" style="color:${REP_COL[rp]};opacity:.75">${mesL} · <span style="font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:${REP_COL[rp]}">${fmt(tAT+tOT)}</span></div>
         <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:10px;font-weight:700;color:${REP_COL[rp]};background:${REP_COL[rp]}22;padding:2px 8px;border-radius:12px;font-family:'JetBrains Mono',monospace">${totPip>0?Math.round((tAT+tOT)/totPip*100):0}% del pipeline</span>
+          <span style="font-size:10px;font-weight:700;color:${REP_COL[rp]};background:${REP_COL[rp]}22;padding:2px 8px;border-radius:12px;font-family:JetBrains Mono,monospace">${totPip>0?Math.round((tAT+tOT)/totPip*100):0}% del pipeline</span>
         </div>
       </div>
       <div class="rc-split">
@@ -957,11 +957,11 @@ function renderClientes(){
       return `<tr style="border-bottom:1px solid var(--light)">
         <td style="padding:7px 11px"><div style="display:flex;align-items:center">${li}<span style="font-family:'Inter',sans-serif;font-weight:700;font-size:12px;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)">${n}</span></div></td>
         <td style="padding:7px 11px">${[...v.reps].map(r=>`<span class="rep-pill" style="background:${REP_BG[r]};color:${REP_COL[r]}">${r}</span>`).join(' ')}</td>
-        <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--navy)">${v.asig>0?fmt(v.asig):'—'}</td>
-        <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--gold-d)">${v.opor>0?fmt(v.opor):'—'}</td>
-        <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--navy)">${fmt(v.asig+v.opor)}</td>
-        <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:${v.real>0?'var(--fin)':'var(--dim)'}">${v.real>0?fmt(v.real):'—'}</td>
-        <td style="padding:7px 11px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:${v.asig>0&&Math.round(v.real/v.asig*100)>60?'var(--fin)':'var(--muted)'}">${v.asig>0?Math.round(v.real/v.asig*100)+'%':'—'}</td>
+        <td style="padding:7px 11px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:600;color:var(--navy)">${v.asig>0?fmt(v.asig):'—'}</td>
+        <td style="padding:7px 11px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:600;color:var(--gold-d)">${v.opor>0?fmt(v.opor):'—'}</td>
+        <td style="padding:7px 11px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;font-size:13px;color:var(--navy)">${fmt(v.asig+v.opor)}</td>
+        <td style="padding:7px 11px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:600;color:${v.real>0?'var(--fin)':'var(--dim)'}">${v.real>0?fmt(v.real):'—'}</td>
+        <td style="padding:7px 11px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:600;color:${v.asig>0&&Math.round(v.real/v.asig*100)>60?'var(--fin)':'var(--muted)'}">${v.asig>0?Math.round(v.real/v.asig*100)+'%':'—'}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
 }
