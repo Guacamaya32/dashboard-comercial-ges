@@ -266,7 +266,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <option value="">Todo 2026</option>
     <option value="enero">Enero</option><option value="febrero">Febrero</option>
     <option value="marzo">Marzo</option><option value="abril">Abril</option>
-    <option value="mayo">Mayo</option><option value="junio" selected>Junio</option>
+    <option value="mayo">Mayo</option><option value="junio">Junio</option>
     <option value="julio">Julio</option><option value="agosto">Agosto</option>
     <option value="septiembre">Septiembre</option><option value="octubre">Octubre</option>
     <option value="noviembre">Noviembre</option>
@@ -364,7 +364,7 @@ const REPS=['MICHELL','JULIANA','JOHAN','JUAN'];
 const MO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const MS={enero:'ENE',febrero:'FEB',marzo:'MAR',abril:'ABR',mayo:'MAY',junio:'JUN',julio:'JUL',agosto:'AGO',septiembre:'SEP',octubre:'OCT',noviembre:'NOV',diciembre:'DIC'};
 
-let G_MES='junio', G_REP='', G_ANIO='', sCol='c', sDir=1;
+let G_MES=(()=>{const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return m[new Date().getMonth()];})(), G_REP='', G_ANIO='', sCol='c', sDir=1;
 let CH={};
 const dc=id=>{if(CH[id]){CH[id].destroy();delete CH[id];}};
 const fmt=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v).toLocaleString();
@@ -620,23 +620,36 @@ function renderMensual(){
           id:'canOutsideLabels',
           afterDraw(chart){
             const {ctx}=chart;
-            // recompute center
             const ca=chart.chartArea;
-            const ccx=ca.left+(ca.right-ca.left)/2, ccy=ca.top+(ca.bottom-ca.top)/2;
-            chart.data.datasets[0].data.forEach((_,i)=>{
+            const ccx=ca.left+(ca.right-ca.left)/2;
+            const ccy=ca.top+(ca.bottom-ca.top)/2;
+            const ds=chart.data.datasets[0];
+            const total=ds.data.reduce((s,v)=>s+v,0)||1;
+            ds.data.forEach((val,i)=>{
               const meta=chart.getDatasetMeta(0);
               const arc=meta.data[i];
-              const pct=Math.round(_/totalCan*100);
-              if(pct<4)return;
+              const pct=Math.round(val/total*100);
+              if(pct<3)return;
               const mid=(arc.startAngle+arc.endAngle)/2;
-              const r=arc.outerRadius+14;
-              const x=ccx+Math.cos(mid)*r, y=ccy+Math.sin(mid)*r;
+              const outerR=arc.outerRadius;
+              const lineR=outerR+8;
+              const labelR=outerR+20;
+              const lx=ccx+Math.cos(mid)*lineR;
+              const ly=ccy+Math.sin(mid)*lineR;
+              const tx=ccx+Math.cos(mid)*labelR;
+              const ty=ccy+Math.sin(mid)*labelR;
               ctx.save();
+              ctx.beginPath();
+              ctx.moveTo(ccx+Math.cos(mid)*outerR,ccy+Math.sin(mid)*outerR);
+              ctx.lineTo(lx,ly);
+              ctx.strokeStyle=ds.borderColor[i]||'#999';
+              ctx.lineWidth=1.5;
+              ctx.stroke();
               ctx.font='bold 10px Inter,sans-serif';
-              ctx.fillStyle='#3D4D63';
-              ctx.textAlign=Math.cos(mid)>0?'left':'right';
+              ctx.fillStyle='#2C3E50';
+              ctx.textAlign=Math.cos(mid)>=0?'left':'right';
               ctx.textBaseline='middle';
-              ctx.fillText(pct+'%',x,y);
+              ctx.fillText(pct+'%',tx+(Math.cos(mid)>=0?3:-3),ty);
               ctx.restore();
             });
           }
@@ -993,7 +1006,7 @@ function renderTable(){
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--dim)">${fmt(r.ie)}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:${r.ir>0?'var(--fin)':'var(--dim)'}">${r.ir>0?fmt(r.ir):'—'}</td>
       <td>${sb(r.s)}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:${r.co?'var(--gold-d)':'var(--muted)'};font-weight:500" title="${r.co||''}">${r.co||'—'}</td>
+      ${(r.s==='CANCELADO'||r.s==='PLANEACION')?'<td style="max-width:200px;font-size:10px;font-weight:500;white-space:normal;word-break:break-word;color:'+(r.co?'var(--gold-d)':'var(--muted)')+'" title="'+(r.co||'')+'">'+(r.co||'—')+'</td>':'<td style="color:var(--dim);font-size:10px">—</td>'}
     </tr>`;
   }).join('');
 }
@@ -1006,6 +1019,7 @@ function exportCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_${G_ANIO||'Todos'}_${G_MES||'anual'}.csv`;a.click();
 }
 
+(function(){const sel=document.getElementById('g-mes');if(sel&&G_MES)sel.value=G_MES;})();
 document.getElementById('live-date').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
 updateClrBtn();
 
