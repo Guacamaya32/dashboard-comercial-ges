@@ -574,7 +574,7 @@ function renderMensual(){
         <!-- Chart -->
         <div style="background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:14px;box-shadow:var(--sh);position:sticky;top:180px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px">Motivo de cancelación</div>
-          <div style="height:200px"><canvas id="${canChartId}"></canvas></div>
+          <div style="height:220px"><canvas id="${canChartId}"></canvas></div>
           <div style="margin-top:10px">
             ${tipRows.map(t=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--light)">'
               +'<div style="display:flex;align-items:center;gap:6px">'
@@ -595,63 +595,64 @@ function renderMensual(){
     setTimeout(()=>{
       const ctx=document.getElementById(canChartId);
       if(!ctx)return;
+      // Bar chart: always readable, no clipping issues with labels
+      const barTotal=tipRows.reduce((s,t)=>s+t.v,0)||1;
       new Chart(ctx,{
-        type:'doughnut',
+        type:'bar',
         data:{
           labels:tipRows.map(t=>t.sub),
           datasets:[{
-            data:tipRows.map(t=>t.v),
+            data:tipRows.map(t=>Math.round(t.v/barTotal*100)),
             backgroundColor:tipRows.map(t=>t.col+'CC'),
             borderColor:tipRows.map(t=>t.col),
-            borderWidth:2,
-            hoverOffset:6
+            borderWidth:1,
+            borderRadius:4,
+            borderSkipped:false
           }]
         },
         options:{
-          responsive:true,maintainAspectRatio:false,cutout:'55%',
-          layout:{padding:{top:14,bottom:14,left:14,right:14}},
+          indexAxis:'y',
+          responsive:true,maintainAspectRatio:false,
+          layout:{padding:{right:36}},
           plugins:{
             legend:{display:false},
-            tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/totalCan*100)+'%)'}}
+            tooltip:{callbacks:{
+              label:c=>{
+                const t=tipRows[c.dataIndex];
+                return t.sub+': '+fmt(t.v)+' ('+c.raw+'%)';
+              }
+            }},
+            pctLabels:{enabled:false}
           },
-          animation:{animateRotate:true}
+          scales:{
+            x:{display:false,max:100,grace:'0%'},
+            y:{
+              ticks:{
+                color:'#3D4D63',
+                font:{size:10,family:'Inter',weight:'600'},
+                crossAlign:'far'
+              },
+              grid:{display:false},
+              border:{display:false}
+            }
+          }
         },
         plugins:[{
-          id:'canOutsideLabels',
-          afterDraw(chart){
-            const {ctx}=chart;
-            const ca=chart.chartArea;
-            const ccx=ca.left+(ca.right-ca.left)/2;
-            const ccy=ca.top+(ca.bottom-ca.top)/2;
-            const ds=chart.data.datasets[0];
-            const total=ds.data.reduce((s,v)=>s+v,0)||1;
-            ds.data.forEach((val,i)=>{
-              const meta=chart.getDatasetMeta(0);
-              const arc=meta.data[i];
-              const pct=Math.round(val/total*100);
-              if(pct<3)return;
-              const mid=(arc.startAngle+arc.endAngle)/2;
-              const outerR=arc.outerRadius;
-              const lineR=outerR+8;
-              const labelR=outerR+20;
-              const lx=ccx+Math.cos(mid)*lineR;
-              const ly=ccy+Math.sin(mid)*lineR;
-              const tx=ccx+Math.cos(mid)*labelR;
-              const ty=ccy+Math.sin(mid)*labelR;
-              ctx.save();
-              ctx.beginPath();
-              ctx.moveTo(ccx+Math.cos(mid)*outerR,ccy+Math.sin(mid)*outerR);
-              ctx.lineTo(lx,ly);
-              ctx.strokeStyle=ds.borderColor[i]||'#999';
-              ctx.lineWidth=1.5;
-              ctx.stroke();
-              ctx.font='bold 10px Inter,sans-serif';
-              ctx.fillStyle='#2C3E50';
-              ctx.textAlign=Math.cos(mid)>=0?'left':'right';
-              ctx.textBaseline='middle';
-              ctx.fillText(pct+'%',tx+(Math.cos(mid)>=0?3:-3),ty);
-              ctx.restore();
+          id:'barPctLabels',
+          afterDatasetsDraw(chart){
+            const {ctx,data}=chart;
+            const ds=chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font='bold 10px Inter,sans-serif';
+            ctx.textBaseline='middle';
+            ds.data.forEach((bar,i)=>{
+              const pct=data.datasets[0].data[i];
+              const t=tipRows[i];
+              ctx.fillStyle=t.col;
+              ctx.textAlign='left';
+              ctx.fillText(pct+'%', bar.x+5, bar.y);
             });
+            ctx.restore();
           }
         }]
       });
