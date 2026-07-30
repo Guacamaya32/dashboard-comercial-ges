@@ -324,18 +324,24 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <div class="tt-bar">
     <div class="sw"><span class="sico">🔍</span><input type="text" id="srch" placeholder="Buscar cliente, pozo, servicio…" oninput="renderTable()"></div>
     <select id="fSt" onchange="renderTable()"><option value="__a">Todos los estados</option><option value="FINALIZADO">Finalizado</option><option value="EN EJECUCION">En ejecución</option><option value="CANCELADO">Cancelado</option><option value="PLANEACION">Planeación</option></select>
+    <select id="fTp" onchange="renderTable()"><option value="">Asig. + Opor.</option><option value="A">Solo Asignado</option><option value="O">Solo Oportunidad</option></select>
     <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
   </div>
   <div class="tbl-meta" id="tbl-meta"></div>
   <div class="tbl-wrap"><div class="tbl-scroll">
     <table>
       <thead><tr>
-        <th onclick="ts('c')">Cliente</th><th>Rep.</th><th>Mes</th>
-        <th>Pozo</th><th>Servicio</th><th>Línea</th>
-        <th onclick="ts('v')" style="text-align:right">Valor Efectivo</th>
-        <th style="text-align:right">Estimado</th>
-        <th style="text-align:right">Real</th>
-        <th>Estado</th><th>Comentarios</th>
+        <th onclick="ts('c')" style="cursor:pointer" title="Ordenar">Cliente ↕</th>
+        <th onclick="ts('r')" style="cursor:pointer" title="Ordenar">Rep. ↕</th>
+        <th onclick="ts('m')" style="cursor:pointer" title="Ordenar">Mes ↕</th>
+        <th onclick="ts('pz')" style="cursor:pointer" title="Ordenar">Pozo ↕</th>
+        <th onclick="ts('sv')" style="cursor:pointer" title="Ordenar">Servicio ↕</th>
+        <th onclick="ts('l')" style="cursor:pointer" title="Ordenar">Línea ↕</th>
+        <th onclick="ts('v')" style="text-align:right;cursor:pointer" title="Ordenar">Valor Efectivo ↕</th>
+        <th onclick="ts('ie')" style="text-align:right;cursor:pointer" title="Ordenar">Estimado ↕</th>
+        <th onclick="ts('ir')" style="text-align:right;cursor:pointer" title="Ordenar">Real ↕</th>
+        <th onclick="ts('s')" style="cursor:pointer" title="Ordenar">Estado ↕</th>
+        <th>Comentarios</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -491,17 +497,22 @@ function renderMensual(){
 
     // ── Tipificación por comentario ──────────────────────────────────────
     function tipificar(r){
+      // Priorizar campo 'mt' (motivo cancelacion) si viene del Excel
+      const mt=(r.mt||'').toUpperCase().trim();
       const co=(r.co||'').toUpperCase();
-      // Subtipo detallado
-      if(/PRECIO|PRECIOS/.test(co))           return {tipo:'RECHAZADO', sub:'Precio',        col:'#C0392B', bg:'#FDECEA'};
-      if(/PRESUPUESTO/.test(co))              return {tipo:'RECHAZADO', sub:'Presupuesto',   col:'#C0392B', bg:'#FDECEA'};
-      if(/DISPONIBILIDAD|RIG|EQUIPO/.test(co)) return {tipo:'RECHAZADO', sub:'Disponibilidad',col:'#C0392B', bg:'#FDECEA'};
-      if(/DISEÑO|CONDICI/.test(co))           return {tipo:'RECHAZADO', sub:'Diseño/Condición',col:'#C0392B', bg:'#FDECEA'};
-      if(/NPT|NO SE PAG/.test(co))            return {tipo:'RECHAZADO', sub:'NPT/Operacional',col:'#C0392B', bg:'#FDECEA'};
-      if(/EXTENSION|APLAZADO|EXTENSI/.test(co)) return {tipo:'CANCELADO', sub:'Aplazado',    col:'#7D3C98', bg:'#F5EEF8'};
-      if(/OTRA COMPA|ASIGNADO|ASIGNACI|MAXIM|COMPETENCIA/.test(co)) return {tipo:'CANCELADO', sub:'Competencia', col:'#7D3C98', bg:'#F5EEF8'};
-      if(/PARO|WO|YACIMIENTO|BUSQUEDA|EJECUTADA/.test(co)) return {tipo:'CANCELADO', sub:'Operacional',col:'#7D3C98', bg:'#F5EEF8'};
-      return {tipo:'CANCELADO', sub:'Sin información', col:'#7D3C98', bg:'#F5EEF8'};
+      const src=mt||co; // usar mt si existe, sino co
+      // RECHAZADO: razones relacionadas con precio, disponibilidad o condiciones técnicas
+      if(/PRECIO|PRECIOS/.test(src))                      return {tipo:'RECHAZADO', sub:'Precio',          col:'#C0392B', bg:'#FDECEA'};
+      if(/PRESUPUESTO/.test(src))                         return {tipo:'RECHAZADO', sub:'Presupuesto',     col:'#C0392B', bg:'#FDECEA'};
+      if(/DISPONIBILIDAD|RIG|EQUIPO|FALTA DE RIG/.test(src)) return {tipo:'RECHAZADO', sub:'Disponibilidad',col:'#C0392B', bg:'#FDECEA'};
+      if(/DISEÑO|CONDICI|HOLD UP/.test(src))              return {tipo:'RECHAZADO', sub:'Diseño/Condición',col:'#C0392B', bg:'#FDECEA'};
+      if(/NPT|NO SE PAG/.test(src))                       return {tipo:'RECHAZADO', sub:'NPT/Operacional', col:'#C0392B', bg:'#FDECEA'};
+      // CANCELADO: razones externas, competencia o aplazamiento
+      if(/EXTENSION|APLAZADO|EXTENSI/.test(src))          return {tipo:'CANCELADO', sub:'Aplazado',       col:'#7D3C98', bg:'#F5EEF8'};
+      if(/OTRA COMPA|ASIGNADO A|ASIGNACI|MAXIM|COMPETENCIA/.test(src)) return {tipo:'CANCELADO', sub:'Competencia',    col:'#7D3C98', bg:'#F5EEF8'};
+      if(/PARO|WO|YACIMIENTO|BUSQUEDA|EJECUTADA/.test(src)) return {tipo:'CANCELADO', sub:'Operacional',  col:'#7D3C98', bg:'#F5EEF8'};
+      if(mt)return{tipo:'CANCELADO',sub:mt.charAt(0)+mt.slice(1).toLowerCase(),col:'#7D3C98',bg:'#F5EEF8'};
+      return {tipo:'CANCELADO', sub:'Sin información',    col:'#7D3C98', bg:'#F5EEF8'};
     }
 
     // ── Agrupar para la gráfica ──────────────────────────────────────────
@@ -979,13 +990,15 @@ function renderClientes(){
 function renderTable(){
   const q=(document.getElementById('srch').value||'').toLowerCase();
   const fSt=document.getElementById('fSt').value;
+  const fTp=(document.getElementById('fTp')||{value:''}).value;
   let D=ALL.filter(r=>{
     if(G_MES&&r.m!==G_MES)return false;if(G_REP&&r.r!==G_REP)return false;
     if(G_ANIO&&String(r.anio||2026)!==String(G_ANIO))return false;
     if(fSt!=='__a'&&r.s!==fSt)return false;
+    if(fTp&&r.t!==fTp)return false;
     if(q)return[r.c,r.pz,r.sv,r.r,r.l,r.co].some(v=>v&&v.toLowerCase().includes(q));
     return true;
-  }).sort((a,b)=>sCol==='v'?(a.v-b.v)*sDir:String(a[sCol]||'').localeCompare(String(b[sCol]||''))*sDir);
+  }).sort((a,b)=>NUM_COLS.includes(sCol)?((a[sCol]||0)-(b[sCol]||0))*sDir:String(a[sCol]||'').localeCompare(String(b[sCol]||''),undefined,{sensitivity:'base'})*sDir);
 
   const active=D.filter(r=>r.s!=='CANCELADO');
   const cancelled=D.filter(r=>r.s==='CANCELADO');
@@ -1012,6 +1025,7 @@ function renderTable(){
   }).join('');
 }
 function ts(col){if(sCol===col)sDir*=-1;else{sCol=col;sDir=1;}renderTable();}
+const NUM_COLS=['v','ie','ir'];
 
 function exportCSV(){
   const D=ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio||2026)===String(G_ANIO)));
