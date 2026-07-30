@@ -1330,7 +1330,7 @@ function renderTable(){
   const tbody=document.getElementById('tbody');
   if(!D.length){tbody.innerHTML=`<tr><td colspan="12"><div class="empty-s">Sin resultados para los filtros seleccionados</div></td></tr>`;return;}
   tbody.innerHTML=D.map(r=>{
-    const isCan=r.s==='CANCELADO';
+    const isCan=r.s==='CANCELADO'||r.s==='RECHAZADO';
     return`<tr class="${isCan?'rcan':r.t==='A'?'ra':'ro'}">
       <td style="font-family:'Inter',sans-serif;font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--navy)">${r.c}</td>
       <td><span class="rep-pill" style="background:${REP_BG[r.r]};color:${REP_COL[r.r]}">${r.r}</span></td>
