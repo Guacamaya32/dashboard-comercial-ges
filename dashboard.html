@@ -813,13 +813,25 @@ function renderMensual(){
     // ── Tipificación: RECHAZADO si mt empieza con "RECHAZADO", resto = CANCELADO ──
     function tipificar(r){
       const mt=(r.mt||'').trim();
-      // RECHAZADO solo si mt empieza con 'RECHAZADO'
-      if(mt.toUpperCase().startsWith('RECHAZADO')){
-        const sub=mt.replace(/^RECHAZADO\s*[-–]\s*/i,'').trim();
-        return {tipo:'RECHAZADO', sub:sub||'Rechazado', col:'#C0392B', bg:'#FDECEA'};
+      const co=(r.co||'').trim();
+      // RECHAZADO: si mt O co contienen "RECHAZAD" (cubre RECHAZADO y RECHAZADA)
+      if(/RECHAZAD/i.test(mt)||/RECHAZAD/i.test(co)){
+        const src=mt||co;
+        const sub=src.replace(/.*RECHAZAD[AO][^-]*[-–]?\s*/i,'').trim();
+        const subFmt=sub?sub.charAt(0).toUpperCase()+sub.slice(1).toLowerCase():'Disponibilidad';
+        return {tipo:'RECHAZADO', sub:subFmt, col:'#C0392B', bg:'#FDECEA'};
       }
-      // Todo lo demás: CANCELADO con el subtipo del campo mt (o sin info si vacío)
-      const sub=mt?mt.charAt(0).toUpperCase()+mt.slice(1).toLowerCase():'Sin información';
+      // CANCELADO: subtipo desde mt; si vacío, inferir del co
+      let sub='Sin información';
+      if(mt) sub=mt.charAt(0).toUpperCase()+mt.slice(1).toLowerCase();
+      else if(co){
+        if(/PRECIO|PRESUPUESTO/i.test(co))                              sub='Precios/Presupuesto';
+        else if(/DISPONIBILIDAD|RIG/i.test(co))                         sub='Disponibilidad';
+        else if(/WEATHERFORD|MAXIM|BAKER|OTRA COMP|COMPETENCIA/i.test(co)) sub='Competencia';
+        else if(/APLAZADO|EXTENSI|ESPERA/i.test(co))                    sub='Aplazado';
+        else if(/ALCANCE|CAMBIO.*CLIENTE|CLIENTE.*CAMBIO/i.test(co))    sub='Cambio alcance';
+        else if(/NPT|POZO|YACIMIENTO|WO|PARO/i.test(co))               sub='Operacional';
+      }
       return {tipo:'CANCELADO', sub:sub, col:'#7D3C98', bg:'#F5EEF8'};
     }
     // ── Agrupar para la gráfica ──────────────────────────────────────────
