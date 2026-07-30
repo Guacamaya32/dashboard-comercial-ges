@@ -813,12 +813,38 @@ function renderMensual(){
     // ── Tipificación: RECHAZADO si mt empieza con "RECHAZADO", resto = CANCELADO ──
     function tipificar(r){
       const mt=(r.mt||'').trim();
-      if(mt.toUpperCase().startsWith('RECHAZADO')){
-        const sub=mt.replace(/^RECHAZADO\s*[-–]\s*/i,'').trim();
-        return {tipo:'RECHAZADO', sub:(sub||'Rechazado'), col:'#C0392B', bg:'#FDECEA'};
+      const co=(r.co||'').trim().toUpperCase();
+
+      // 1. Si mt tiene valor: mt manda
+      if(mt){
+        if(mt.toUpperCase().startsWith('RECHAZADO')){
+          const sub=mt.replace(/^RECHAZADO\s*[-–]\s*/i,'').trim();
+          return {tipo:'RECHAZADO', sub:sub||'Disponibilidad', col:'#C0392B', bg:'#FDECEA'};
+        }
+        const subFmt=mt.charAt(0).toUpperCase()+mt.slice(1).toLowerCase();
+        return {tipo:'CANCELADO', sub:subFmt, col:'#7D3C98', bg:'#F5EEF8'};
       }
-      const sub=mt||'Sin información';
-      return {tipo:'CANCELADO', sub:sub, col:'#7D3C98', bg:'#F5EEF8'};
+
+      // 2. mt vacío: intentar inferir del comentario
+      if(co){
+        // Rechazado: causa interna (precio, disponibilidad nuestra, diseño, NPT)
+        if(/PRECIO|PRESUPUESTO/.test(co))
+          return {tipo:'RECHAZADO', sub:'Precios/Presupuesto', col:'#C0392B', bg:'#FDECEA'};
+        if(/DISPONIBILIDAD|FALTA DE RIG|RIG|SIN DISPONIBILIDAD/.test(co))
+          return {tipo:'RECHAZADO', sub:'Disponibilidad', col:'#C0392B', bg:'#FDECEA'};
+        if(/DISE.O|CONDICI|NPT|NO SE PAG/.test(co))
+          return {tipo:'RECHAZADO', sub:'Técnico/NPT', col:'#C0392B', bg:'#FDECEA'};
+        // Cancelado: causa externa
+        if(/OTRA COMPA|ASIGNADO A|ASIGNACI.N A|MAXIM|WEATHERFORD|BAKER/.test(co))
+          return {tipo:'CANCELADO', sub:'Competencia', col:'#7D3C98', bg:'#F5EEF8'};
+        if(/APLAZADO|EXTENSI|ESPERA/.test(co))
+          return {tipo:'CANCELADO', sub:'Aplazado', col:'#7D3C98', bg:'#F5EEF8'};
+        if(/PARO|WO|YACIMIENTO|BUSQUEDA|EJECUTADA|ALCANCE/.test(co))
+          return {tipo:'CANCELADO', sub:'Operacional/Alcance', col:'#7D3C98', bg:'#F5EEF8'};
+      }
+
+      // 3. Sin datos suficientes
+      return {tipo:'CANCELADO', sub:'Sin información', col:'#7D3C98', bg:'#F5EEF8'};
     }
     // ── Agrupar para la gráfica ──────────────────────────────────────────
     const tipMap={};
