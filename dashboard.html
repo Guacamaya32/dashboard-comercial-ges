@@ -810,20 +810,15 @@ function renderMensual(){
     const canSorted=CAN.slice().sort((a,b)=>b.v-a.v);
     const totalCan=canSorted.reduce((s,r)=>s+r.v,0);
 
-    // ── Tipificación por comentario ──────────────────────────────────────
+    // ── Tipificación: RECHAZADO si mt empieza con "RECHAZADO", resto = CANCELADO ──
     function tipificar(r){
-      // Lee directamente el campo 'mt' (MOTIVO CANCELACIÓN del Excel)
       const mt=(r.mt||'').trim();
-      if(!mt) return {tipo:'CANCELADO', sub:'Sin información', col:'#7D3C98', bg:'#F5EEF8'};
-      // RECHAZADO: el motivo empieza con 'RECHAZADO'
       if(mt.toUpperCase().startsWith('RECHAZADO')){
-        const sub=mt.replace(/^rechazado\s*[-–]\s*/i,'').trim();
-        const subFmt=sub.charAt(0).toUpperCase()+sub.slice(1).toLowerCase();
-        return {tipo:'RECHAZADO', sub:subFmt||'Rechazado', col:'#C0392B', bg:'#FDECEA'};
+        const sub=mt.replace(/^RECHAZADO\s*[-–]\s*/i,'').trim();
+        return {tipo:'RECHAZADO', sub:(sub||'Rechazado'), col:'#C0392B', bg:'#FDECEA'};
       }
-      // CANCELADO: usar el motivo tal cual (capitalizado)
-      const subFmt=mt.charAt(0).toUpperCase()+mt.slice(1).toLowerCase();
-      return {tipo:'CANCELADO', sub:subFmt, col:'#7D3C98', bg:'#F5EEF8'};
+      const sub=mt||'Sin información';
+      return {tipo:'CANCELADO', sub:sub, col:'#7D3C98', bg:'#F5EEF8'};
     }
     // ── Agrupar para la gráfica ──────────────────────────────────────────
     const tipMap={};
@@ -839,20 +834,38 @@ function renderMensual(){
     const vRech=canSorted.filter(r=>tipificar(r).tipo==='RECHAZADO').reduce((s,r)=>s+r.v,0);
     const vCan=canSorted.filter(r=>tipificar(r).tipo==='CANCELADO').reduce((s,r)=>s+r.v,0);
 
-    // Build chart data string for outsideLabels plugin
-    const canChartId='cCan_'+Date.now();
+    // ── Build grouped data ──────────────────────────────────────────────
+    const ts=Date.now();
+    const rechId='cRech_'+ts, canId='cCan2_'+ts;
 
-    // Build card HTML with string concat (no nested template literals)
-    const cardsHtml=canSorted.map((r,i)=>{
+    // Group subtypes per tipo
+    const rechMap={}, canMap={};
+    canSorted.forEach(r=>{
+      const t=tipificar(r);
+      const map=t.tipo==='RECHAZADO'?rechMap:canMap;
+      if(!map[t.sub]) map[t.sub]={sub:t.sub,v:0,n:0,col:t.col};
+      map[t.sub].v+=r.v; map[t.sub].n++;
+    });
+    const rechRows=Object.values(rechMap).sort((a,b)=>b.v-a.v);
+    const canRows =Object.values(canMap).sort((a,b)=>b.v-a.v);
+
+    // Cards sorted: RECHAZADO first, then CANCELADO, each group by value desc
+    const sortedCards=canSorted.slice().sort((a,b)=>{
+      const ta=tipificar(a).tipo, tb=tipificar(b).tipo;
+      if(ta===tb) return b.v-a.v;
+      return ta==='RECHAZADO'?-1:1;
+    });
+    const cardsHtml=sortedCards.map(function(r,i){
       const t=tipificar(r);
       const share=Math.round(r.v/totalCan*100);
-      const tipBadge='<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;background:'+t.col+';color:#fff;letter-spacing:.05em;text-transform:uppercase">'+t.tipo+'</span>'
-        +'<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;background:'+t.bg+';color:'+t.col+';margin-left:4px">'+t.sub+'</span>';
+      const subBadge=t.sub&&t.sub!=='Sin informacion'&&t.sub!=='Sin información'
+        ?'<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;background:'+t.bg+';color:'+t.col+';margin-left:4px">'+t.sub+'</span>':'';
       return '<div style="background:var(--white);border:1px solid '+t.col+'33;border-left:4px solid '+t.col+';border-radius:var(--rl);padding:12px 14px;box-shadow:var(--sh)">'
         +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
-        +'<span style="font-family:Inter,sans-serif;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+t.col+'22;color:'+t.col+'">#'+(i+1)+'</span>'
+        +'<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+t.col+'22;color:'+t.col+'">#'+(i+1)+'</span>'
         +'<span class="rep-pill" style="background:'+REP_BG[r.r]+';color:'+REP_COL[r.r]+'">'+r.r+'</span>'
-        +tipBadge
+        +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;background:'+t.col+';color:#fff;text-transform:uppercase">'+t.tipo+'</span>'
+        +subBadge
         +'</div>'
         +'<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:1px">'+r.c+'</div>'
         +'<div style="font-size:10px;color:var(--muted);margin-bottom:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.pz+' · '+(r.sv||'—')+'</div>'
@@ -863,120 +876,92 @@ function renderMensual(){
         +'<div style="margin-top:6px;height:3px;background:var(--light);border-radius:2px;overflow:hidden">'
         +'<div style="height:100%;background:'+t.col+';border-radius:2px;width:'+share+'%"></div>'
         +'</div>'
-        +(r.co?'<div style="margin-top:5px;font-size:10px;color:var(--muted);font-style:italic;border-top:1px solid var(--light);padding-top:4px">💬 '+r.co+'</div>':'')
+        +(r.co?'<div style="margin-top:5px;font-size:10px;color:var(--muted);font-style:italic;border-top:1px solid var(--light);padding-top:4px">'+String.fromCodePoint(0x1F4AC)+' '+r.co+'</div>':'')
         +'</div>';
     }).join('');
 
+    function legHtml(rows){
+      return rows.map(function(t){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--light)">'
+          +'<div style="display:flex;align-items:center;gap:5px">'
+          +'<div style="width:7px;height:7px;border-radius:2px;background:'+t.col+';flex-shrink:0"></div>'
+          +'<span style="font-size:10px;color:var(--slate)">'+t.sub+'</span>'
+          +'</div>'
+          +'<span style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700;color:var(--navy)">'+fmt(t.v)+'<span style="color:var(--muted);font-weight:400"> '+t.n+'x</span></span>'
+          +'</div>';
+      }).join('');
+    }
+
     const summaryRow='<div style="display:flex;gap:10px;margin-bottom:12px">'
       +'<div style="flex:1;background:#FDECEA;border:1px solid #F5B0B0;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">'
-      +'<span style="font-size:20px">🚫</span>'
+      +'<span style="font-size:20px">&#128683;</span>'
       +'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C0392B;margin-bottom:2px">Rechazado</div>'
       +'<div style="font-family:JetBrains Mono,monospace;font-size:16px;font-weight:700;color:#C0392B">'+fmt(vRech)+'</div>'
       +'<div style="font-size:10px;color:var(--muted)">'+nRech+' oportunidad'+(nRech!==1?'es':'')+'</div></div>'
       +'</div>'
       +'<div style="flex:1;background:#F5EEF8;border:1px solid #D2B4DE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">'
-      +'<span style="font-size:20px">↩️</span>'
+      +'<span style="font-size:20px">&#8617;&#65039;</span>'
       +'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7D3C98;margin-bottom:2px">Cancelado</div>'
       +'<div style="font-family:JetBrains Mono,monospace;font-size:16px;font-weight:700;color:#7D3C98">'+fmt(vCan)+'</div>'
       +'<div style="font-size:10px;color:var(--muted)">'+nCan+' oportunidad'+(nCan!==1?'es':'')+'</div></div>'
       +'</div>'
       +'</div>';
 
-    canEl.innerHTML=`<div style="margin-top:22px">
-      <div class="slbl" style="margin-bottom:10px">
-        🚫 Pipeline Perdido — ${CAN.length} cancelaciones · ${fmt(totalCan)} excluido
-      </div>
-      ${summaryRow}
-      <div style="display:grid;grid-template-columns:1fr 260px;gap:14px;align-items:start">
-        <!-- Cards -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">
-          ${cardsHtml}
-        </div>
-        <!-- Chart -->
-        <div style="background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:14px;box-shadow:var(--sh);position:sticky;top:180px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px">Motivo de cancelación</div>
-          <div style="height:220px"><canvas id="${canChartId}"></canvas></div>
-          <div style="margin-top:10px">
-            ${tipRows.map(t=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--light)">'
-              +'<div style="display:flex;align-items:center;gap:6px">'
-              +'<div style="width:8px;height:8px;border-radius:50%;background:'+t.col+';flex-shrink:0"></div>'
-              +'<span style="font-size:10px;color:var(--slate)">'+t.sub+'</span>'
-              +'</div>'
-              +'<div style="text-align:right">'
-              +'<span style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700;color:var(--navy)">'+fmt(t.v)+'</span>'
-              +'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+t.n+'x</span>'
-              +'</div>'
-              +'</div>').join('')}
-          </div>
-        </div>
-      </div>
-    </div>`;
+    canEl.innerHTML='<div style="margin-top:22px">'
+      +'<div class="slbl" style="margin-bottom:10px">&#128683; Pipeline Perdido &mdash; '+CAN.length+' cancelaciones &middot; '+fmt(totalCan)+' excluido</div>'
+      +summaryRow
+      +'<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+cardsHtml+'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:12px;position:sticky;top:180px">'
+      // RECHAZADO chart panel
+      +'<div style="background:#FDECEA;border:1px solid #F5B0B0;border-radius:var(--rl);padding:12px">'
+      +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C0392B;margin-bottom:8px">&#128683; Motivo de Rechazo</div>'
+      +(rechRows.length
+        ?'<div style="height:'+(rechRows.length*34+6)+'px"><canvas id="'+rechId+'"></canvas></div><div style="margin-top:6px">'+legHtml(rechRows)+'</div>'
+        :'<div style="font-size:11px;color:var(--muted);padding:4px 0">Sin rechazos este mes</div>')
+      +'</div>'
+      // CANCELADO chart panel
+      +'<div style="background:#F5EEF8;border:1px solid #D2B4DE;border-radius:var(--rl);padding:12px">'
+      +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7D3C98;margin-bottom:8px">&#8617; Motivo de Cancelaci&oacute;n</div>'
+      +(canRows.length
+        ?'<div style="height:'+(canRows.length*34+6)+'px"><canvas id="'+canId+'"></canvas></div><div style="margin-top:6px">'+legHtml(canRows)+'</div>'
+        :'<div style="font-size:11px;color:var(--muted);padding:4px 0">Sin cancelados este mes</div>')
+      +'</div>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
 
-    // Render donut chart after innerHTML is set
-    setTimeout(()=>{
-      const ctx=document.getElementById(canChartId);
-      if(!ctx)return;
-      // Bar chart: always readable, no clipping issues with labels
-      const barTotal=tipRows.reduce((s,t)=>s+t.v,0)||1;
-      new Chart(ctx,{
+    function makeBarChart(canvasId,rows,col){
+      var el=document.getElementById(canvasId);
+      if(!el||!rows.length)return;
+      var total=rows.reduce(function(s,r){return s+r.v;},0)||1;
+      new Chart(el,{
         type:'bar',
-        data:{
-          labels:tipRows.map(t=>t.sub),
-          datasets:[{
-            data:tipRows.map(t=>Math.round(t.v/barTotal*100)),
-            backgroundColor:tipRows.map(t=>t.col+'CC'),
-            borderColor:tipRows.map(t=>t.col),
-            borderWidth:1,
-            borderRadius:4,
-            borderSkipped:false
-          }]
-        },
+        data:{labels:rows.map(function(r){return r.sub;}),datasets:[{
+          data:rows.map(function(r){return Math.round(r.v/total*100);}),
+          backgroundColor:col+'99',borderColor:col,borderWidth:1,borderRadius:3,borderSkipped:false
+        }]},
         options:{
-          indexAxis:'y',
-          responsive:true,maintainAspectRatio:false,
-          layout:{padding:{right:36}},
-          plugins:{
-            legend:{display:false},
-            tooltip:{callbacks:{
-              label:c=>{
-                const t=tipRows[c.dataIndex];
-                return t.sub+': '+fmt(t.v)+' ('+c.raw+'%)';
-              }
-            }},
-            pctLabels:{enabled:false}
-          },
+          indexAxis:'y',responsive:true,maintainAspectRatio:false,
+          layout:{padding:{right:40}},
+          plugins:{legend:{display:false},pctLabels:{enabled:false},
+            tooltip:{callbacks:{label:function(c){return rows[c.dataIndex].sub+': '+fmt(rows[c.dataIndex].v)+' ('+c.raw+'%)';}}}},
           scales:{
-            x:{display:false,max:100,grace:'0%'},
-            y:{
-              ticks:{
-                color:'#3D4D63',
-                font:{size:10,family:'Inter',weight:'600'},
-                crossAlign:'far'
-              },
-              grid:{display:false},
-              border:{display:false}
-            }
+            x:{display:false,max:100},
+            y:{ticks:{color:col,font:{size:10,family:'Inter',weight:'600'},crossAlign:'far'},grid:{display:false},border:{display:false}}
           }
         },
-        plugins:[{
-          id:'barPctLabels',
-          afterDatasetsDraw(chart){
-            const {ctx,data}=chart;
-            const ds=chart.getDatasetMeta(0);
-            ctx.save();
-            ctx.font='bold 10px Inter,sans-serif';
-            ctx.textBaseline='middle';
-            ds.data.forEach((bar,i)=>{
-              const pct=data.datasets[0].data[i];
-              const t=tipRows[i];
-              ctx.fillStyle=t.col;
-              ctx.textAlign='left';
-              ctx.fillText(pct+'%', bar.x+5, bar.y);
-            });
-            ctx.restore();
-          }
-        }]
+        plugins:[{id:'bpl',afterDatasetsDraw:function(chart){
+          var ctx2=chart.ctx,meta=chart.getDatasetMeta(0),data=chart.data;
+          ctx2.save();ctx2.font='bold 10px Inter,sans-serif';ctx2.textBaseline='middle';ctx2.textAlign='left';ctx2.fillStyle=col;
+          meta.data.forEach(function(bar,i){ctx2.fillText(data.datasets[0].data[i]+'%',bar.x+5,bar.y);});
+          ctx2.restore();
+        }}]
       });
+    }
+    setTimeout(function(){
+      makeBarChart(rechId,rechRows,'#C0392B');
+      makeBarChart(canId,canRows,'#7D3C98');
     },0);
 
   } else { canEl.innerHTML=''; }
