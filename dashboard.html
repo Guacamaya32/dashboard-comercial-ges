@@ -91,6 +91,7 @@ select:focus{border-color:var(--navy)}
 .mb:hover{color:var(--navy)}
 .mb.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
 main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
+body.detalle-active main{max-width:none;padding:10px 12px 40px}
 .view{display:none}.view.active{display:block}
 .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
 .kpi{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
@@ -165,7 +166,7 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 #view-detalle .tbl-wrap{max-width:none;width:100%}
 .tbl-wrap{border:1px solid var(--light);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .tbl-scroll{overflow-x:auto;width:100%}
-table{width:100%;min-width:1100px;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
+table{width:100%;min-width:100%;border-collapse:collapse;font-size:11.5px;table-layout:auto}
 thead tr{background:var(--navy)}
 th{position:relative;user-select:none}
 th .rh{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:1;background:transparent}
@@ -762,7 +763,7 @@ function animateCounters(){
   });
 }
 function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();animateCounters();}
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');refreshActive();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle');refreshActive();}
 
 const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
 const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}}});
@@ -1319,9 +1320,9 @@ function renderTable(){
   const tbl=document.querySelector('#view-detalle table');
   if(tbl&&!tbl.querySelector('colgroup')){
     const cg=document.createElement('colgroup');
-    [130,80,90,90,100,130,60,80,70,70,60,180].forEach(w=>{
+    ['12%','7%','7%','7%','8%','12%','5%','6%','5%','5%','5%','14%'].forEach(w=>{
       const col=document.createElement('col');
-      col.style.width=w+'px';
+      col.style.width=w;
       cg.appendChild(col);
     });
     tbl.insertBefore(cg,tbl.firstChild);
@@ -1335,14 +1336,14 @@ function renderTable(){
       <td><span class="rep-pill" style="background:${REP_BG[r.r]};color:${REP_COL[r.r]}">${r.r}</span></td>
       <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;${r.t==='A'?'background:var(--asig-bg);color:var(--navy)':'background:var(--opor-bg);color:var(--gold-d)'}">${r.t==='A'?'Asignado':'Oportunidad'}</span></td>
       <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Inter',sans-serif">${r.m}</td>
-      <td style="color:var(--slate);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.pz}">${r.pz}</td>
-      <td style="color:var(--slate);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.sv}">${r.sv}</td>
+      <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:130px" title="${r.pz}">${r.pz}</td>
+      <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:160px" title="${r.sv}">${r.sv}</td>
       <td style="color:var(--muted);font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.l||'—'}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;color:${isCan?'var(--can)':r.t==='A'?'var(--navy)':'var(--gold-d)'}">${isCan?'<s>'+fmt(r.v)+'</s>':fmt(r.v)}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--dim)">${fmt(r.ie)}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:${r.ir>0?'var(--fin)':'var(--dim)'}">${r.ir>0?fmt(r.ir):'—'}</td>
       <td>${sb(r.s)}</td>
-      ${(r.s==='CANCELADO'||r.s==='RECHAZADO'||r.s==='PLANEACION')?'<td style="max-width:200px;font-size:10px;font-weight:500;white-space:normal;word-break:break-word;color:'+(r.co?'var(--gold-d)':'var(--muted)')+'" title="'+(r.co||'')+'">'+(r.co||'—')+'</td>':'<td style="color:var(--dim);font-size:10px">—</td>'}
+      ${(r.s==='CANCELADO'||r.s==='RECHAZADO'||r.s==='PLANEACION')?'<td style="font-size:10px;font-weight:500;white-space:normal;word-break:break-word;min-width:140px;color:'+(r.co?'var(--gold-d)':'var(--muted)')+'" title="'+(r.co||'')+'">'+(r.co||'—')+'</td>':'<td style="color:var(--dim);font-size:10px">—</td>'}
     </tr>`;
   }).join('');
 }
