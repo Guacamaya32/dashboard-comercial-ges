@@ -693,6 +693,7 @@ const MO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','sep
 const MES_ORDER_ALL=MO;
 const MS={enero:'ENE',febrero:'FEB',marzo:'MAR',abril:'ABR',mayo:'MAY',junio:'JUN',julio:'JUL',agosto:'AGO',septiembre:'SEP',octubre:'OCT',noviembre:'NOV',diciembre:'DIC'};
 
+let cliSortCol='total',cliSortDir=-1;
 let G_MES=(()=>{const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return m[new Date().getMonth()];})(), G_REP='', G_ANIO='', sCol='c', sDir=1;
 let CH={};
 const dc=id=>{if(CH[id]){CH[id].destroy();delete CH[id];}};
@@ -1027,27 +1028,23 @@ function renderExecSummary(A, O, D, CAN, mes){
   const realP = pct(cur.real, prev?.real);
   const nP = pct(cur.n, prev?.n);
 
-  const allCli = new Set([...Object.keys(cur.by_cli||{}), ...Object.keys(prev?.by_cli||{})]);
-  const cliRows = [];
-  allCli.forEach(c=>{
-    const cv=cur.by_cli?.[c]||0, pv=prev?.by_cli?.[c]||0;
-    if(cv>0) cliRows.push({c, cv, pv, p:pct(cv,pv)});
-  });
+  // ── Solo ASIGNADO: mapas directamente desde A[] (registros del mes) ───
+  function buildMapA(rows,key){const m={};rows.filter(r=>r.t==='A').forEach(r=>{const k=r[key]||'';if(k)m[k]=(m[k]||0)+r.v;});return m;}
+  function buildLinMapA(rows){const m={};rows.filter(r=>r.t==='A').forEach(r=>{if(!r.l)return;r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(p=>{if(p&&p.length<6)m[p]=(m[p]||0)+r.v;});});return m;}
+
+  const curCliA=buildMapA(A,'c'), curRepA=buildMapA(A,'r'), curLinA=buildLinMapA(A);
+  const prevA=prevMes?ALL.filter(r=>r.m===prevMes&&r.t==='A'&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO'):[];
+  const prvCliA=buildMapA(prevA,'c'), prvRepA=buildMapA(prevA,'r'), prvLinA=buildLinMapA(prevA);
+
+  const allCli=new Set([...Object.keys(curCliA),...Object.keys(prvCliA)]);
+  const cliRows=[];
+  allCli.forEach(c=>{const cv=curCliA[c]||0,pv=prvCliA[c]||0;if(cv>0)cliRows.push({c,cv,pv,p:pct(cv,pv)});});
   cliRows.sort((a,b)=>b.cv-a.cv);
 
-  const repRows=REPS.map(r=>({r, cv:cur.by_rep?.[r]||0, pv:prev?.by_rep?.[r]||0}))
-    .map(x=>({...x, p:pct(x.cv,x.pv)}))
-    .sort((a,b)=>b.cv-a.cv);
+  const repRows=REPS.map(r=>({r,cv:curRepA[r]||0,pv:prvRepA[r]||0})).map(x=>({...x,p:pct(x.cv,x.pv)})).sort((a,b)=>b.cv-a.cv);
 
-  const allLineKeys=[...new Set([
-    ...Object.keys(cur.by_linea||{}),
-    ...Object.keys(prev?.by_linea||{})
-  ])];
-  const lineRows=allLineKeys
-    .map(l=>({l, cv:cur.by_linea?.[l]||0, pv:prev?.by_linea?.[l]||0}))
-    .filter(x=>x.cv>0)
-    .map(x=>({...x, p:pct(x.cv,x.pv)}))
-    .sort((a,b)=>b.cv-a.cv);
+  const allLineKeys=[...new Set([...Object.keys(curLinA),...Object.keys(prvLinA)])];
+  const lineRows=allLineKeys.map(l=>({l,cv:curLinA[l]||0,pv:prvLinA[l]||0})).filter(x=>x.cv>0).map(x=>({...x,p:pct(x.cv,x.pv)})).sort((a,b)=>b.cv-a.cv);
 
   el.innerHTML=`
   <div style="background:var(--white);border:1px solid var(--light);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden;margin-bottom:14px">
@@ -1282,9 +1279,34 @@ function renderClientes(){
   }
   document.getElementById('cli-tbl').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px">
     <thead><tr style="background:var(--navy)">
-      ${['Cliente','Rep.','Asignado','Oportunidad','Total','Finalizado','% Ejec.'].map((h,i)=>`<th style="padding:8px 11px;text-align:${i>1?'right':'left'};font-family:'Inter',sans-serif;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:${i===2?'#A0C8FF':i===3?'#FFE08A':'rgba(255,255,255,.65)'}">${h}</th>`).join('')}
+      ${[
+        {h:'Cliente',col:'name',align:'left'},
+        {h:'Rep.',col:'rep',align:'left'},
+        {h:'Asignado',col:'asig',align:'right'},
+        {h:'Oportunidad',col:'opor',align:'right'},
+        {h:'Total',col:'total',align:'right'},
+        {h:'Finalizado',col:'fin',align:'right'},
+        {h:'% Ejec.',col:'pct',align:'right'}
+      ].map((hd,i)=>{
+        const active=cliSortCol===hd.col;
+        const arrow=active?(cliSortDir<0?'↓':'↑'):'↕';
+        const col=i===2?'#A0C8FF':i===3?'#FFE08A':'rgba(255,255,255,.65)';
+        return `<th onclick="cliSort('${hd.col}')" style="padding:8px 11px;text-align:${hd.align};font-family:'Inter',sans-serif;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:${col};cursor:pointer;white-space:nowrap;user-select:none">${hd.h} ${arrow}</th>`;
+      }).join('')}
     </tr></thead>
-    <tbody>${Object.entries(allC).sort((a,b)=>(b[1].asig+b[1].opor)-(a[1].asig+a[1].opor)).map(([n,v])=>{
+    <tbody>${Object.entries(allC).sort((a,b)=>{
+      const cols={name:0,rep:0,asig:0,opor:0,total:0,fin:0,pct:0};
+      if(cliSortCol==='name') return String(a[0]).localeCompare(String(b[0]))*cliSortDir;
+      if(cliSortCol==='rep')  return String([...a[1].reps][0]||'').localeCompare(String([...b[1].reps][0]||''))*cliSortDir;
+      if(cliSortCol==='asig') return (a[1].asig-b[1].asig)*cliSortDir;
+      if(cliSortCol==='opor') return (a[1].opor-b[1].opor)*cliSortDir;
+      if(cliSortCol==='fin')  return (a[1].fin-b[1].fin)*cliSortDir;
+      if(cliSortCol==='pct'){
+        const pa=a[1].asig>0?a[1].fin/a[1].asig:0, pb=b[1].asig>0?b[1].fin/b[1].asig:0;
+        return (pa-pb)*cliSortDir;
+      }
+      return ((b[1].asig+b[1].opor)-(a[1].asig+a[1].opor))*cliSortDir; // total
+    }).map(([n,v])=>{
       const li=clientAvatar(n);
       return `<tr style="border-bottom:1px solid var(--light)">
         <td style="padding:7px 11px"><div style="display:flex;align-items:center">${li}<span style="font-family:'Inter',sans-serif;font-weight:700;font-size:12px;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)">${n}</span></div></td>
@@ -1348,6 +1370,7 @@ function renderTable(){
   }).join('');
 }
 function ts(col){if(sCol===col)sDir*=-1;else{sCol=col;sDir=1;}renderTable();}
+function cliSort(col){if(cliSortCol===col)cliSortDir*=-1;else{cliSortCol=col;cliSortDir=-1;}renderClientes();}
 const NUM_COLS=['v','ie','ir'];
 
 function exportCSV(){
