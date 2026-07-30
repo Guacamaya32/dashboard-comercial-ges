@@ -162,10 +162,15 @@ main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 .btn-exp{background:var(--navy);color:#fff;border:none;padding:0 14px;height:30px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);cursor:pointer}
 .btn-exp:hover{background:var(--navy-d)}
 .tbl-meta{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:500}
+#view-detalle .tbl-wrap{max-width:none;width:100%}
 .tbl-wrap{border:1px solid var(--light);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
-.tbl-scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.tbl-scroll{overflow-x:auto;width:100%}
+table{width:100%;min-width:1100px;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
 thead tr{background:var(--navy)}
+th{position:relative;user-select:none}
+th .rh{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:1;background:transparent}
+th .rh:hover,th .rh.dragging{background:var(--gold)}
+
 th{padding:9px 11px;text-align:left;font-family:'Inter',sans-serif;font-weight:600;color:rgba(255,255,255,.75);font-size:9px;text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;cursor:pointer;user-select:none}
 th:hover{color:#fff}
 td{padding:7px 11px;border-bottom:1px solid var(--light);vertical-align:middle;font-family:'Inter',sans-serif}
@@ -334,6 +339,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
       <thead><tr>
         <th onclick="ts('c')" style="cursor:pointer" title="Ordenar">Cliente ↕</th>
         <th onclick="ts('r')" style="cursor:pointer" title="Ordenar">Rep. ↕</th>
+        <th onclick="ts('t')" style="cursor:pointer" title="Ordenar">Tipo ↕</th>
         <th onclick="ts('m')" style="cursor:pointer" title="Ordenar">Mes ↕</th>
         <th onclick="ts('pz')" style="cursor:pointer" title="Ordenar">Pozo ↕</th>
         <th onclick="ts('sv')" style="cursor:pointer" title="Ordenar">Servicio ↕</th>
@@ -1309,6 +1315,17 @@ function renderTable(){
   document.getElementById('tbl-meta').textContent=`${D.length} registros · Activos: ${active.length} (${fmt(active.reduce((s,r)=>s+r.v,0))}) · Cancelados: ${cancelled.length}`;
 
   const sb=s=>s==='FINALIZADO'?'<span class="badge b-fin">✓ FIN</span>':s==='EN EJECUCION'?'<span class="badge b-ej">▶ EJEC</span>':s==='CANCELADO'?'<span class="badge b-can">✕ CAN</span>':s==='RECHAZADO'?'<span class="badge b-rech">✕ RECH</span>':'<span class="badge b-plan">📋 PLAN</span>';
+  // Set colgroup for resizable columns
+  const tbl=document.querySelector('#view-detalle table');
+  if(tbl&&!tbl.querySelector('colgroup')){
+    const cg=document.createElement('colgroup');
+    [130,80,90,90,100,130,60,80,70,70,60,180].forEach(w=>{
+      const col=document.createElement('col');
+      col.style.width=w+'px';
+      cg.appendChild(col);
+    });
+    tbl.insertBefore(cg,tbl.firstChild);
+  }
   const tbody=document.getElementById('tbody');
   if(!D.length){tbody.innerHTML=`<tr><td colspan="12"><div class="empty-s">Sin resultados para los filtros seleccionados</div></td></tr>`;return;}
   tbody.innerHTML=D.map(r=>{
@@ -1316,6 +1333,7 @@ function renderTable(){
     return`<tr class="${isCan?'rcan':r.t==='A'?'ra':'ro'}">
       <td style="font-family:'Inter',sans-serif;font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--navy)">${r.c}</td>
       <td><span class="rep-pill" style="background:${REP_BG[r.r]};color:${REP_COL[r.r]}">${r.r}</span></td>
+      <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;${r.t==='A'?'background:var(--asig-bg);color:var(--navy)':'background:var(--opor-bg);color:var(--gold-d)'}">${r.t==='A'?'Asignado':'Oportunidad'}</span></td>
       <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Inter',sans-serif">${r.m}</td>
       <td style="color:var(--slate);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.pz}">${r.pz}</td>
       <td style="color:var(--slate);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.sv}">${r.sv}</td>
@@ -1378,6 +1396,33 @@ async function cargarDatos(esManual){
   }
 }
 cargarDatos();
+
+// ── Column resize ───────────────────────────────────────────────────────
+(function initResize(){
+  function addHandles(){
+    const ths=document.querySelectorAll('#view-detalle thead th');
+    ths.forEach(th=>{
+      if(th.querySelector('.rh'))return;
+      const rh=document.createElement('div');
+      rh.className='rh';
+      th.appendChild(rh);
+      let startX,startW;
+      rh.addEventListener('mousedown',function(e){
+        e.preventDefault();
+        startX=e.pageX; startW=th.offsetWidth;
+        rh.classList.add('dragging');
+        function onMove(e){th.style.width=(Math.max(40,startW+e.pageX-startX))+'px';}
+        function onUp(){rh.classList.remove('dragging');document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+        document.addEventListener('mousemove',onMove);
+        document.addEventListener('mouseup',onUp);
+      });
+    });
+  }
+  // Re-init after each renderTable call
+  const origRT=window.renderTable;
+  if(origRT) window.renderTable=function(){origRT.apply(this,arguments);setTimeout(addHandles,50);};
+  setTimeout(addHandles,500);
+})();
 </script>
 </body>
 </html>
