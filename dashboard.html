@@ -823,14 +823,6 @@ function renderMensual(){
       return {tipo:'CANCELADO', sub:sub, col:'#7D3C98', bg:'#F5EEF8'};
     }
     // ── Agrupar para la gráfica ──────────────────────────────────────────
-    const tipMap={};
-    canSorted.forEach(r=>{
-      const t=tipificar(r);
-      const key=t.tipo+':'+t.sub;
-      if(!tipMap[key]) tipMap[key]={tipo:t.tipo,sub:t.sub,col:t.col,bg:t.bg,v:0,n:0};
-      tipMap[key].v+=r.v; tipMap[key].n++;
-    });
-    const tipRows=Object.values(tipMap).sort((a,b)=>b.v-a.v);
     const nRech=canSorted.filter(r=>tipificar(r).tipo==='RECHAZADO').length;
     const nCan=canSorted.filter(r=>tipificar(r).tipo==='CANCELADO').length;
     const vRech=canSorted.filter(r=>tipificar(r).tipo==='RECHAZADO').reduce((s,r)=>s+r.v,0);
