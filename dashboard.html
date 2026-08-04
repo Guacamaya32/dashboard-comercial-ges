@@ -366,7 +366,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </div>
   <div class="g2" style="margin-bottom:14px">
     <div class="card"><div class="ct">Distribución por Cliente</div><div style="height:220px"><canvas id="cFinCli"></canvas></div></div>
-    <div class="card"><div class="ct">Ecopetrol — Ingresos por Gerencia</div><div style="height:220px"><canvas id="cFinLin"></canvas></div></div>
+    <div class="card"><div class="ct">Finalizado por Línea de Servicio</div><div style="height:220px"><canvas id="cFinLin"></canvas></div></div>
   </div>
 </div>
 
@@ -1592,9 +1592,10 @@ function renderFinalizados(){
     type:'doughnut',
     data:{labels:repLabels,datasets:[{
       data:repVals,
-      backgroundColor:repLabels.map(function(rp){return COLREP_BG[rp];}),
-      borderColor:repLabels.map(function(rp){return COLREP_DK[rp];}),
-      borderWidth:3,hoverOffset:8
+      backgroundColor:repLabels.map(function(rp){
+        return {MICHELL:'#1A5276',JULIANA:'#006B3C',JOHAN:'#CC9A00',JUAN:'#922B21'}[rp]||'#435D74';
+      }),
+      borderColor:'#fff',borderWidth:3,hoverOffset:8
     }]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
       layout:{padding:32},
@@ -1603,8 +1604,8 @@ function renderFinalizados(){
           font:{size:11,family:'Inter'},color:'#3D4D63',boxWidth:12,padding:12,
           generateLabels:function(chart){
             return repLabels.map(function(rp,i){
-              return {text:rp+' — '+fmt(repVals[i]),fillStyle:COLREP_DK[rp],
-                strokeStyle:COLREP_DK[rp],lineWidth:0,hidden:false,index:i};
+              var rc={MICHELL:'#1A5276',JULIANA:'#006B3C',JOHAN:'#CC9A00',JUAN:'#922B21'}[rp]||'#435D74';
+              return {text:rp+' — '+fmt(repVals[i]),fillStyle:rc,strokeStyle:rc,lineWidth:0,hidden:false,index:i};
             });
           }
         }},
@@ -1614,7 +1615,8 @@ function renderFinalizados(){
       }
     },
     plugins:[{id:'repOut',afterDraw:function(chart){
-      donutOutside(chart,repVals,repTotal,function(i){return COLREP_DK[repLabels[i]];});
+      var RC={MICHELL:'#1A5276',JULIANA:'#006B3C',JOHAN:'#CC9A00',JUAN:'#922B21'};
+      donutOutside(chart,repVals,repTotal,function(i){return RC[repLabels[i]]||'#435D74';});
     }}]
   });
 
@@ -1631,7 +1633,8 @@ function renderFinalizados(){
     type:'doughnut',
     data:{labels:topCli.map(function(x){return x[0];}),datasets:[{
       data:topCli.map(function(x){return x[1];}),
-      backgroundColor:CLI_BG,borderColor:CLI_DK,borderWidth:3,hoverOffset:8
+      backgroundColor:['#002060','#1A5276','#006B3C','#CC9A00','#922B21','#7D3C98','#CA6F1E','#435D74'],
+      borderColor:'#fff',borderWidth:3,hoverOffset:8
     }]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
       layout:{padding:32},
@@ -1640,8 +1643,8 @@ function renderFinalizados(){
           font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:10,
           generateLabels:function(chart){
             return topCli.map(function(x,i){
-              return {text:x[0],fillStyle:CLI_DK[i]||'#435D74',
-                strokeStyle:CLI_DK[i]||'#435D74',lineWidth:0,hidden:false,index:i};
+              var CP=['#002060','#1A5276','#006B3C','#CC9A00','#922B21','#7D3C98','#CA6F1E','#435D74'];
+              return {text:x[0],fillStyle:CP[i]||'#435D74',strokeStyle:CP[i]||'#435D74',lineWidth:0,hidden:false,index:i};
             });
           }
         }},
@@ -1652,30 +1655,31 @@ function renderFinalizados(){
     },
     plugins:[{id:'cliOut',afterDraw:function(chart){
       donutOutside(chart,topCli.map(function(x){return x[1];}),cliTotal,
-        function(i){return CLI_DK[i]||'#435D74';});
+        function(i){var CP=['#002060','#1A5276','#006B3C','#CC9A00','#922B21','#7D3C98','#CA6F1E','#435D74'];return CP[i]||'#435D74';});
     }}]
   });
 
-  // ── CHART 4: Ecopetrol por gerencia ─────────────────────────────────────
-  var gerMap={};
-  finAll.filter(function(r){return /^ECP/i.test(r.c);}).forEach(function(r){
-    var ger=r.c.trim().replace(/^ECP\s*/i,'').trim()||'General';
-    gerMap[ger]=(gerMap[ger]||0)+(r.ir>0?r.ir:r.v);
+  // ── CHART 4: Finalizado por línea de servicio ───────────────────────────
+  var linMap={};
+  finAll.forEach(function(r){
+    if(!r.l)return;
+    r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(function(p){
+      p=p.trim();
+      if(p&&p.length<6&&/^[A-Za-z]+$/.test(p))linMap[p]=(linMap[p]||0)+(r.ir>0?r.ir:r.v);
+    });
   });
-  var gerRows=Object.entries(gerMap).sort(function(a,b){return b[1]-a[1];});
-
+  var topLin=Object.entries(linMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  var LINE_COL={'CT':'#002060','ES':'#006B3C','TT':'#CC9A00','AZ':'#C0392B','WL':'#1A5276','AI':'#7D3C98','WT':'#CA6F1E','WS':'#566573','CWB':'#0E6655'};
   dc('cFinLin');CH.cFinLin=new Chart(document.getElementById('cFinLin'),{
     type:'bar',
-    data:{labels:gerRows.map(function(x){return x[0];}),datasets:[{
-      data:gerRows.map(function(x){return x[1];}),
-      backgroundColor:CLI_BG.slice(0,gerRows.length),
-      borderColor:CLI_DK.slice(0,gerRows.length),
-      borderWidth:1.5,borderRadius:4
+    data:{labels:topLin.map(function(x){return x[0];}),datasets:[{
+      data:topLin.map(function(x){return x[1];}),
+      backgroundColor:topLin.map(function(x){return LINE_COL[x[0]]||'#435D74';}),
+      borderRadius:4
     }]},
     options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
-      pctLabels:{enabled:true,color:'#1A4F7A'},
-      legend:{display:false},
-      tooltip:{callbacks:{label:function(c){return 'ECP '+gerRows[c.dataIndex][0]+': '+fmt(c.raw);}}}
+      pctLabels:{enabled:true,color:'#3D4D63'},
+      legend:{display:false}
     })})
   });
 }
