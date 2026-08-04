@@ -3311,15 +3311,17 @@ async function cargarDatos(esManual){
     const raw=await resp.json();
     // Ensure every record has anio field (SharePoint data may omit it)
     const live=raw.map(r=>Object.assign({anio:2026},r));
-    // Fusionar con el histórico embebido POR MES (año+mes), no por registro individual:
-    // comparar registro a registro es frágil (una fecha con hora incluida, un espacio,
-    // etc. hace que no "haga match" y el mismo dato quede contado dos veces). En cambio,
-    // por cada año-mes que sí venga en el lote en vivo, se usa SOLO el lote en vivo para
-    // ese mes (reemplazo limpio, sin duplicar); los años-meses que el flujo no traiga se
-    // conservan tal cual del histórico embebido.
-    const liveMonths=new Set(live.map(r=>r.anio+'|'+r.m));
-    const keptSeed=ALL_SEED.filter(r=>!liveMonths.has(r.anio+'|'+r.m));
-    ALL=keptSeed.concat(live);
+    // Los años cerrados (todo lo anterior al año más reciente del histórico embebido) ya
+    // están verificados contra el Excel y NO deben cambiar con cada refresh. Si el flujo de
+    // Power Automate trae un lote incompleto para un mes de un año anterior (p.ej. por un
+    // límite de filas en la consulta de SharePoint), antes eso pisaba el dato histórico
+    // correcto con uno más chico. Ahora solo se fusiona/actualiza el año en curso; los años
+    // anteriores se mantienen siempre tal cual el histórico embebido.
+    const anioActual=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
+    const liveCurr=live.filter(function(r){return r.anio===anioActual;});
+    const liveMonths=new Set(liveCurr.map(r=>r.anio+'|'+r.m));
+    const keptSeed=ALL_SEED.filter(r=>r.anio!==anioActual||!liveMonths.has(r.anio+'|'+r.m));
+    ALL=keptSeed.concat(liveCurr);
     populateAnioFilter();
     MES_STATS=buildMesStats(ALL,G_ANIO);
     updateClrBtn();
