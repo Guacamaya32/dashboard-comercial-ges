@@ -1466,10 +1466,12 @@ cargarDatos();
 // ── FINALIZADOS TAB ─────────────────────────────────────────────────────────
 function renderFinalizados(){
   const MES=MO;
-  // Rep colors from dashboard palette (v15)
-  const COLREP={MICHELL:'#185FA5',JULIANA:'#0F6E56',JOHAN:'#854F0B',JUAN:'#993556'};
-  // Brand palette for charts
-  const BRAND=['#002060','#006B3C','#CC9A00','#1A5276','#C0392B','#435D74','#7D3C98','#0E6655'];
+  // Rep colors: use REP_COL (dark) as stroke + REP_BG (pastel) as fill — matches rep cards
+  const COLREP_BG={MICHELL:'#D6E8F7',JULIANA:'#D0EFE5',JOHAN:'#FEF3D0',JUAN:'#F2D9E8'};
+  const COLREP_DK={MICHELL:'#1A4F7A',JULIANA:'#0D5C3A',JOHAN:'#7A5500',JUAN:'#6B2050'};
+  // Client palette: pastel tones derived from brand colors
+  const BRAND=['#D6E8F7','#D0EFE5','#FEF3D0','#F2D9E8','#D6EAF8','#E0F4EC','#FFF8DC','#F5EEF8'];
+  const BRAND_DK=['#1A4F7A','#0D5C3A','#7A5500','#6B2050','#1A5276','#006B3C','#CC9A00','#7D3C98'];
 
   function getFin(){
     return ALL.filter(function(r){return r.s==='FINALIZADO'
@@ -1488,11 +1490,20 @@ function renderFinalizados(){
     &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO))
     &&r.s!=='CANCELADO'&&r.s!=='RECHAZADO';}).reduce(function(s,r){return s+r.v;},0);
   const pctEjec=asigTot>0?Math.round(vTot/asigTot*100):0;
+  // Ecopetrol = all ECP* clients
+  const vEcop=finAll.filter(function(r){return /^ECP/i.test(r.c);})
+    .reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
+  // Monthly average: sum finalizado / months that have at least 1 finalizado
+  const mesesConFin=MES.filter(function(m){
+    return finAll.some(function(r){return r.m===m;});
+  }).length||1;
+  const vFinAll=finAll.reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
+  const avgMes=vFinAll/mesesConFin;
+
   document.getElementById('kpi-fin').innerHTML=[
-    {l:'Total Ejecutado',v:fmt(vTot),s:nTot+' servicios completados',cls:'ks',i:'✅'},
-    {l:'Ticket Promedio',v:fmt(avg),s:'por servicio',cls:'ka',i:'📊'},
-    {l:'% Cumplimiento',v:pctEjec+'%',s:'del pipeline asignado',cls:'kt',i:'🎯'},
-    {l:'Servicios',v:nTot,s:'registros finalizados',cls:'ko',i:'📋'},
+    {l:'Total Ingresos Ejecutados',v:fmt(vTot),s:nTot+' servicios finalizados',cls:'ks',i:'✅'},
+    {l:'Ingresos Ecopetrol',v:fmt(vEcop),s:Math.round(vEcop/vTot*100||0)+'% del total ejecutado',cls:'ka',i:'🛢️'},
+    {l:'Promedio Mensual',v:fmt(avgMes),s:'ingresos finalizados / mes',cls:'kt',i:'📅'},
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
   // ── CHART 1: Evolución mensual — barra apilada con % encima ──────────
@@ -1585,8 +1596,9 @@ function renderFinalizados(){
     type:'doughnut',
     data:{labels:repSortedLabels,datasets:[{
       data:repSortedVals,
-      backgroundColor:repSortedLabels.map(function(rp){return COLREP[rp];}),
-      borderColor:'#fff',borderWidth:3,hoverOffset:8
+      backgroundColor:repSortedLabels.map(function(rp){return COLREP_BG[rp];}),
+      borderColor:repSortedLabels.map(function(rp){return COLREP_DK[rp];}),
+      borderWidth:3,hoverOffset:8
     }]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
       layout:{padding:{top:28,bottom:28,left:28,right:28}},
@@ -1596,7 +1608,7 @@ function renderFinalizados(){
           font:{size:11,family:'Inter'},color:'#3D4D63',boxWidth:12,padding:10,
           generateLabels:function(chart){
             return repSortedLabels.map(function(rp,i){
-              return {text:rp+' — '+fmt(repSortedVals[i]),fillStyle:COLREP[rp],hidden:false,index:i};
+              return {text:rp+' — '+fmt(repSortedVals[i]),fillStyle:COLREP_DK[rp],strokeStyle:COLREP_DK[rp],hidden:false,index:i};
             });
           }
         }},
@@ -1606,7 +1618,7 @@ function renderFinalizados(){
       }
     },
     plugins:[{id:'repOut',afterDraw:function(chart){
-      donutOutside(chart,repSortedVals,repTotal,function(i){return COLREP[repSortedLabels[i]];});
+      donutOutside(chart,repSortedVals,repTotal,function(i){return COLREP_DK[repSortedLabels[i]];});
     }}]
   });
 
@@ -1623,7 +1635,7 @@ function renderFinalizados(){
     type:'doughnut',
     data:{labels:topCli.map(function(x){return x[0];}),datasets:[{
       data:topCli.map(function(x){return x[1];}),
-      backgroundColor:BRAND,borderColor:'#fff',borderWidth:3,hoverOffset:8
+      backgroundColor:BRAND,borderColor:BRAND_DK,borderWidth:2,hoverOffset:8
     }]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
       layout:{padding:{top:28,bottom:28,left:28,right:28}},
@@ -1633,7 +1645,7 @@ function renderFinalizados(){
           font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:8,
           generateLabels:function(chart){
             return topCli.map(function(x,i){
-              return {text:x[0],fillStyle:BRAND[i]||'#999',hidden:false,index:i};
+              return {text:x[0],fillStyle:BRAND_DK[i]||'#435D74',strokeStyle:BRAND_DK[i]||'#435D74',hidden:false,index:i};
             });
           }
         }},
@@ -1643,7 +1655,7 @@ function renderFinalizados(){
       }
     },
     plugins:[{id:'cliOut',afterDraw:function(chart){
-      donutOutside(chart,topCli.map(function(x){return x[1];}),cliTotal,function(i){return BRAND[i]||'#999';});
+      donutOutside(chart,topCli.map(function(x){return x[1];}),cliTotal,function(i){return BRAND_DK[i]||'#435D74';});
     }}]
   });
 
