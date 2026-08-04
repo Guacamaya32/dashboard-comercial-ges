@@ -2573,7 +2573,6 @@ let ALL=[{c:'FRONTERA',ger:'NA',t:'A',r:'MICHELL',m:'junio',anio:2026,pz:'YAGUAZ
 // Copia base del histórico embebido (2022-2026). Se usa para fusionar con la
 // respuesta en vivo de SharePoint sin perder años/meses que el flujo no traiga.
 const ALL_SEED=ALL.slice();
-function keyRec(r){return [r.c,r.r,r.pz,r.sv,r.fi,r.m,r.anio].join('|');}
 const B={
   NAVY:'#002060', NAVY_D:'#001040', NAVY_M:'#0E2A47',
   GOLD:'#FFC000', GOLD_D:'#CC9A00', GOLD_BG:'#FFF8DC',
@@ -3312,13 +3311,15 @@ async function cargarDatos(esManual){
     const raw=await resp.json();
     // Ensure every record has anio field (SharePoint data may omit it)
     const live=raw.map(r=>Object.assign({anio:2026},r));
-    // Fusionar con el histórico embebido: el registro en vivo actualiza/agrega,
-    // pero un lote parcial (p.ej. si el flujo solo trae el año en curso) ya no
-    // borra los años/meses anteriores que sí conocemos.
-    const merged={};
-    ALL_SEED.forEach(r=>{merged[keyRec(r)]=r;});
-    live.forEach(r=>{merged[keyRec(r)]=r;});
-    ALL=Object.values(merged);
+    // Fusionar con el histórico embebido POR MES (año+mes), no por registro individual:
+    // comparar registro a registro es frágil (una fecha con hora incluida, un espacio,
+    // etc. hace que no "haga match" y el mismo dato quede contado dos veces). En cambio,
+    // por cada año-mes que sí venga en el lote en vivo, se usa SOLO el lote en vivo para
+    // ese mes (reemplazo limpio, sin duplicar); los años-meses que el flujo no traiga se
+    // conservan tal cual del histórico embebido.
+    const liveMonths=new Set(live.map(r=>r.anio+'|'+r.m));
+    const keptSeed=ALL_SEED.filter(r=>!liveMonths.has(r.anio+'|'+r.m));
+    ALL=keptSeed.concat(live);
     populateAnioFilter();
     MES_STATS=buildMesStats(ALL,G_ANIO);
     updateClrBtn();
