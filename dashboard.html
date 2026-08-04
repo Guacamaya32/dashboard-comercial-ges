@@ -3427,11 +3427,32 @@ function renderFinalizados(){
   var vYearAll=ALL.filter(function(r){return r.s==='FINALIZADO'&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(!G_REP||r.r===G_REP);}).reduce(function(s,r){return s+val(r);},0);
   var pctEcop=vYearAll>0?Math.round(vEcop/vYearAll*100):0;
   var mesesConFin=MES.filter(function(m){return fin.some(function(r){return r.m===m;});}).length||1;
+  // Total histórico: igual que 'fin' pero SIN el filtro de año (siempre suma 2022-2026),
+  // para que siempre haya un total visible que agregue todos los años aunque el filtro
+  // de Año esté fijado en uno solo.
+  var finHist=ALL.filter(function(r){
+    if(r.s!=='FINALIZADO') return false;
+    if(G_REP&&r.r!==G_REP) return false;
+    if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep) return false;
+    if(FIN_FILTER.cli){
+      var cnH=/^ECP/i.test(r.c)?'ECOPETROL':r.c;
+      if(cnH!==FIN_FILTER.cli) return false;
+    }
+    if(FIN_FILTER.lin){
+      var lsH=r.l?r.l.replace(/\s/g,'').split(/[,\-\+]+/):[];
+      if(!lsH.some(function(p){return p.trim()===FIN_FILTER.lin;})) return false;
+    }
+    if(FIN_FILTER.mes&&r.m!==FIN_FILTER.mes) return false;
+    return true;
+  });
+  var vHist=finHist.reduce(function(s,r){return s+val(r);},0);
   document.getElementById('kpi-fin').innerHTML=[
     {l:'Total Ingresos Anuales',v:fmt(vYear),s:nYear+' servicios finalizados',cls:'ks',i:'✅'},
     {l:'Ingresos Ecopetrol',v:fmt(vEcop),s:pctEcop+'% del total anual ejecutado',cls:'ka',i:'🛢️'},
     {l:'Promedio Mensual',v:fmt(vYear/mesesConFin),s:'ingresos finalizados / mes',cls:'kt',i:'📅'},
+    {l:'Total Histórico (todos los años)',v:fmt(vHist),s:finHist.length+' servicios · 2022-2026',cls:'kr',i:'🗂️'},
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
+
 
   // ── Shared outer-label helper ──────────────────────────────────────────
   function donutOutside(chart,vals,total,colFn){
@@ -3498,13 +3519,30 @@ function renderFinalizados(){
         afterBody:function(it){return['Total asignado: '+fmt(mesAsig[it[0].dataIndex])];}
       }}
     })}),
-    plugins:[{id:'pctTopLabel',afterDatasetsDraw:function(chart){
-      var ctx=chart.ctx; var meta=chart.getDatasetMeta(1);
-      ctx.save();ctx.font='bold 9px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
-      meta.data.forEach(function(bar,i){
+    plugins:[{id:'barLabels',afterDatasetsDraw:function(chart){
+      var ctx=chart.ctx;
+      var metaEj=chart.getDatasetMeta(0); // Ejecutado (barra inferior del stack)
+      var metaPend=chart.getDatasetMeta(1); // Pendiente (define el tope del stack)
+      ctx.save();
+      // 1) Valor mensual (USD) como etiqueta arriba de cada barra apilada
+      ctx.font='bold 9px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+      metaPend.data.forEach(function(bar,i){
         if(!mesAsig[i])return;
-        ctx.fillStyle=mesFinCol[i]==='#E8EDF6'?'#AED6F1':mesFinCol[i];
-        ctx.fillText(mesPct[i]+'%',bar.x,bar.y-3);
+        ctx.fillStyle='#3D4D63';
+        ctx.fillText(fmt(mesFin[i]),bar.x,bar.y-3);
+      });
+      // 2) Porcentaje ejecutado DENTRO de la barra Ejecutado, con contraste según el color de fondo
+      ctx.textBaseline='middle';
+      metaEj.data.forEach(function(bar,i){
+        if(!mesAsig[i]||!mesFin[i])return;
+        var top=bar.y, base=bar.base;
+        var h=Math.abs(base-top);
+        if(h<12)return; // barra muy angosta: no forzar el texto adentro
+        var midY=(top+base)/2;
+        // amber (#D4AC0D) es clara: texto oscuro; verde/rojo son oscuros: texto blanco
+        ctx.fillStyle=mesFinCol[i]==='#D4AC0D'?'#3D2E00':'#fff';
+        ctx.font='bold 9px Inter,sans-serif';
+        ctx.fillText(mesPct[i]+'%',bar.x,midY);
       });
       ctx.restore();
     }}]
