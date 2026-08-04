@@ -366,7 +366,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </div>
   <div class="g2" style="margin-bottom:14px">
     <div class="card"><div class="ct">Distribución por Cliente</div><div style="height:220px"><canvas id="cFinCli"></canvas></div></div>
-    <div class="card"><div class="ct">Finalizado por Línea de Servicio</div><div style="height:220px"><canvas id="cFinLin"></canvas></div></div>
+    <div class="card"><div class="ct">Ecopetrol — Ingresos por Gerencia</div><div style="height:220px"><canvas id="cFinLin"></canvas></div></div>
   </div>
 </div>
 
@@ -1466,66 +1466,91 @@ cargarDatos();
 // ── FINALIZADOS TAB ─────────────────────────────────────────────────────────
 function renderFinalizados(){
   const MES=MO;
-  // Rep colors: use REP_COL (dark) as stroke + REP_BG (pastel) as fill — matches rep cards
+  // Pastel rep palette (matches rep cards)
   const COLREP_BG={MICHELL:'#D6E8F7',JULIANA:'#D0EFE5',JOHAN:'#FEF3D0',JUAN:'#F2D9E8'};
   const COLREP_DK={MICHELL:'#1A4F7A',JULIANA:'#0D5C3A',JOHAN:'#7A5500',JUAN:'#6B2050'};
-  // Client palette: pastel tones derived from brand colors
-  const BRAND=['#D6E8F7','#D0EFE5','#FEF3D0','#F2D9E8','#D6EAF8','#E0F4EC','#FFF8DC','#F5EEF8'];
-  const BRAND_DK=['#1A4F7A','#0D5C3A','#7A5500','#6B2050','#1A5276','#006B3C','#CC9A00','#7D3C98'];
+  // Pastel client palette
+  const CLI_BG =['#D6E8F7','#D5F5E3','#FDEBD0','#F9EBEA','#D6EAF8','#E8F8F5','#FEF9E7','#F5EEF8'];
+  const CLI_DK =['#1A4F7A','#1E8449','#CA6F1E','#C0392B','#1A5276','#0E6655','#9A7D0A','#6C3483'];
 
-  function getFin(){
-    return ALL.filter(function(r){return r.s==='FINALIZADO'
-      &&(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)
-      &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO));});
-  }
-  const fin=getFin();
+  // ── All finalizados (year-wide, ignoring G_MES filter for totals) ─────
+  const finYear=ALL.filter(function(r){return r.s==='FINALIZADO'
+    &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO));});
+  // Filtered finalizados (respects G_MES + G_REP)
+  const fin=ALL.filter(function(r){return r.s==='FINALIZADO'
+    &&(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)
+    &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO));});
+  // For charts use finYear filtered by G_REP only (show full year in charts)
   const finAll=ALL.filter(function(r){return r.s==='FINALIZADO'
+    &&(!G_REP||r.r===G_REP)
     &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO));});
 
-  // ── KPIs ──────────────────────────────────────────────────────────────
-  const vTot=fin.reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
-  const nTot=fin.length;
-  const avg=nTot>0?vTot/nTot:0;
-  const asigTot=ALL.filter(function(r){return r.t==='A'&&(!G_MES||r.m===G_MES)
-    &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO))
-    &&r.s!=='CANCELADO'&&r.s!=='RECHAZADO';}).reduce(function(s,r){return s+r.v;},0);
-  const pctEjec=asigTot>0?Math.round(vTot/asigTot*100):0;
-  // Ecopetrol = all ECP* clients
-  const vEcop=finAll.filter(function(r){return /^ECP/i.test(r.c);})
+  // ── KPI 1: Total anual ejecutado (full year, ignores G_MES) ─────────────
+  const vYear=finYear.reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
+  const nYear=finYear.length;
+
+  // ── KPI 2: Ecopetrol anual ───────────────────────────────────────────────
+  const vEcop=finYear.filter(function(r){return /^ECP/i.test(r.c);})
     .reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
-  // Monthly average: sum finalizado / months that have at least 1 finalizado
+  const pctEcop=vYear>0?Math.round(vEcop/vYear*100):0;
+
+  // ── KPI 3: Promedio mensual (meses con al menos 1 finalizado) ────────────
   const mesesConFin=MES.filter(function(m){
-    return finAll.some(function(r){return r.m===m;});
+    return finYear.some(function(r){return r.m===m;});
   }).length||1;
-  const vFinAll=finAll.reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
-  const avgMes=vFinAll/mesesConFin;
+  const avgMes=vYear/mesesConFin;
 
   document.getElementById('kpi-fin').innerHTML=[
-    {l:'Total Ingresos Ejecutados',v:fmt(vTot),s:nTot+' servicios finalizados',cls:'ks',i:'✅'},
-    {l:'Ingresos Ecopetrol',v:fmt(vEcop),s:Math.round(vEcop/vTot*100||0)+'% del total ejecutado',cls:'ka',i:'🛢️'},
+    {l:'Total Ingresos Anuales',v:fmt(vYear),s:nYear+' servicios finalizados en el año',cls:'ks',i:'✅'},
+    {l:'Ingresos Ecopetrol',v:fmt(vEcop),s:pctEcop+'% del total anual ejecutado',cls:'ka',i:'🛢️'},
     {l:'Promedio Mensual',v:fmt(avgMes),s:'ingresos finalizados / mes',cls:'kt',i:'📅'},
-  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
+  ].map(function(k){
+    return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';
+  }).join('');
 
-  // ── CHART 1: Evolución mensual — barra apilada con % encima ──────────
-  const mesLabels=MES.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1,3);});
-  const mesFin=MES.map(function(m){
-    return finAll.filter(function(r){return r.m===m&&(!G_REP||r.r===G_REP);})
+  // ── Shared outer-label helper ────────────────────────────────────────────
+  function donutOutside(chart,vals,total,colFn){
+    var ctx=chart.ctx; var ca=chart.chartArea;
+    var cx=ca.left+(ca.right-ca.left)/2, cy=ca.top+(ca.bottom-ca.top)/2;
+    chart.getDatasetMeta(0).data.forEach(function(arc,i){
+      var pct=Math.round(vals[i]/total*100);
+      if(pct<4)return;
+      var mid=(arc.startAngle+arc.endAngle)/2;
+      var outerR=arc.outerRadius;
+      var lx=cx+Math.cos(mid)*(outerR+7), ly=cy+Math.sin(mid)*(outerR+7);
+      var tx=cx+Math.cos(mid)*(outerR+22), ty=cy+Math.sin(mid)*(outerR+22);
+      ctx.save();
+      ctx.beginPath();ctx.moveTo(cx+Math.cos(mid)*outerR,cy+Math.sin(mid)*outerR);
+      ctx.lineTo(lx,ly);ctx.strokeStyle=colFn(i);ctx.lineWidth=1.5;ctx.stroke();
+      ctx.font='bold 10px Inter,sans-serif';
+      ctx.fillStyle=colFn(i);
+      ctx.textAlign=Math.cos(mid)>=0?'left':'right';
+      ctx.textBaseline='middle';
+      ctx.fillText(pct+'%',tx+(Math.cos(mid)>=0?2:-2),ty);
+      ctx.restore();
+    });
+  }
+
+  // ── CHART 1: Evolución mensual ───────────────────────────────────────────
+  var mesLabels=MES.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1,3);});
+  var mesFin=MES.map(function(m){
+    return finYear.filter(function(r){return r.m===m&&(!G_REP||r.r===G_REP);})
       .reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
   });
-  const mesAsig=MES.map(function(m){
+  var mesAsig=MES.map(function(m){
     return ALL.filter(function(r){return r.m===m&&r.t==='A'&&(!G_REP||r.r===G_REP)
       &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO))
       &&r.s!=='CANCELADO'&&r.s!=='RECHAZADO';})
       .reduce(function(s,r){return s+r.v;},0);
   });
-  const mesRem=mesAsig.map(function(a,i){return Math.max(0,a-mesFin[i]);});
-  const mesPct=mesAsig.map(function(a,i){return a>0?Math.round(mesFin[i]/a*100):0;});
+  var mesRem=mesAsig.map(function(a,i){return Math.max(0,a-mesFin[i]);});
+  var mesPct=mesAsig.map(function(a,i){return a>0?Math.round(mesFin[i]/a*100):0;});
 
   dc('cFinMes');CH.cFinMes=new Chart(document.getElementById('cFinMes'),{
     type:'bar',
     data:{labels:mesLabels,datasets:[
-      {label:'Ejecutado',data:mesFin,backgroundColor:'#006B3C',borderRadius:0,stack:'s'},
-      {label:'Pendiente',data:mesRem,backgroundColor:'#D6EAF8',borderRadius:[4,4,0,0],stack:'s'}
+      {label:'Ejecutado',data:mesFin,backgroundColor:'#1E8449CC',borderColor:'#1E8449',borderWidth:1,borderRadius:0,stack:'s'},
+      {label:'Pendiente',data:mesRem,backgroundColor:'#D6E8F7',borderColor:'#1A4F7A',borderWidth:1,borderRadius:[4,4,0,0],stack:'s'}
     ]},
     options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
       pctLabels:{enabled:false},
@@ -1533,7 +1558,7 @@ function renderFinalizados(){
       tooltip:{callbacks:{
         title:function(items){return mesLabels[items[0].dataIndex]+' 2026';},
         label:function(c){
-          const i=c.dataIndex;
+          var i=c.dataIndex;
           if(c.dataset.label==='Ejecutado') return 'Ejecutado: '+fmt(mesFin[i])+' ('+mesPct[i]+'%)';
           return 'Pendiente: '+fmt(mesRem[i]);
         },
@@ -1542,73 +1567,44 @@ function renderFinalizados(){
     })}),
     plugins:[{id:'pctTopLabel',afterDatasetsDraw:function(chart){
       var ctx=chart.ctx;
-      // Label above the full stacked bar = % cumplimiento
-      var metaRem=chart.getDatasetMeta(1); // top (Pendiente) bar = top of stack
-      ctx.save();
-      ctx.font='bold 9px Inter,sans-serif';
-      ctx.textAlign='center';
-      ctx.textBaseline='bottom';
+      var metaRem=chart.getDatasetMeta(1);
+      ctx.save();ctx.font='bold 9px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
       metaRem.data.forEach(function(bar,i){
+        if(!mesAsig[i])return;
         var pct=mesPct[i];
-        if(!mesAsig[i]) return;
-        ctx.fillStyle=pct>=80?'#006B3C':pct>=50?'#CC9A00':'#C0392B';
+        ctx.fillStyle=pct>=80?'#1E8449':pct>=50?'#9A7D0A':'#C0392B';
         ctx.fillText(pct+'%',bar.x,bar.y-3);
       });
       ctx.restore();
     }}]
   });
 
-  // ── CHART 2: Por representante — torta ejecutiva ──────────────────────
-  var repTotals=REPS.map(function(rp){
-    return finAll.filter(function(r){return r.r===rp;})
-      .reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
-  });
-  var repTotal=repTotals.reduce(function(s,v){return s+v;},0)||1;
-  // Sort reps by value desc for legend order
-  var repSorted=REPS.map(function(rp,i){return{rp:rp,v:repTotals[i]};})
-    .sort(function(a,b){return b.v-a.v;});
-  var repSortedLabels=repSorted.map(function(x){return x.rp;});
-  var repSortedVals=repSorted.map(function(x){return x.v;});
-
-  function donutOutside(chart,vals,total,colFn){
-    var ctx=chart.ctx; var ca=chart.chartArea;
-    var cx=ca.left+(ca.right-ca.left)/2, cy=ca.top+(ca.bottom-ca.top)/2;
-    chart.getDatasetMeta(0).data.forEach(function(arc,i){
-      var pct=Math.round(vals[i]/total*100);
-      if(pct<3)return;
-      var mid=(arc.startAngle+arc.endAngle)/2;
-      var outerR=arc.outerRadius;
-      var lx=cx+Math.cos(mid)*(outerR+8), ly=cy+Math.sin(mid)*(outerR+8);
-      var tx=cx+Math.cos(mid)*(outerR+22), ty=cy+Math.sin(mid)*(outerR+22);
-      ctx.save();
-      ctx.beginPath();ctx.moveTo(cx+Math.cos(mid)*outerR,cy+Math.sin(mid)*outerR);
-      ctx.lineTo(lx,ly);ctx.strokeStyle=colFn(i);ctx.lineWidth=1.5;ctx.stroke();
-      ctx.font='bold 10px Inter,sans-serif';
-      ctx.fillStyle='#2C3E50';
-      ctx.textAlign=Math.cos(mid)>=0?'left':'right';
-      ctx.textBaseline='middle';
-      ctx.fillText(pct+'%',tx+(Math.cos(mid)>=0?2:-2),ty);
-      ctx.restore();
-    });
-  }
+  // ── CHART 2: Representantes — torta pastel ───────────────────────────────
+  var repSorted=REPS.map(function(rp){
+    return {rp:rp,v:finAll.filter(function(r){return r.r===rp;})
+      .reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0)};
+  }).sort(function(a,b){return b.v-a.v;});
+  var repLabels=repSorted.map(function(x){return x.rp;});
+  var repVals=repSorted.map(function(x){return x.v;});
+  var repTotal=repVals.reduce(function(s,v){return s+v;},0)||1;
 
   dc('cFinRep');CH.cFinRep=new Chart(document.getElementById('cFinRep'),{
     type:'doughnut',
-    data:{labels:repSortedLabels,datasets:[{
-      data:repSortedVals,
-      backgroundColor:repSortedLabels.map(function(rp){return COLREP_BG[rp];}),
-      borderColor:repSortedLabels.map(function(rp){return COLREP_DK[rp];}),
+    data:{labels:repLabels,datasets:[{
+      data:repVals,
+      backgroundColor:repLabels.map(function(rp){return COLREP_BG[rp];}),
+      borderColor:repLabels.map(function(rp){return COLREP_DK[rp];}),
       borderWidth:3,hoverOffset:8
     }]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
-      layout:{padding:{top:28,bottom:28,left:28,right:28}},
-      plugins:{
-        pctLabels:{enabled:false},
-        legend:{display:true,position:'right',labels:{
-          font:{size:11,family:'Inter'},color:'#3D4D63',boxWidth:12,padding:10,
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+      layout:{padding:32},
+      plugins:{pctLabels:{enabled:false},
+        legend:{display:true,position:'bottom',align:'center',labels:{
+          font:{size:11,family:'Inter'},color:'#3D4D63',boxWidth:12,padding:12,
           generateLabels:function(chart){
-            return repSortedLabels.map(function(rp,i){
-              return {text:rp+' — '+fmt(repSortedVals[i]),fillStyle:COLREP_DK[rp],strokeStyle:COLREP_DK[rp],hidden:false,index:i};
+            return repLabels.map(function(rp,i){
+              return {text:rp+' — '+fmt(repVals[i]),fillStyle:COLREP_DK[rp],
+                strokeStyle:COLREP_DK[rp],lineWidth:0,hidden:false,index:i};
             });
           }
         }},
@@ -1618,13 +1614,13 @@ function renderFinalizados(){
       }
     },
     plugins:[{id:'repOut',afterDraw:function(chart){
-      donutOutside(chart,repSortedVals,repTotal,function(i){return COLREP_DK[repSortedLabels[i]];});
+      donutOutside(chart,repVals,repTotal,function(i){return COLREP_DK[repLabels[i]];});
     }}]
   });
 
-  // ── CHART 3: Clientes — torta ejecutiva (ECP* → ECOPETROL) ────────────
+  // ── CHART 3: Clientes — torta pastel ECP agrupado por cliente ──────────
   var cliMap={};
-  finAll.filter(function(r){return !G_REP||r.r===G_REP;}).forEach(function(r){
+  finAll.forEach(function(r){
     var nombre=/^ECP/i.test(r.c)?'ECOPETROL':r.c;
     cliMap[nombre]=(cliMap[nombre]||0)+(r.ir>0?r.ir:r.v);
   });
@@ -1635,17 +1631,17 @@ function renderFinalizados(){
     type:'doughnut',
     data:{labels:topCli.map(function(x){return x[0];}),datasets:[{
       data:topCli.map(function(x){return x[1];}),
-      backgroundColor:BRAND,borderColor:BRAND_DK,borderWidth:2,hoverOffset:8
+      backgroundColor:CLI_BG,borderColor:CLI_DK,borderWidth:3,hoverOffset:8
     }]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
-      layout:{padding:{top:28,bottom:28,left:28,right:28}},
-      plugins:{
-        pctLabels:{enabled:false},
-        legend:{display:true,position:'right',labels:{
-          font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:8,
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+      layout:{padding:32},
+      plugins:{pctLabels:{enabled:false},
+        legend:{display:true,position:'bottom',align:'center',labels:{
+          font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:10,
           generateLabels:function(chart){
             return topCli.map(function(x,i){
-              return {text:x[0],fillStyle:BRAND_DK[i]||'#435D74',strokeStyle:BRAND_DK[i]||'#435D74',hidden:false,index:i};
+              return {text:x[0],fillStyle:CLI_DK[i]||'#435D74',
+                strokeStyle:CLI_DK[i]||'#435D74',lineWidth:0,hidden:false,index:i};
             });
           }
         }},
@@ -1655,29 +1651,31 @@ function renderFinalizados(){
       }
     },
     plugins:[{id:'cliOut',afterDraw:function(chart){
-      donutOutside(chart,topCli.map(function(x){return x[1];}),cliTotal,function(i){return BRAND_DK[i]||'#435D74';});
+      donutOutside(chart,topCli.map(function(x){return x[1];}),cliTotal,
+        function(i){return CLI_DK[i]||'#435D74';});
     }}]
   });
 
-  // ── CHART 4: Por línea de servicio ────────────────────────────────────
-  var linMap={};
-  finAll.filter(function(r){return !G_REP||r.r===G_REP;}).forEach(function(r){
-    if(!r.l)return;
-    r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(function(p){
-      p=p.trim();if(p&&p.length<6&&/^[A-Za-z]+$/.test(p))linMap[p]=(linMap[p]||0)+(r.ir>0?r.ir:r.v);
-    });
+  // ── CHART 4: Ecopetrol por gerencia ─────────────────────────────────────
+  var gerMap={};
+  finAll.filter(function(r){return /^ECP/i.test(r.c);}).forEach(function(r){
+    var ger=r.c.trim().replace(/^ECP\s*/i,'').trim()||'General';
+    gerMap[ger]=(gerMap[ger]||0)+(r.ir>0?r.ir:r.v);
   });
-  var topLin=Object.entries(linMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  var LINE_COL={'CT':'#002060','ES':'#006B3C','TT':'#CC9A00','AZ':'#C0392B','WL':'#1A5276','AI':'#7D3C98','WT':'#CA6F1E','WS':'#566573','CWB':'#0E6655'};
+  var gerRows=Object.entries(gerMap).sort(function(a,b){return b[1]-a[1];});
+
   dc('cFinLin');CH.cFinLin=new Chart(document.getElementById('cFinLin'),{
     type:'bar',
-    data:{labels:topLin.map(function(x){return x[0];}),datasets:[{
-      data:topLin.map(function(x){return x[1];}),
-      backgroundColor:topLin.map(function(x){return LINE_COL[x[0]]||'#435D74';}),borderRadius:4
+    data:{labels:gerRows.map(function(x){return x[0];}),datasets:[{
+      data:gerRows.map(function(x){return x[1];}),
+      backgroundColor:CLI_BG.slice(0,gerRows.length),
+      borderColor:CLI_DK.slice(0,gerRows.length),
+      borderWidth:1.5,borderRadius:4
     }]},
     options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
-      pctLabels:{enabled:true,color:'#3D4D63'},
-      legend:{display:false}
+      pctLabels:{enabled:true,color:'#1A4F7A'},
+      legend:{display:false},
+      tooltip:{callbacks:{label:function(c){return 'ECP '+gerRows[c.dataIndex][0]+': '+fmt(c.raw);}}}
     })})
   });
 }
