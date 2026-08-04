@@ -288,11 +288,11 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 </div>
 
 <div class="mnav">
-  <button class="mb active" onclick="showView('mensual',event)">📊 Análisis Mensual</button>
+  <button class="mb active" onclick="showView('mensual',event)">📊 Proyecciones</button>
   <button class="mb" onclick="showView('representantes',event)">👤 Representantes</button>
   <button class="mb" onclick="showView('clientes',event)">🏢 Clientes</button>
   <button class="mb" onclick="showView('detalle',event)">📋 Detalle</button>
-  <button class="mb" onclick="showView('finalizados',event)">✅ Finalizados</button>
+  <button class="mb" onclick="showView('finalizados',event)">✅ Ejecutados</button>
 </div>
 
 <main>
@@ -361,11 +361,11 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 <div class="view" id="view-finalizados">
   <div class="krow" id="kpi-fin"></div>
   <div class="g2" style="margin-bottom:14px">
-    <div class="card"><div class="ct">Evolución Mensual — Valor Finalizado</div><div style="height:220px"><canvas id="cFinMes"></canvas></div></div>
-    <div class="card"><div class="ct">Finalizado por Representante (mensual)</div><div style="height:220px"><canvas id="cFinRep"></canvas></div></div>
+    <div class="card"><div class="ct">Evolución Mensual — Asignado vs Finalizado</div><div style="height:220px"><canvas id="cFinMes"></canvas></div></div>
+    <div class="card"><div class="ct">Finalizado por Representante — Distribución</div><div style="height:220px"><canvas id="cFinRep"></canvas></div></div>
   </div>
   <div class="g2" style="margin-bottom:14px">
-    <div class="card"><div class="ct">Top Clientes — Acumulado Finalizado</div><div style="height:220px"><canvas id="cFinCli"></canvas></div></div>
+    <div class="card"><div class="ct">Clientes — Distribución Finalizado (ECP = Ecopetrol)</div><div style="height:220px"><canvas id="cFinCli"></canvas></div></div>
     <div class="card"><div class="ct">Finalizado por Línea de Servicio</div><div style="height:220px"><canvas id="cFinLin"></canvas></div></div>
   </div>
 </div>
@@ -1504,48 +1504,153 @@ function renderFinalizados(){
   });
   const mesLabels=MES.map(m=>m.charAt(0).toUpperCase()+m.slice(1,3));
 
+  // Barra apilada: Finalizado (verde) + Pendiente (navy claro) = Asignado total
+  const mesRem=mesAsig.map(function(a,i){return Math.max(0,a-mesFin[i]);});
+  const mesPct=mesAsig.map(function(a,i){return a>0?Math.round(mesFin[i]/a*100):0;});
   dc('cFinMes');CH.cFinMes=new Chart(document.getElementById('cFinMes'),{
     type:'bar',
     data:{labels:mesLabels,datasets:[
-      {label:'Asignado',data:mesAsig,backgroundColor:'#002060',borderRadius:3,stack:'s',order:2},
-      {label:'Finalizado',data:mesFin,backgroundColor:'#0F6E56',borderRadius:3,stack:'s2',order:1,
-       type:'line',borderColor:'#0F6E56',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#0F6E56',fill:false,tension:.3}
+      {label:'Finalizado',data:mesFin,backgroundColor:'#0F6E56CC',borderColor:'#0F6E56',borderWidth:1,borderRadius:0,stack:'s'},
+      {label:'Asignado pendiente',data:mesRem,backgroundColor:'#002060',borderRadius:[4,4,0,0],stack:'s'}
     ]},
     options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
       pctLabels:{enabled:false},
-      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:12}}
-    })})
+      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10}},
+      tooltip:{callbacks:{
+        title:function(items){return mesLabels[items[0].dataIndex]+' 2026';},
+        label:function(c){
+          const i=c.dataIndex;
+          if(c.dataset.label==='Finalizado') return 'Finalizado: '+fmt(mesFin[i])+' ('+mesPct[i]+'%)';
+          return 'Pendiente: '+fmt(mesRem[i]);
+        },
+        afterBody:function(items){
+          const i=items[0].dataIndex;
+          return ['Total asignado: '+fmt(mesAsig[i])];
+        }
+      }}
+    })}),
+    plugins:[{
+      id:'pctLabelInBar',
+      afterDatasetsDraw:function(chart){
+        const ctx=chart.ctx;
+        const meta=chart.getDatasetMeta(0); // Finalizado dataset
+        ctx.save();
+        ctx.font='bold 9px Inter,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        meta.data.forEach(function(bar,i){
+          if(!mesFin[i]) return;
+          const pct=mesPct[i];
+          // Label inside green bar if tall enough, else above
+          const mid=bar.y+bar.height/2;
+          if(bar.height>18){
+            ctx.fillStyle='#fff';
+            ctx.fillText(pct+'%',bar.x,mid);
+          } else {
+            ctx.fillStyle='#0F6E56';
+            ctx.fillText(pct+'%',bar.x,bar.y-8);
+          }
+        });
+        ctx.restore();
+      }
+    }]
   });
 
-  // ── CHART 2: Por representante apilado ───────────────────────────────
-  const repDatasets=REPS.map(rp=>({
-    label:rp,
-    data:MES.map(m=>finAll.filter(r=>r.m===m&&r.r===rp).reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0)),
-    backgroundColor:COLREP[rp],borderRadius:2,stack:'s'
-  }));
+  // ── CHART 2: Por representante — torta con % ─────────────────────────
+  const repTotals=REPS.map(function(rp){
+    return finAll.filter(function(r){return r.r===rp;}).reduce(function(s,r){return s+(r.ir>0?r.ir:r.v);},0);
+  });
+  const repTotal=repTotals.reduce(function(s,v){return s+v;},0)||1;
   dc('cFinRep');CH.cFinRep=new Chart(document.getElementById('cFinRep'),{
-    type:'bar',
-    data:{labels:mesLabels,datasets:repDatasets},
-    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
-      pctLabels:{enabled:false},
-      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10}}
-    })})
+    type:'doughnut',
+    data:{labels:REPS,datasets:[{
+      data:repTotals,
+      backgroundColor:REPS.map(function(rp){return COLREP[rp];}),
+      borderColor:'#fff',borderWidth:2,hoverOffset:6
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'50%',
+      layout:{padding:{top:22,bottom:22,left:22,right:22}},
+      plugins:{
+        pctLabels:{enabled:false},
+        legend:{display:true,position:'right',labels:{font:{size:11,family:'Inter'},color:'#3D4D63',boxWidth:12,
+          generateLabels:function(chart){
+            return chart.data.labels.map(function(lbl,i){
+              const v=repTotals[i], pct=Math.round(v/repTotal*100);
+              return {text:lbl+' '+pct+'% ('+fmt(v)+')',fillStyle:COLREP[lbl],hidden:false,index:i};
+            });
+          }
+        }},
+        tooltip:{callbacks:{label:function(c){return c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/repTotal*100)+'%)';}}}
+      }
+    },
+    plugins:[{id:'repOuterLabels',afterDraw:function(chart){
+      const {ctx}=chart; const ca=chart.chartArea;
+      const cx=ca.left+(ca.right-ca.left)/2, cy=ca.top+(ca.bottom-ca.top)/2;
+      const ds=chart.data.datasets[0];
+      const tot=ds.data.reduce(function(s,v){return s+v;},0)||1;
+      chart.getDatasetMeta(0).data.forEach(function(arc,i){
+        const pct=Math.round(ds.data[i]/tot*100);
+        if(pct<5)return;
+        const mid=(arc.startAngle+arc.endAngle)/2;
+        const r=arc.outerRadius*0.7;
+        ctx.save();
+        ctx.font='bold 11px Inter,sans-serif';
+        ctx.fillStyle='#fff';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(pct+'%',cx+Math.cos(mid)*r,cy+Math.sin(mid)*r);
+        ctx.restore();
+      });
+    }}]
   });
 
-  // ── CHART 3: Top clientes acumulado ──────────────────────────────────
+  // ── CHART 3: Top clientes — torta (ECP* → ECOPETROL) ─────────────────
   const cliMap={};
-  finAll.filter(r=>!G_REP||r.r===G_REP).forEach(r=>{cliMap[r.c]=(cliMap[r.c]||0)+(r.ir>0?r.ir:r.v);});
-  const topCli=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  finAll.filter(function(r){return !G_REP||r.r===G_REP;}).forEach(function(r){
+    const nombre=/^ECP/i.test(r.c)?'ECOPETROL':r.c;
+    cliMap[nombre]=(cliMap[nombre]||0)+(r.ir>0?r.ir:r.v);
+  });
+  const topCli=Object.entries(cliMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  const cliTotal=topCli.reduce(function(s,x){return s+x[1];},0)||1;
+  const CLI_PAL=['#002060','#185FA5','#1A5276','#2E86C1','#5DADE2','#0F6E56','#854F0B','#993556'];
   dc('cFinCli');CH.cFinCli=new Chart(document.getElementById('cFinCli'),{
-    type:'bar',
-    data:{labels:topCli.map(x=>x[0]),datasets:[{
-      data:topCli.map(x=>x[1]),
-      backgroundColor:'#185FA5',borderRadius:4
+    type:'doughnut',
+    data:{labels:topCli.map(function(x){return x[0];}),datasets:[{
+      data:topCli.map(function(x){return x[1];}),
+      backgroundColor:CLI_PAL,borderColor:'#fff',borderWidth:2,hoverOffset:6
     }]},
-    options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
-      pctLabels:{enabled:true,color:'#3D4D63'},
-      legend:{display:false}
-    })})
+    options:{responsive:true,maintainAspectRatio:false,cutout:'45%',
+      layout:{padding:{top:18,bottom:18,left:18,right:18}},
+      plugins:{
+        pctLabels:{enabled:false},
+        legend:{display:true,position:'right',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:6,
+          generateLabels:function(chart){
+            return chart.data.labels.map(function(lbl,i){
+              const v=topCli[i][1], pct=Math.round(v/cliTotal*100);
+              return {text:lbl+' '+pct+'%',fillStyle:CLI_PAL[i]||'#999',hidden:false,index:i};
+            });
+          }
+        }},
+        tooltip:{callbacks:{label:function(c){return c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/cliTotal*100)+'%)';}}}
+      }
+    },
+    plugins:[{id:'cliOuterLabels',afterDraw:function(chart){
+      const {ctx}=chart; const ca=chart.chartArea;
+      const cx=ca.left+(ca.right-ca.left)/2, cy=ca.top+(ca.bottom-ca.top)/2;
+      const ds=chart.data.datasets[0];
+      const tot=ds.data.reduce(function(s,v){return s+v;},0)||1;
+      chart.getDatasetMeta(0).data.forEach(function(arc,i){
+        const pct=Math.round(ds.data[i]/tot*100);
+        if(pct<5)return;
+        const mid=(arc.startAngle+arc.endAngle)/2;
+        const r=arc.outerRadius*0.68;
+        ctx.save();
+        ctx.font='bold 10px Inter,sans-serif';
+        ctx.fillStyle='#fff';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(pct+'%',cx+Math.cos(mid)*r,cy+Math.sin(mid)*r);
+        ctx.restore();
+      });
+    }}]
   });
 
   // ── CHART 4: Por línea de servicio ───────────────────────────────────
