@@ -2588,16 +2588,17 @@ const MES_ORDER_ALL=MO;
 const MS={enero:'ENE',febrero:'FEB',marzo:'MAR',abril:'ABR',mayo:'MAY',junio:'JUN',julio:'JUL',agosto:'AGO',septiembre:'SEP',octubre:'OCT',noviembre:'NOV',diciembre:'DIC'};
 
 let cliSortCol='total',cliSortDir=-1;
-let G_MES=(()=>{const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return m[new Date().getMonth()];})(), G_REP='', G_ANIO='', sCol='c', sDir=1;
+let G_MES=(()=>{const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return m[new Date().getMonth()];})(), G_REP='', G_ANIO='2026', sCol='c', sDir=1;
 let CH={};
 const dc=id=>{if(CH[id]){CH[id].destroy();delete CH[id];}};
 const fmt=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v).toLocaleString();
 const fmtM=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v;
 
+let MES_STATS={};
 function buildMesStats(all,anio){
   const stats={};
   MES_ORDER_ALL.forEach(mes=>{
-    const active=all.filter(r=>r.m===mes&&(!anio||String(r.anio||2026)===String(anio))&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO');
+    const active=all.filter(r=>r.m===mes&&(!anio||String(r.anio)===String(anio))&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO');
     if(!active.length)return;
     const asigRows=active.filter(r=>r.t==='A'),oporRows=active.filter(r=>r.t==='O');
     const asig=asigRows.reduce((s,r)=>s+r.v,0),opor=oporRows.reduce((s,r)=>s+r.v,0);
@@ -2625,7 +2626,7 @@ function updateBadgeAnio(){const el=document.getElementById('badge-anio');if(el)
 function populateAnioFilter(){
   const sel=document.getElementById('g-anio');
   if(!sel)return;
-  const anios=[...new Set(ALL.map(r=>r.anio||2026).filter(a=>a))].sort((a,b)=>b-a);
+  const anios=[...new Set(ALL.map(r=>r.anio).filter(a=>a))].sort((a,b)=>b-a);
   const prevValue=sel.value;
   sel.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
   if(anios.map(String).includes(prevValue)){
@@ -3274,7 +3275,7 @@ function exportCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_${G_ANIO||'Todos'}_${G_MES||'anual'}.csv`;a.click();
 }
 
-(function(){const sel=document.getElementById('g-mes');if(sel&&G_MES)sel.value=G_MES;})();
+(function(){const selm=document.getElementById('g-mes');if(selm&&G_MES)selm.value=G_MES;const sely=document.getElementById('g-anio');if(sely&&G_ANIO)sely.value=G_ANIO;})();
 document.getElementById('live-date').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
 updateClrBtn();
 
