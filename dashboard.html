@@ -292,6 +292,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="mb" onclick="showView('representantes',event)">👤 Representantes</button>
   <button class="mb" onclick="showView('clientes',event)">🏢 Clientes</button>
   <button class="mb" onclick="showView('detalle',event)">📋 Detalle</button>
+  <button class="mb" onclick="showView('finalizados',event)">✅ Finalizados</button>
 </div>
 
 <main>
@@ -355,6 +356,20 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     </table>
   </div></div>
 </div>
+
+<!-- FINALIZADOS -->
+<div class="view" id="view-finalizados">
+  <div class="krow" id="kpi-fin"></div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="ct">Evolución Mensual — Valor Finalizado</div><div style="height:220px"><canvas id="cFinMes"></canvas></div></div>
+    <div class="card"><div class="ct">Finalizado por Representante (mensual)</div><div style="height:220px"><canvas id="cFinRep"></canvas></div></div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="ct">Top Clientes — Acumulado Finalizado</div><div style="height:220px"><canvas id="cFinCli"></canvas></div></div>
+    <div class="card"><div class="ct">Finalizado por Línea de Servicio</div><div style="height:220px"><canvas id="cFinLin"></canvas></div></div>
+  </div>
+</div>
+
 </main>
 <script>
 let ALL=[{c:'PAREX',t:'A',r:'JOHAN',m:'enero',pz:'LAS MARACAS 6',sv:'ABANDONO INTEGRADO',ie:130000.0,ir:130941.08,v:130941.08,l:'CT -ES - AZ - TT - CW',s:'FINALIZADO',co:''},
@@ -763,8 +778,8 @@ function animateCounters(){
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();animateCounters();}
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle');refreshActive();}
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();animateCounters();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');refreshActive();}
 
 const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
 const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}}});
@@ -1447,6 +1462,114 @@ cargarDatos();
   if(origRT) window.renderTable=function(){origRT.apply(this,arguments);setTimeout(addHandles,50);};
   setTimeout(addHandles,500);
 })();
+
+// ── FINALIZADOS TAB ─────────────────────────────────────────────────────────
+function renderFinalizados(){
+  const MES=MO;
+  const COLREP={MICHELL:'#185FA5',JULIANA:'#0F6E56',JOHAN:'#854F0B',JUAN:'#993556'};
+  const COLREP_A={MICHELL:'#185FA580',JULIANA:'#0F6E5680',JOHAN:'#854F0B80',JUAN:'#99355680'};
+
+  // Filter: respect G_MES, G_REP, G_ANIO filters
+  function getFin(){
+    return ALL.filter(r=>r.s==='FINALIZADO'
+      &&(!G_MES||r.m===G_MES)
+      &&(!G_REP||r.r===G_REP)
+      &&(!G_ANIO||String(r.anio||2026)===String(G_ANIO)));
+  }
+  const fin=getFin();
+  const finAll=ALL.filter(r=>r.s==='FINALIZADO'&&(!G_ANIO||String(r.anio||2026)===String(G_ANIO)));
+
+  // ── KPIs ──────────────────────────────────────────────────────────────
+  const vTot=fin.reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
+  const nTot=fin.length;
+  const avg=nTot>0?vTot/nTot:0;
+  const asigTot=ALL.filter(r=>r.t==='A'&&(!G_MES||r.m===G_MES)&&(!G_ANIO||String(r.anio||2026)===String(G_ANIO))&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO').reduce((s,r)=>s+r.v,0);
+  const pctEjec=asigTot>0?Math.round(vTot/asigTot*100):0;
+
+  document.getElementById('kpi-fin').innerHTML=[
+    {l:'Total Finalizado',v:fmt(vTot),s:nTot+' servicios completados',cls:'ks',i:'✅'},
+    {l:'Ticket Promedio',v:fmt(avg),s:'por servicio finalizado',cls:'ka',i:'📊'},
+    {l:'% Ejecución',v:pctEjec+'%',s:'del pipeline asignado',cls:'kt',i:'🎯'},
+    {l:'Servicios',v:nTot,s:'registros finalizados',cls:'ko',i:'📋'},
+  ].map(k=>'<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>').join('');
+
+  // ── CHART 1: Evolución mensual (line + bar) ───────────────────────────
+  const mesFin=MES.map(m=>{
+    const rows=finAll.filter(r=>r.m===m&&(!G_REP||r.r===G_REP));
+    return rows.reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0);
+  });
+  const mesAsig=MES.map(m=>{
+    const rows=ALL.filter(r=>r.m===m&&r.t==='A'&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio||2026)===String(G_ANIO))&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO');
+    return rows.reduce((s,r)=>s+r.v,0);
+  });
+  const mesLabels=MES.map(m=>m.charAt(0).toUpperCase()+m.slice(1,3));
+
+  dc('cFinMes');CH.cFinMes=new Chart(document.getElementById('cFinMes'),{
+    type:'bar',
+    data:{labels:mesLabels,datasets:[
+      {label:'Asignado',data:mesAsig,backgroundColor:'#002060',borderRadius:3,stack:'s',order:2},
+      {label:'Finalizado',data:mesFin,backgroundColor:'#0F6E56',borderRadius:3,stack:'s2',order:1,
+       type:'line',borderColor:'#0F6E56',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#0F6E56',fill:false,tension:.3}
+    ]},
+    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
+      pctLabels:{enabled:false},
+      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:12}}
+    })})
+  });
+
+  // ── CHART 2: Por representante apilado ───────────────────────────────
+  const repDatasets=REPS.map(rp=>({
+    label:rp,
+    data:MES.map(m=>finAll.filter(r=>r.m===m&&r.r===rp).reduce((s,r)=>s+(r.ir>0?r.ir:r.v),0)),
+    backgroundColor:COLREP[rp],borderRadius:2,stack:'s'
+  }));
+  dc('cFinRep');CH.cFinRep=new Chart(document.getElementById('cFinRep'),{
+    type:'bar',
+    data:{labels:mesLabels,datasets:repDatasets},
+    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
+      pctLabels:{enabled:false},
+      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10}}
+    })})
+  });
+
+  // ── CHART 3: Top clientes acumulado ──────────────────────────────────
+  const cliMap={};
+  finAll.filter(r=>!G_REP||r.r===G_REP).forEach(r=>{cliMap[r.c]=(cliMap[r.c]||0)+(r.ir>0?r.ir:r.v);});
+  const topCli=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  dc('cFinCli');CH.cFinCli=new Chart(document.getElementById('cFinCli'),{
+    type:'bar',
+    data:{labels:topCli.map(x=>x[0]),datasets:[{
+      data:topCli.map(x=>x[1]),
+      backgroundColor:'#185FA5',borderRadius:4
+    }]},
+    options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
+      pctLabels:{enabled:true,color:'#3D4D63'},
+      legend:{display:false}
+    })})
+  });
+
+  // ── CHART 4: Por línea de servicio ───────────────────────────────────
+  const linMap={};
+  finAll.filter(r=>!G_REP||r.r===G_REP).forEach(r=>{
+    if(!r.l)return;
+    r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(p=>{
+      p=p.trim();if(p&&p.length<6&&/^[A-Za-z]+$/.test(p))linMap[p]=(linMap[p]||0)+(r.ir>0?r.ir:r.v);
+    });
+  });
+  const topLin=Object.entries(linMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const LINE_COL={'CT':'#002060','ES':'#0F6E56','TT':'#b8960a','AZ':'#C0392B','WL':'#1A5276','AI':'#7D3C98','WT':'#CA6F1E','WS':'#566573','CWB':'#0E6655'};
+  dc('cFinLin');CH.cFinLin=new Chart(document.getElementById('cFinLin'),{
+    type:'bar',
+    data:{labels:topLin.map(x=>x[0]),datasets:[{
+      data:topLin.map(x=>x[1]),
+      backgroundColor:topLin.map(x=>LINE_COL[x[0]]||'#435D74'),borderRadius:4
+    }]},
+    options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
+      pctLabels:{enabled:true,color:'#3D4D63'},
+      legend:{display:false}
+    })})
+  });
+}
 </script>
 </body>
 </html>
