@@ -3332,16 +3332,16 @@ async function cargarDatos(esManual){
     });
     // Fusión ADITIVA y segura: el flujo de Power Automate puede devolver la tabla completa
     // o solo un delta (lo que cambió recientemente). Comparar la fila completa (incluyendo
-    // comentarios/gerencia/estado) es frágil: basta que un campo secundario venga formateado
-    // distinto para que el registro no calce y se duplique. En cambio, se compara solo por la
-    // identidad esencial del registro (cliente+pozo+servicio+fecha+tipo+monto), y se usa un
-    // CONTEO por llave (no solo presencia/ausencia): así, si hay 2 registros reales que
-    // comparten esa identidad (ocurre en los datos: dos líneas de costo del mismo pozo el
-    // mismo día con montos iguales), los 2 se reconocen como ya existentes y no se duplican;
-    // y si el lote en vivo trae una copia de más de esa misma llave, ESA sí se agrega como
-    // nueva. Nada del histórico se borra por ausencia en un lote parcial.
+    // comentarios/gerencia/estado/montos) es frágil: basta que un campo secundario venga
+    // formateado o redondeado distinto para que el registro no calce y se duplique. En cambio,
+    // se compara solo por la identidad esencial del registro (cliente+pozo+servicio+fecha+
+    // tipo), y se usa un CONTEO por llave (no solo presencia/ausencia): así, si hay 2 registros
+    // reales que comparten esa identidad (ocurre en los datos: dos líneas de costo del mismo
+    // pozo el mismo día), los 2 se reconocen como ya existentes y no se duplican; y si el lote
+    // en vivo trae una copia de más de esa misma llave, ESA sí se agrega como nueva. Nada del
+    // histórico se borra por ausencia en un lote parcial.
     function idKey(r){
-      return [r.c,r.pz,r.sv,r.fi,r.t,Math.round((r.ie||0)*100),Math.round((r.ir||0)*100)].join('|').toUpperCase();
+      return [r.c,r.pz,r.sv,r.fi,r.t].join('|').toUpperCase();
     }
     const conteoSeed={};
     ALL_SEED.forEach(function(r){const k=idKey(r);conteoSeed[k]=(conteoSeed[k]||0)+1;});
@@ -3350,7 +3350,24 @@ async function cargarDatos(esManual){
       if(conteoSeed[k]>0){conteoSeed[k]--;return false;} // ya existe una copia sin usar: no es nuevo
       return true; // no quedan copias en el histórico para esta llave: sí es nuevo
     });
-    ALL=ALL_SEED.concat(nuevos);
+    // Red de seguridad: si de golpe aparecen demasiados registros "nuevos" del año en curso,
+    // lo más probable es que algún campo de SharePoint no esté calzando bien con el histórico
+    // (y no que en verdad haya tantos registros nuevos) — eso fue justo lo que causó números
+    // inflados en refrescos anteriores. En ese caso NO se aplica el refresh (se conserva el
+    // histórico verificado) y, si fue una actualización manual, se avisa en vez de mostrar
+    // datos posiblemente duplicados sin decir nada.
+    const anioActualSeed=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
+    const totalAnioSeed=ALL_SEED.filter(function(r){return r.anio===anioActualSeed;}).length;
+    const nuevosAnioActual=nuevos.filter(function(r){return r.anio===anioActualSeed;}).length;
+    const LIMITE_NUEVOS=15;
+    if(nuevosAnioActual>LIMITE_NUEVOS&&nuevosAnioActual>totalAnioSeed*0.15){
+      console.warn('Refresh SharePoint descartado: se detectaron '+nuevosAnioActual+' registros "nuevos" de golpe (posible desajuste de formato con el histórico).');
+      if(esManual){
+        alert('La actualización desde SharePoint no se aplicó porque los datos no coinciden con el formato esperado (se detectaron '+nuevosAnioActual+' registros "nuevos" de golpe, lo cual es poco probable).\n\nSe mantienen los datos verificados. Comparte el detalle con quien armó el flujo de Power Automate, o súbeme el Excel actualizado y regenero el histórico.');
+      }
+    }else{
+      ALL=ALL_SEED.concat(nuevos);
+    }
     populateAnioFilter();
     MES_STATS=buildMesStats(ALL,G_ANIO);
     updateClrBtn();
