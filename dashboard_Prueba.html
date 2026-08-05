@@ -3243,9 +3243,9 @@ function renderRaw(){
   // Cada par es [clave interna, nombre de la columna en el Excel].
   var COLS=[
     ['c','CLIENTE'],['ger','GERENCIA'],['t','TIPO'],['r','REPRESENTANTE'],
-    ['pz','POZO'],['top','TIPO OPERACIÓN'],['sv','SERVICIO'],['fi','FECHA INI'],
-    ['ff','FECHA FINALIZACIÓN'],['anio','AÑO'],['m','MES'],['ie','INGRESO ESTIMADO'],
-    ['ir','INGRESO REAL'],['l','LINEA DE SERVICIO'],['cst','CODIGO ST'],
+    ['pz','POZO'],['top','TIPO OPERACIÓN'],['sv','SERVICIO'],['fi','FECHA INICIO'],
+    ['ff','FECHA FINALIZACIÓN'],['anio','AÑO'],['m','MES'],['ie','INGRESO ESTIMADO (USD)'],
+    ['ir','INGRESO REAL (USD)'],['l','LINEA DE SERVICIO'],['cst','CODIGO ST'],
     ['s','STATUS'],['co','COMENTARIOS']
   ];
   var D=ALL.filter(function(r){return !G_ANIO||String(r.anio)===String(G_ANIO);});
