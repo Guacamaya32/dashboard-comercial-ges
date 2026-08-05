@@ -3322,25 +3322,34 @@ async function cargarDatos(esManual){
       rec.ie=Number(rec.ie)||0;
       rec.ir=Number(rec.ir)||0;
       rec.v=Number(rec.v)||(rec.ir>0?rec.ir:rec.ie);
+      // Normalizar textos (espacios extra) y fechas: SharePoint suele devolver la fecha con
+      // hora incluida (ej. '2026-05-13T00:00:00'); si eso no se recorta a solo 'YYYY-MM-DD',
+      // NINGÚN registro del año en curso calza contra el histórico y todos se agregan de
+      // nuevo como si fueran nuevos, duplicando el mes completo.
+      ['c','ger','pz','sv','l','s','co'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).trim();});
+      ['fi','ff'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).slice(0,10);});
       return rec;
     });
     // Fusión ADITIVA y segura: el flujo de Power Automate puede devolver la tabla completa
-    // o solo un delta (lo que cambió recientemente) — ya se comprobó que a veces solo trae
-    // lo nuevo. Reemplazar por mes o por una llave compuesta (cliente+pozo+servicio+fecha)
-    // es riesgoso: hay registros legítimamente distintos que comparten esos mismos datos
-    // (p.ej. dos líneas de costo del mismo pozo el mismo día, con montos distintos), así que
-    // una llave parcial podría fusionar por error dos registros reales en uno solo.
-    // Por eso: cualquier registro en vivo que no exista YA de forma idéntica en el histórico
-    // se agrega; nada del histórico se borra o reemplaza por ausencia en un lote parcial.
-    // (Si en vez de agregar filas nuevas se EDITA el monto de una fila ya existente en Excel,
-    // ese cambio no se reemplaza solo — para que quede reflejado hay que reenviarme el Excel
-    // actualizado y regenero el histórico embebido, como hemos venido haciendo.)
-    function fullKey(r){
-      return [r.c,r.ger,r.t,r.r,r.m,r.anio,r.pz,r.sv,r.l,r.s,r.co,r.fi,r.ff,
-        Math.round((r.ie||0)*100),Math.round((r.ir||0)*100),Math.round((r.v||0)*100)].join('|').toUpperCase();
+    // o solo un delta (lo que cambió recientemente). Comparar la fila completa (incluyendo
+    // comentarios/gerencia/estado) es frágil: basta que un campo secundario venga formateado
+    // distinto para que el registro no calce y se duplique. En cambio, se compara solo por la
+    // identidad esencial del registro (cliente+pozo+servicio+fecha+tipo+monto), y se usa un
+    // CONTEO por llave (no solo presencia/ausencia): así, si hay 2 registros reales que
+    // comparten esa identidad (ocurre en los datos: dos líneas de costo del mismo pozo el
+    // mismo día con montos iguales), los 2 se reconocen como ya existentes y no se duplican;
+    // y si el lote en vivo trae una copia de más de esa misma llave, ESA sí se agrega como
+    // nueva. Nada del histórico se borra por ausencia en un lote parcial.
+    function idKey(r){
+      return [r.c,r.pz,r.sv,r.fi,r.t,Math.round((r.ie||0)*100),Math.round((r.ir||0)*100)].join('|').toUpperCase();
     }
-    const yaExiste=new Set(ALL_SEED.map(fullKey));
-    const nuevos=live.filter(function(r){return !yaExiste.has(fullKey(r));});
+    const conteoSeed={};
+    ALL_SEED.forEach(function(r){const k=idKey(r);conteoSeed[k]=(conteoSeed[k]||0)+1;});
+    const nuevos=live.filter(function(r){
+      const k=idKey(r);
+      if(conteoSeed[k]>0){conteoSeed[k]--;return false;} // ya existe una copia sin usar: no es nuevo
+      return true; // no quedan copias en el histórico para esta llave: sí es nuevo
+    });
     ALL=ALL_SEED.concat(nuevos);
     populateAnioFilter();
     MES_STATS=buildMesStats(ALL,G_ANIO);
