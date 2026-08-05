@@ -163,7 +163,7 @@ body.detalle-active main{max-width:none;padding:10px 12px 40px}
 .btn-exp{background:var(--navy);color:#fff;border:none;padding:0 14px;height:30px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);cursor:pointer}
 .btn-exp:hover{background:var(--navy-d)}
 .tbl-meta{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:500}
-#view-detalle .tbl-wrap{max-width:none;width:100%}
+#view-detalle .tbl-wrap,#view-raw .tbl-wrap{max-width:none;width:100%}
 .tbl-wrap{border:1px solid var(--light);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .tbl-scroll{overflow-x:auto;width:100%}
 table{width:100%;min-width:100%;border-collapse:collapse;font-size:11.5px;table-layout:auto}
@@ -298,6 +298,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="mb" onclick="showView('clientes',event)">🏢 Clientes</button>
   <button class="mb" onclick="showView('detalle',event)">📋 Detalle</button>
   <button class="mb" onclick="showView('finalizados',event)">✅ Ejecutados</button>
+  <button class="mb" onclick="showView('raw',event)">🗒 Datos crudos</button>
 </div>
 
 <main>
@@ -376,6 +377,16 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="card"><div class="ct">Distribución por Cliente</div><div style="height:240px"><canvas id="cFinCli"></canvas></div></div>
     <div class="card"><div class="ct">Finalizado por Línea de Servicio</div><div style="height:240px"><canvas id="cFinLin"></canvas></div></div>
   </div>
+</div>
+
+<div class="view" id="view-raw">
+  <div class="tbl-meta" id="raw-meta" style="margin-bottom:8px"></div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+    Muestra las 17 columnas del Excel tal como llegan desde el flujo. Las columnas con encabezado en <span style="color:#c0392b;font-weight:700">rojo (vacío)</span> son las que <b>no se están trayendo</b> (o vienen sin datos).
+  </div>
+  <div class="tbl-wrap"><div class="tbl-scroll">
+    <table id="raw-tbl"><thead id="raw-thead"></thead><tbody id="raw-tbody"></tbody></table>
+  </div></div>
 </div>
 
 </main>
@@ -2670,8 +2681,8 @@ function animateCounters(){
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();animateCounters();}
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');refreshActive();}
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='raw')renderRaw();animateCounters();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados'||id==='raw');refreshActive();}
 
 const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
 const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}}});
@@ -3227,6 +3238,35 @@ function renderClientes(){
     }).join('')}</tbody></table>`;
 }
 
+function renderRaw(){
+  // Tabla de diagnóstico: las 17 columnas del Excel tal como llegan del flujo.
+  // Cada par es [clave interna, nombre de la columna en el Excel].
+  var COLS=[
+    ['c','CLIENTE'],['ger','GERENCIA'],['t','TIPO'],['r','REPRESENTANTE'],
+    ['pz','POZO'],['top','TIPO OPERACIÓN'],['sv','SERVICIO'],['fi','FECHA INICIO'],
+    ['ff','FECHA FINALIZACIÓN'],['anio','AÑO'],['m','MES'],['ie','INGRESO ESTIMADO (USD)'],
+    ['ir','INGRESO REAL (USD)'],['l','LINEA DE SERVICIO'],['cst','CODIGO ST'],
+    ['s','STATUS'],['co','COMENTARIOS']
+  ];
+  var D=ALL.filter(function(r){return !G_ANIO||String(r.anio)===String(G_ANIO);});
+  function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function vacio(v){return v===undefined||v===null||String(v).trim()==='';}
+  function tiene(k){return D.some(function(r){return !vacio(r[k]);});}
+  var vacias=COLS.filter(function(cd){return !tiene(cd[0]);}).map(function(cd){return cd[1];});
+  document.getElementById('raw-meta').textContent=D.length+' registros'+(G_ANIO?(' · Año '+G_ANIO):'')+(vacias.length?(' · No se están trayendo: '+vacias.join(', ')):' · Todas las columnas traen datos ✓');
+  document.getElementById('raw-thead').innerHTML='<tr>'+COLS.map(function(cd){
+    var v=!tiene(cd[0]);
+    return '<th style="font-size:10px;font-weight:700;letter-spacing:.03em;white-space:nowrap;padding:6px 8px;position:sticky;top:0;'+(v?'color:#c0392b;background:#fdecea':'color:var(--navy);background:#fff')+'">'+esc(cd[1])+(v?'<br><span style="font-weight:600;font-size:9px">(vacío)</span>':'')+'</th>';
+  }).join('')+'</tr>';
+  var tbody=document.getElementById('raw-tbody');
+  if(!D.length){tbody.innerHTML='<tr><td colspan="'+COLS.length+'"><div class="empty-s">Sin datos</div></td></tr>';return;}
+  tbody.innerHTML=D.map(function(r){
+    return '<tr>'+COLS.map(function(cd){
+      var val=r[cd[0]];var vc=vacio(val);var txt=vc?'—':esc(val);
+      return '<td style="font-size:11px;padding:5px 8px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;color:'+(vc?'var(--muted)':'var(--slate)')+'" title="'+txt+'">'+txt+'</td>';
+    }).join('')+'</tr>';
+  }).join('');
+}
 function renderTable(){
   const q=(document.getElementById('srch').value||'').toLowerCase();
   const fSt=document.getElementById('fSt').value;
@@ -3341,7 +3381,15 @@ async function cargarDatos(esManual){
     // en vivo trae una copia de más de esa misma llave, ESA sí se agrega como nueva. Nada del
     // histórico se borra por ausencia en un lote parcial.
     function idKey(r){
-      return [r.c,r.pz,r.sv,r.fi,r.t].join('|').toUpperCase();
+      // Identidad temporal por AÑO+MES (no por fecha exacta). El flujo de Power Automate no
+      // siempre envía la fecha inicio (fi); si falta, la fila deja de calzar contra el histórico
+      // y se cuenta como "nueva", inflando el conteo y disparando el guard de los "294 nuevos".
+      // AÑO (anio) y MES (m) sí llegan siempre desde el Select, así que ambos lados calzan de
+      // forma estable. Se normaliza cada campo (trim + mayúsculas) para tolerar espacios y
+      // diferencias de mayúsculas entre el histórico y la respuesta en vivo.
+      function n(x){return String(x==null?'':x).trim();}
+      var per=n(r.anio)+'-'+n(r.m);
+      return [n(r.c),n(r.pz),n(r.sv),per,n(r.t)].join('|').toUpperCase();
     }
     const conteoSeed={};
     ALL_SEED.forEach(function(r){const k=idKey(r);conteoSeed[k]=(conteoSeed[k]||0)+1;});
