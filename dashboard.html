@@ -2626,15 +2626,14 @@ const MS={enero:'ENE',febrero:'FEB',marzo:'MAR',abril:'ABR',mayo:'MAY',junio:'JU
 // cargar el monto completo al mes que quedó registrado en la columna MES. Ej: un servicio de
 // $100.000 del 25 de junio al 5 de julio (6 días en junio, 5 en julio) reparte ~$54.545 a
 // junio y ~$45.455 a julio.
-// Si el rango cae dentro de un solo mes, el registro no se toca (se devuelve igual, sin
-// dividir, sigue contando normal). Si falta la fecha de finalización (o es inválida), NO se
-// puede calcular a qué mes(es) corresponde de verdad, así que ese registro se EXCLUYE de este
-// cálculo por mes en particular (no se cuenta en ningún mes aquí) — sigue apareciendo normal
-// en Detalle, Clientes y los KPI que no dependen de esta vista mensual.
+// El prorrateo por días SOLO se calcula cuando hay fecha de inicio Y de finalización, y caen
+// en meses distintos. Si falta la fecha de finalización (o es inválida), o el rango cae en un
+// solo mes, el registro NO se divide: se cuenta completo en su mes original (r.m), igual que
+// siempre — así los meses que aún no tienen esa fecha diligenciada no quedan en $0.
 function fragmentosPorMes(r){
-  if(!r.fi||!r.ff) return [];
+  if(!r.fi||!r.ff) return [r];
   var fi=new Date(r.fi+'T00:00:00'), ff=new Date(r.ff+'T00:00:00');
-  if(isNaN(fi.getTime())||isNaN(ff.getTime())||ff<fi) return [];
+  if(isNaN(fi.getTime())||isNaN(ff.getTime())||ff<fi) return [r];
   if(fi.getFullYear()===ff.getFullYear()&&fi.getMonth()===ff.getMonth()) return [r];
   var tramos=[], cursor=new Date(fi.getTime());
   while(cursor<=ff){
