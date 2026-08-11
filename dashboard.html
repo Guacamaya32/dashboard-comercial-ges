@@ -2692,11 +2692,16 @@ function buildMesStats(all,anio){
   return stats;
 }
 
-function getBase(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
+// getBase()/getAsig()/getOpor()/getAll()/getCancelled() alimentan Proyecciones, Representantes
+// y Clientes — usan getAllMes() (registros prorrateados por día cuando aplica) para que el
+// ingreso de un pozo que cruza de mes se reparta también ahí, no solo en Ejecutados. La
+// pestaña Detalle sigue usando ALL directo (sin fragmentar), a propósito, para no partir un
+// mismo pozo/servicio en varias filas.
+function getBase(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
 function getAsig(){return getBase().filter(r=>r.t==='A');}
 function getOpor(){return getBase().filter(r=>r.t==='O');}
 function getAll(){return getBase();}
-function getCancelled(){return ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(r.s==='CANCELADO'||r.s==='RECHAZADO'));}
+function getCancelled(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(r.s==='CANCELADO'||r.s==='RECHAZADO'));}
 
 function updateBadgeAnio(){const el=document.getElementById('badge-anio');if(el)el.textContent=G_ANIO||'Todos';}
 
