@@ -2620,6 +2620,43 @@ const MO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','sep
 const MES_ORDER_ALL=MO;
 const MS={enero:'ENE',febrero:'FEB',marzo:'MAR',abril:'ABR',mayo:'MAY',junio:'JUN',julio:'JUL',agosto:'AGO',septiembre:'SEP',octubre:'OCT',noviembre:'NOV',diciembre:'DIC'};
 
+// ── Prorrateo de ingresos por mes según días ──────────────────────────────
+// Un pozo/servicio con FECHA INICIO y FECHA FINALIZACIÓN que cruza de un mes a otro reparte
+// su ingreso (ie/ir/v) proporcionalmente a los días que le corresponden a cada mes, en vez de
+// cargar el monto completo al mes que quedó registrado en la columna MES. Ej: un servicio de
+// $100.000 del 25 de junio al 5 de julio (6 días en junio, 5 en julio) reparte ~$54.545 a
+// junio y ~$45.455 a julio. Si falta alguna fecha, o el rango cae dentro de un solo mes, el
+// registro no se toca (se devuelve igual, sin dividir).
+function fragmentosPorMes(r){
+  if(!r.fi||!r.ff) return [r];
+  var fi=new Date(r.fi+'T00:00:00'), ff=new Date(r.ff+'T00:00:00');
+  if(isNaN(fi.getTime())||isNaN(ff.getTime())||ff<fi) return [r];
+  if(fi.getFullYear()===ff.getFullYear()&&fi.getMonth()===ff.getMonth()) return [r];
+  var tramos=[], cursor=new Date(fi.getTime());
+  while(cursor<=ff){
+    var anio=cursor.getFullYear(), mesIdx=cursor.getMonth();
+    var finMes=new Date(anio,mesIdx+1,0);
+    var finTramo=finMes<ff?finMes:ff;
+    var dias=Math.round((finTramo-cursor)/86400000)+1;
+    tramos.push({anio:anio,m:MO[mesIdx],dias:dias});
+    cursor=new Date(anio,mesIdx+1,1);
+  }
+  var totalDias=tramos.reduce(function(s,t){return s+t.dias;},0)||1;
+  return tramos.map(function(t){
+    var frac=t.dias/totalDias;
+    return Object.assign({},r,{anio:t.anio,m:t.m,v:r.v*frac,ie:r.ie*frac,ir:r.ir*frac});
+  });
+}
+// Devuelve ALL con cada registro multi-mes dividido en sus fragmentos mensuales. Se usa
+// específicamente para las vistas "por mes" (Resumen Ejecutivo y Evolución Mensual); las
+// tablas por registro (Detalle, Clientes, exportar CSV) siguen usando ALL tal cual, sin
+// dividir, para no fragmentar un mismo pozo/servicio en varias filas.
+function getAllMes(){
+  var out=[];
+  ALL.forEach(function(r){var frs=fragmentosPorMes(r);for(var i=0;i<frs.length;i++)out.push(frs[i]);});
+  return out;
+}
+
 let cliSortCol='total',cliSortDir=-1;
 let G_MES=(()=>{const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return m[new Date().getMonth()];})(), G_REP='', G_ANIO='2026', sCol='c', sDir=1;
 let CH={};
@@ -2672,8 +2709,8 @@ function populateAnioFilter(){
   updateBadgeAnio();
 }
 
-function applyFilters(){G_MES=document.getElementById('g-mes').value;G_REP=document.getElementById('g-rep').value;G_ANIO=document.getElementById('g-anio').value;updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(ALL,G_ANIO);refreshActive();}
-function clearFilters(){G_MES='';G_REP='';G_ANIO='';document.getElementById('g-mes').value='';document.getElementById('g-rep').value='';document.getElementById('g-anio').value='';updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(ALL,G_ANIO);refreshActive();}
+function applyFilters(){G_MES=document.getElementById('g-mes').value;G_REP=document.getElementById('g-rep').value;G_ANIO=document.getElementById('g-anio').value;updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(getAllMes(),G_ANIO);refreshActive();}
+function clearFilters(){G_MES='';G_REP='';G_ANIO='';document.getElementById('g-mes').value='';document.getElementById('g-rep').value='';document.getElementById('g-anio').value='';updateClrBtn();updateBadgeAnio();MES_STATS=buildMesStats(getAllMes(),G_ANIO);refreshActive();}
 function updateClrBtn(){const el=document.getElementById('clr-btn');const p=[];if(G_ANIO)p.push(G_ANIO);if(G_MES)p.push(G_MES);if(G_REP)p.push(G_REP);el.textContent=p.length?'✕ Limpiar: '+p.join(' · '):'';}
 
 function animateCounters(){
@@ -3441,7 +3478,7 @@ async function cargarDatos(esManual){
       ALL=live;
     }
     populateAnioFilter();
-    MES_STATS=buildMesStats(ALL,G_ANIO);
+    MES_STATS=buildMesStats(getAllMes(),G_ANIO);
     updateClrBtn();
     refreshActive();
     const now=new Date();
@@ -3454,7 +3491,7 @@ async function cargarDatos(esManual){
     }
     // Always render with whatever data is available (embedded ALL)
     populateAnioFilter();
-    MES_STATS=buildMesStats(ALL,G_ANIO);
+    MES_STATS=buildMesStats(getAllMes(),G_ANIO);
     updateClrBtn();
     refreshActive();
   }finally{
@@ -3463,7 +3500,7 @@ async function cargarDatos(esManual){
 }
 // Render embedded data immediately, then try SharePoint refresh in background
 populateAnioFilter();
-MES_STATS=buildMesStats(ALL,G_ANIO);
+MES_STATS=buildMesStats(getAllMes(),G_ANIO);
 updateClrBtn();
 refreshActive();
 // Try to update from SharePoint silently
@@ -3533,6 +3570,32 @@ function renderFinalizados(){
   }
 
   var fin=finBase();
+
+  // Versión prorrateada por día, SOLO para la gráfica de evolución mensual: un pozo que
+  // cruza de un mes a otro reparte su ingreso proporcional a los días de cada mes. Los KPIs,
+  // donuts y conteo de servicios de arriba siguen usando finBase() sin fragmentar, para no
+  // alterar cuántos "servicios" se reportan.
+  function finBaseMes(source){
+    return source.filter(function(r){
+      if(!esEjecutado(r)) return false;
+      if(r.t!=='A') return false;
+      if(G_ANIO&&String(r.anio)!==String(G_ANIO)) return false;
+      if(G_REP&&r.r!==G_REP) return false;
+      if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep) return false;
+      if(FIN_FILTER.cli){
+        var cn=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
+        if(cn!==FIN_FILTER.cli) return false;
+      }
+      if(FIN_FILTER.lin){
+        var ls=r.l?r.l.replace(/\s/g,'').split(/[,\-\+]+/):[];
+        if(!ls.some(function(p){return p.trim()===FIN_FILTER.lin;})) return false;
+      }
+      if(FIN_FILTER.mes&&r.m!==FIN_FILTER.mes) return false;
+      return true;
+    });
+  }
+  var allMes=getAllMes();
+  var finMes=finBaseMes(allMes);
   function val(r){return r.ir>0?r.ir:r.v;}
 
   // ── Update filter label ─────────────────────────────────────────────────
@@ -3603,10 +3666,10 @@ function renderFinalizados(){
   // ── CHART 1: Monthly bar — gradient fill effect ────────────────────────
   var mesLabels=MES.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1,3);});
   var mesFin=MES.map(function(m){
-    return fin.filter(function(r){return r.m===m;}).reduce(function(s,r){return s+val(r);},0);
+    return finMes.filter(function(r){return r.m===m;}).reduce(function(s,r){return s+val(r);},0);
   });
   var mesAsig=MES.map(function(m){
-    return ALL.filter(function(r){return r.m===m&&r.t==='A'
+    return allMes.filter(function(r){return r.m===m&&r.t==='A'
       &&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))
       &&r.s!=='CANCELADO'&&r.s!=='RECHAZADO';}).reduce(function(s,r){return s+r.v;},0);
   });
