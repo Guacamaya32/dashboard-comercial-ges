@@ -3427,7 +3427,7 @@ async function cargarDatos(esManual){
       // hora incluida (ej. '2026-05-13T00:00:00'); si eso no se recorta a solo 'YYYY-MM-DD',
       // NINGÚN registro del año en curso calza contra el histórico y todos se agregan de
       // nuevo como si fueran nuevos, duplicando el mes completo.
-      ['c','ger','pz','sv','l','s','co'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).trim();});
+      ['c','ger','pz','sv','top','l','s','co'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).trim();});
       ['fi','ff'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).slice(0,10);});
       // El campo REPRESENTANTE en SharePoint/Excel trae el nombre completo (ej. "JOHAN DUITAMA"),
       // pero el resto del dashboard (colores, filtro de Rep., pestaña Representantes) agrupa por
@@ -3875,12 +3875,10 @@ function renderFinalizados(){
   });
 
   // ── CHART 5: Ingresos por Tipo de Trabajo ──────────────────────────────
-  // Usa SERVICIO (columna 'sv') como tipo de trabajo, porque TIPO OPERACIÓN (campo 'top')
-  // todavía llega vacío en el histórico — en cuanto el Excel traiga esa columna con datos,
-  // esta gráfica se puede migrar a 'top' sin más cambios (solo cambiar r.sv por r.top abajo).
+  // Usa TIPO OPERACIÓN (campo 'top'), tal como se pidió.
   var topMap={};
   fin.forEach(function(r){
-    if(r.sv) topMap[r.sv]=(topMap[r.sv]||0)+val(r);
+    if(r.top) topMap[r.top]=(topMap[r.top]||0)+val(r);
   });
   var topTop=Object.entries(topMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
   dc('cFinTop');CH.cFinTop=new Chart(document.getElementById('cFinTop'),{
