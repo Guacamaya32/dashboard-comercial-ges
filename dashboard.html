@@ -3333,7 +3333,16 @@ function renderTable(){
 
   const active=D.filter(r=>r.s!=='CANCELADO');
   const cancelled=D.filter(r=>r.s==='CANCELADO');
-  document.getElementById('tbl-meta').textContent=`${D.length} registros · Activos: ${active.length} (${fmt(active.reduce((s,r)=>s+r.v,0))}) · Cancelados: ${cancelled.length}`;
+  // El total en USD de esta barra SÍ usa los valores prorrateados por día (mismos filtros que
+  // la tabla), aunque cada fila de abajo siga mostrando el pozo completo sin fragmentar.
+  const activeMes=getAllMes().filter(function(r){
+    if(G_MES&&r.m!==G_MES)return false;if(G_REP&&r.r!==G_REP)return false;
+    if(G_ANIO&&String(r.anio)!==String(G_ANIO))return false;
+    if(fSt!=='__a'&&r.s!==fSt)return false;
+    if(fTp&&r.t!==fTp)return false;
+    return r.s!=='CANCELADO';
+  });
+  document.getElementById('tbl-meta').textContent=`${D.length} registros · Activos: ${active.length} (${fmt(activeMes.reduce((s,r)=>s+r.v,0))} prorrateado) · Cancelados: ${cancelled.length}`;
 
   const sb=s=>s==='FINALIZADO'?'<span class="badge b-fin">✓ FIN</span>':s==='EN EJECUCION'?'<span class="badge b-ej">▶ EJEC</span>':s==='CANCELADO'?'<span class="badge b-can">✕ CAN</span>':s==='RECHAZADO'?'<span class="badge b-rech">✕ RECH</span>':'<span class="badge b-plan">📋 PLAN</span>';
   // Set colgroup for resizable columns
