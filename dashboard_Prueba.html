@@ -3404,14 +3404,20 @@ async function cargarDatos(esManual){
     // inflados en refrescos anteriores. En ese caso NO se aplica el refresh (se conserva el
     // histórico verificado) y, si fue una actualización manual, se avisa en vez de mostrar
     // datos posiblemente duplicados sin decir nada.
-    const anioActualSeed=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
-    const totalAnioSeed=ALL_SEED.filter(function(r){return r.anio===anioActualSeed;}).length;
-    const nuevosAnioActual=nuevos.filter(function(r){return r.anio===anioActualSeed;}).length;
-    const LIMITE_NUEVOS=15;
-    if(nuevosAnioActual>LIMITE_NUEVOS&&nuevosAnioActual>totalAnioSeed*0.15){
-      console.warn('Refresh SharePoint descartado: se detectaron '+nuevosAnioActual+' registros "nuevos" de golpe (posible desajuste de formato con el histórico).');
+    // Un DESAJUSTE DE FORMATO real (una columna llave renombrada, un formato de fecha distinto,
+    // etc.) hace que CASI TODA la tabla en vivo deje de calzar contra el histórico — como los
+    // "294" de antes, que eran la tabla entera. El crecimiento normal (agregar filas de un mes
+    // nuevo) solo deja sin calzar a una MINORÍA, mientras la mayoría del histórico se sigue
+    // reconociendo. Como el flujo devuelve la tabla COMPLETA en cada refresh, se mide la
+    // FRACCIÓN del lote en vivo que no calza, no un conteo absoluto: así, agregar 55 registros
+    // reales entre cientos ya no se confunde con un cambio de formato (el error de antes se
+    // disparaba con un umbral fijo de 15, que el crecimiento normal supera cada mes).
+    const fracNuevos=live.length?(nuevos.length/live.length):0;
+    const LIMITE_FRAC=0.5; // >50% de la tabla en vivo sin calzar ⇒ probable desajuste de formato
+    if(nuevos.length>15 && fracNuevos>LIMITE_FRAC){
+      console.warn('Refresh SharePoint descartado: '+nuevos.length+' de '+live.length+' registros ('+Math.round(fracNuevos*100)+'%) no calzan con el histórico — probable desajuste de formato.');
       if(esManual){
-        alert('La actualización desde SharePoint no se aplicó porque los datos no coinciden con el formato esperado (se detectaron '+nuevosAnioActual+' registros "nuevos" de golpe, lo cual es poco probable).\n\nSe mantienen los datos verificados. Comparte el detalle con quien armó el flujo de Power Automate, o súbeme el Excel actualizado y regenero el histórico.');
+        alert('La actualización desde SharePoint no se aplicó porque los datos no coinciden con el formato esperado ('+nuevos.length+' de '+live.length+' registros no calzan con el histórico, lo cual sugiere un cambio de formato y no datos nuevos reales).\n\nSe mantienen los datos verificados. Comparte el detalle con quien armó el flujo de Power Automate, o súbeme el Excel actualizado y regenero el histórico.');
       }
     }else{
       ALL=ALL_SEED.concat(nuevos);
