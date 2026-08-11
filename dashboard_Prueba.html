@@ -3483,10 +3483,15 @@ function renderFinalizados(){
   const REP_PAL={MICHELL:'#1A5276',JULIANA:'#006B3C',JOHAN:'#CC9A00',JUAN:'#922B21'};
   const LINE_COL={'CT':'#002060','ES':'#006B3C','TT':'#CC9A00','AZ':'#C0392B','WL':'#1A5276','AI':'#7D3C98','WT':'#CA6F1E','WS':'#566573','CWB':'#0E6655'};
 
-  // Base: all finalizado for the year (respects global filters + interactive filter)
+  // Base: FINALIZADO + EN EJECUCION para el año (respeta filtros globales + filtro interactivo).
+  // "Ejecutado" ahora significa: todo lo que ya se finalizó, más lo que está en curso ahora
+  // mismo — no solo lo 100% cerrado. Se limita a tipo Asignación (t==='A') para que numerador
+  // y denominador (Total asignado, más abajo) midan exactamente lo mismo.
+  function esEjecutado(r){return r.s==='FINALIZADO'||r.s==='EN EJECUCION';}
   function finBase(){
     return ALL.filter(function(r){
-      if(r.s!=='FINALIZADO') return false;
+      if(!esEjecutado(r)) return false;
+      if(r.t!=='A') return false;
       if(G_ANIO&&String(r.anio)!==String(G_ANIO)) return false;
       if(G_REP&&r.r!==G_REP) return false;
       if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep) return false;
@@ -3520,14 +3525,15 @@ function renderFinalizados(){
   var vYear=fin.reduce(function(s,r){return s+val(r);},0);
   var nYear=fin.length;
   var vEcop=fin.filter(function(r){return /^ECP/i.test(r.c);}).reduce(function(s,r){return s+val(r);},0);
-  var vYearAll=ALL.filter(function(r){return r.s==='FINALIZADO'&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(!G_REP||r.r===G_REP);}).reduce(function(s,r){return s+val(r);},0);
+  var vYearAll=ALL.filter(function(r){return esEjecutado(r)&&r.t==='A'&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(!G_REP||r.r===G_REP);}).reduce(function(s,r){return s+val(r);},0);
   var pctEcop=vYearAll>0?Math.round(vEcop/vYearAll*100):0;
   var mesesConFin=MES.filter(function(m){return fin.some(function(r){return r.m===m;});}).length||1;
   // Total histórico: igual que 'fin' pero SIN el filtro de año (siempre suma 2022-2026),
   // para que siempre haya un total visible que agregue todos los años aunque el filtro
   // de Año esté fijado en uno solo.
   var finHist=ALL.filter(function(r){
-    if(r.s!=='FINALIZADO') return false;
+    if(!esEjecutado(r)) return false;
+    if(r.t!=='A') return false;
     if(G_REP&&r.r!==G_REP) return false;
     if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep) return false;
     if(FIN_FILTER.cli){
@@ -3543,7 +3549,7 @@ function renderFinalizados(){
   });
   var vHist=finHist.reduce(function(s,r){return s+val(r);},0);
   document.getElementById('kpi-fin').innerHTML=[
-    {l:'Total Ingresos Anuales',v:fmt(vYear),s:nYear+' servicios finalizados',cls:'ks',i:'✅'},
+    {l:'Total Ingresos Anuales',v:fmt(vYear),s:nYear+' servicios (finalizado + en ejecución)',cls:'ks',i:'✅'},
     {l:'Ingresos Ecopetrol',v:fmt(vEcop),s:pctEcop+'% del total anual ejecutado',cls:'ka',i:'🛢️'},
     {l:'Promedio Mensual',v:fmt(vYear/mesesConFin),s:'ingresos finalizados / mes',cls:'kt',i:'📅'},
     {l:'Total Histórico (todos los años)',v:fmt(vHist),s:finHist.length+' servicios · 2022-2026',cls:'kr',i:'🗂️'},
