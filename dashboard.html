@@ -164,7 +164,7 @@ body.detalle-active main{max-width:none;padding:10px 12px 40px}
 .btn-exp{background:var(--navy);color:#fff;border:none;padding:0 14px;height:30px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);cursor:pointer}
 .btn-exp:hover{background:var(--navy-d)}
 .tbl-meta{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:500}
-#view-detalle .tbl-wrap,#view-raw .tbl-wrap{max-width:none;width:100%}
+#view-detalle .tbl-wrap{max-width:none;width:100%}
 .tbl-wrap{border:1px solid var(--light);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .tbl-scroll{overflow-x:auto;width:100%}
 table{width:100%;min-width:100%;border-collapse:collapse;font-size:11.5px;table-layout:auto}
@@ -300,7 +300,6 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="mb" onclick="showView('clientes',event)">🏢 Clientes</button>
   <button class="mb" onclick="showView('detalle',event)">📋 Detalle</button>
   <button class="mb" onclick="showView('finalizados',event)">✅ Ejecutados</button>
-  <button class="mb" onclick="showView('raw',event)">🗒 Datos crudos</button>
 </div>
 
 <main>
@@ -316,6 +315,10 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <div class="g22">
     <div class="card"><div class="ct">Top Clientes — Asignado</div><div id="prog-ac"></div></div>
     <div class="card"><div class="ct">Top Clientes — Oportunidad</div><div id="prog-oc"></div></div>
+  </div>
+  <div class="g22">
+    <div class="card"><div class="ct">Asignado por Gerencia ECP</div><div style="height:220px"><canvas id="cGerA"></canvas></div></div>
+    <div class="card"><div class="ct">Oportunidad por Gerencia ECP</div><div style="height:220px"><canvas id="cGerO"></canvas></div></div>
   </div>
 </div>
 
@@ -373,22 +376,15 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="ct">Evolución Mensual — Asignado vs Ejecutado <span id="fin-filter-label" style="font-size:10px;color:var(--gold-d);margin-left:8px"></span></div>
     <div style="height:200px"><canvas id="cFinMes"></canvas></div>
   </div>
-  <!-- Bottom 3 charts side by side -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+  <!-- Bottom charts -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
     <div class="card"><div class="ct">Distribución por Representante</div><div style="height:240px"><canvas id="cFinRep"></canvas></div></div>
     <div class="card"><div class="ct">Distribución por Cliente</div><div style="height:240px"><canvas id="cFinCli"></canvas></div></div>
-    <div class="card"><div class="ct">Finalizado por Línea de Servicio</div><div style="height:240px"><canvas id="cFinLin"></canvas></div></div>
   </div>
-</div>
-
-<div class="view" id="view-raw">
-  <div class="tbl-meta" id="raw-meta" style="margin-bottom:8px"></div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
-    Muestra las 17 columnas del Excel tal como llegan desde el flujo. Las columnas con encabezado en <span style="color:#c0392b;font-weight:700">rojo (vacío)</span> son las que <b>no se están trayendo</b> (o vienen sin datos).
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="card"><div class="ct">Ingresos por Gerencia ECP</div><div style="height:240px"><canvas id="cFinGer"></canvas></div></div>
+    <div class="card"><div class="ct">Ingresos por Tipo de Trabajo</div><div style="height:240px"><canvas id="cFinTop"></canvas></div></div>
   </div>
-  <div class="tbl-wrap"><div class="tbl-scroll">
-    <table id="raw-tbl"><thead id="raw-thead"></thead><tbody id="raw-tbody"></tbody></table>
-  </div></div>
 </div>
 
 </main>
@@ -2613,6 +2609,10 @@ const REP_LABEL={MICHELL:'MICHELL SANABRIA',JULIANA:'JULIANA OTALORA',JOHAN:'JOH
 function repLabel(r){return REP_LABEL[r]||r;}
 function repColor(r){return REP_COL[r]||'#5A6B85';}
 function repBg(r){return REP_BG[r]||'#EEF1F5';}
+// Solo el nombre de pila (sin apellido) — se usa en la tabla de Detalle para no ocupar tanto espacio.
+function repNombre(r){return repLabel(r).split(' ')[0];}
+// Mapeo inverso: nombre completo (tal como llega de SharePoint) -> código corto interno.
+const REP_NAME_A_CODIGO={'MICHELL SANABRIA':'MICHELL','JULIANA OTALORA':'JULIANA','JOHAN DUITAMA':'JOHAN','JUAN VEJARANO':'JUAN'};
 const REP_TXT={MICHELL:'#1A4F7A',JULIANA:'#0D5C3A',JOHAN:'#7A5500',JUAN:'#6B2050'};
 const REP_ACCENT={MICHELL:'#1A4F7A',JULIANA:'#0D5C3A',JOHAN:'#7A5500',JUAN:'#6B2050'};
 const REPS=['MICHELL','JULIANA','JOHAN','JUAN'];
@@ -2691,8 +2691,8 @@ function animateCounters(){
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='raw')renderRaw();animateCounters();}
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados'||id==='raw');refreshActive();}
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();animateCounters();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');refreshActive();}
 
 const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
 const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}}});
@@ -2706,7 +2706,6 @@ function renderMensual(){
   const mesL=G_MES?(G_MES[0].toUpperCase()+G_MES.slice(1)+(G_ANIO?' '+G_ANIO:'')):((G_ANIO||'Todos')+' Completo');
 
   document.getElementById('kpi-m').innerHTML=[
-    {l:`Pipeline ${mesL}`,v:fmt(tA+tO),s:'Asignado + Oportunidades · '+D.length+' registros',cls:'ks',i:'💰'},
     {l:'Asignado',v:fmt(tA),s:A.length+' servicios confirmados',cls:'ka',i:'📋'},
     {l:'Oportunidad',v:fmt(tO),s:O.length+' en prospección',cls:'ko',i:'🎯'},
     {l:'Finalizado',v:fmt(real),s:fin+' finalizados',cls:'kt',i:'⚡'},
@@ -2912,7 +2911,7 @@ function renderMensual(){
   } else { canEl.innerHTML=''; }
 
   dc('cRep');
-  CH.cRep=new Chart(document.getElementById('cRep'),{type:'bar',data:{labels:REPS,datasets:[
+  CH.cRep=new Chart(document.getElementById('cRep'),{type:'bar',data:{labels:REPS.map(repLabel),datasets:[
     {label:'Asignado',data:REPS.map(rp=>A.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.NAVY,stack:'s',borderRadius:0},
     {label:'Oportunidad',data:REPS.map(rp=>O.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.GOLD,stack:'s',borderRadius:[4,4,0,0]},
   ]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
@@ -2928,6 +2927,17 @@ function renderMensual(){
   const mA=tpA[0]?.[1]||1,mO=tpO[0]?.[1]||1;
   document.getElementById('prog-ac').innerHTML=tpA.map(([n,v],i)=>`<div class="pr"><span class="pl" title="${n}">${n}</span><div class="pw"><div class="pf" style="width:${Math.round(v/mA*100)}%;background:${PAL[i%PAL.length]}"></div></div><span class="pv">${fmt(v)}</span></div>`).join('');
   document.getElementById('prog-oc').innerHTML=tpO.length?tpO.map(([n,v])=>`<div class="pr"><span class="pl" title="${n}">${n}</span><div class="pw"><div class="pf" style="width:${Math.round(v/mO*100)}%;background:${B.GOLD}"></div></div><span class="pv">${fmt(v)}</span></div>`).join(''):'<div class="empty-s">Sin oportunidades activas</div>';
+
+  // Asignado/Oportunidad por Gerencia ECP: solo gerencias reales (se ignora "NA", que es lo
+  // que traen todos los clientes que no son Ecopetrol, ya que solo Ecopetrol se divide por
+  // gerencia internamente).
+  const gerA={},gerO={};
+  A.forEach(r=>{if(r.ger&&r.ger!=='NA')gerA[r.ger]=(gerA[r.ger]||0)+r.v;});
+  O.forEach(r=>{if(r.ger&&r.ger!=='NA')gerO[r.ger]=(gerO[r.ger]||0)+r.v;});
+  const topGerA=Object.entries(gerA).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const topGerO=Object.entries(gerO).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  dc('cGerA');CH.cGerA=new Chart(document.getElementById('cGerA'),{type:'bar',data:{labels:topGerA.map(x=>x[0]),datasets:[{data:topGerA.map(x=>x[1]),backgroundColor:B.NAVY,borderRadius:4}]},options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'}})})});
+  dc('cGerO');CH.cGerO=new Chart(document.getElementById('cGerO'),{type:'bar',data:{labels:topGerO.map(x=>x[0]),datasets:[{data:topGerO.map(x=>x[1]),backgroundColor:B.GOLD,borderRadius:4}]},options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'}})})});
 }
 
 function renderExecSummary(A, O, D, CAN, mes){
@@ -3178,31 +3188,42 @@ function renderReps(){
     </div>`;
   }).join('');
 
-  dc('cRepA');CH.cRepA=new Chart(document.getElementById('cRepA'),{type:'bar',data:{labels:REPS,datasets:[{label:'Finalizado',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='FINALIZADO').reduce((s,r)=>s+r.v,0)),backgroundColor:B.FIN,stack:'s'},{label:'En ejecución',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='EN EJECUCION').reduce((s,r)=>s+r.v,0)),backgroundColor:B.EJEC,stack:'s'},{label:'Planeación',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='PLANEACION').reduce((s,r)=>s+r.v,0)),backgroundColor:B.DIM,stack:'s'}]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
-  dc('cRepO');CH.cRepO=new Chart(document.getElementById('cRepO'),{type:'bar',data:{labels:REPS,datasets:[{label:'Oportunidad activa',data:REPS.map(rp=>O.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.GOLD,stack:'s',borderRadius:[4,4,0,0]},{label:'Cancelado',data:REPS.map(rp=>CAN.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.CAN,stack:'s'}]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
+  dc('cRepA');CH.cRepA=new Chart(document.getElementById('cRepA'),{type:'bar',data:{labels:REPS.map(repLabel),datasets:[{label:'Finalizado',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='FINALIZADO').reduce((s,r)=>s+r.v,0)),backgroundColor:B.FIN,stack:'s'},{label:'En ejecución',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='EN EJECUCION').reduce((s,r)=>s+r.v,0)),backgroundColor:B.EJEC,stack:'s'},{label:'Planeación',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='PLANEACION').reduce((s,r)=>s+r.v,0)),backgroundColor:B.DIM,stack:'s'}]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
+  dc('cRepO');CH.cRepO=new Chart(document.getElementById('cRepO'),{type:'bar',data:{labels:REPS.map(repLabel),datasets:[{label:'Oportunidad activa',data:REPS.map(rp=>O.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.GOLD,stack:'s',borderRadius:[4,4,0,0]},{label:'Cancelado',data:REPS.map(rp=>CAN.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.CAN,stack:'s'}]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
 }
 
 function renderClientes(){
   const A=getAsig(),O=getOpor();
-  const bA={},bO={};A.forEach(r=>{bA[r.c]=(bA[r.c]||0)+r.v;});O.forEach(r=>{bO[r.c]=(bO[r.c]||0)+r.v;});
+  // Para ECOPETROL, se separa por GERENCIA (ej. "ECOPETROL - GMA (MARES)") como si cada
+  // gerencia fuera un cliente independiente — da mejor visibilidad de dónde está la
+  // oportunidad/asignación por zona. El resto de clientes no tiene gerencia (queda "NA"),
+  // así que siguen agrupados por su nombre normal.
+  function clienteKey(r){
+    if(/^ECOPETROL/i.test(r.c)&&r.ger&&r.ger!=='NA') return 'ECOPETROL - '+r.ger;
+    return /^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
+  }
+  const bA={},bO={};A.forEach(r=>{const k=clienteKey(r);bA[k]=(bA[k]||0)+r.v;});O.forEach(r=>{const k=clienteKey(r);bO[k]=(bO[k]||0)+r.v;});
   const tpA=Object.entries(bA).sort((a,b)=>b[1]-a[1]).slice(0,12);
   const tpO=Object.entries(bO).sort((a,b)=>b[1]-a[1]).slice(0,12);
   dc('cCliA');CH.cCliA=new Chart(document.getElementById('cCliA'),{type:'bar',data:{labels:tpA.map(x=>x[0]),datasets:[{data:tpA.map(x=>x[1]),backgroundColor:B.NAVY,borderRadius:4}]},options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'}})})});
   dc('cCliO');CH.cCliO=new Chart(document.getElementById('cCliO'),{type:'bar',data:{labels:tpO.map(x=>x[0]),datasets:[{data:tpO.map(x=>x[1]),backgroundColor:B.GOLD,borderRadius:4}]},options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'}})})});
 
   const allC={};[...A,...O].forEach(r=>{
-    if(!allC[r.c])allC[r.c]={asig:0,opor:0,real:0,reps:new Set(),fin:0};
-    if(r.t==='A'){allC[r.c].asig+=r.v;if(r.s==='FINALIZADO')allC[r.c].fin++;}
-    else allC[r.c].opor+=r.v;
-    allC[r.c].real+=r.ir;allC[r.c].reps.add(r.r);
+    const cKey=clienteKey(r);
+    if(!allC[cKey])allC[cKey]={asig:0,opor:0,real:0,reps:new Set(),fin:0};
+    if(r.t==='A'){allC[cKey].asig+=r.v;if(r.s==='FINALIZADO')allC[cKey].fin++;}
+    else allC[cKey].opor+=r.v;
+    allC[cKey].real+=r.ir;allC[cKey].reps.add(r.r);
   });
   // Avatar con iniciales del cliente en color derivado del nombre (sin depender de logos externos)
   const AVATAR_COLORS=['#002060','#006B3C','#1A5276','#7A5500','#6B2050','#0E6655','#7D3C98','#B9770E','#C0392B','#1F618D'];
   function clientAvatar(n){
     let hash=0;for(let i=0;i<n.length;i++)hash=n.charCodeAt(i)+((hash<<5)-hash);
     const col=AVATAR_COLORS[Math.abs(hash)%AVATAR_COLORS.length];
-    const words=n.trim().split(/\s+/);
-    const initials=(words.length>=2?words[0][0]+words[1][0]:n.slice(0,2)).toUpperCase();
+    // 'ECOPETROL - GMA (MARES)' -> iniciales de la gerencia (EG), no del separador '-'
+    const base=n.includes(' - ')?n.split(' - ')[1]:n;
+    const words=base.trim().split(/\s+/).filter(w=>/[A-Za-zÁÉÍÓÚÑ]/.test(w));
+    const initials=(words.length>=2?words[0][0]+words[1][0]:base.slice(0,2)).toUpperCase();
     return `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;margin-right:8px;flex-shrink:0;letter-spacing:.02em">${initials}</span>`;
   }
   document.getElementById('cli-tbl').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -3248,35 +3269,6 @@ function renderClientes(){
     }).join('')}</tbody></table>`;
 }
 
-function renderRaw(){
-  // Tabla de diagnóstico: las 17 columnas del Excel tal como llegan del flujo.
-  // Cada par es [clave interna, nombre de la columna en el Excel].
-  var COLS=[
-    ['c','CLIENTE'],['ger','GERENCIA'],['t','TIPO'],['r','REPRESENTANTE'],
-    ['pz','POZO'],['top','TIPO OPERACIÓN'],['sv','SERVICIO'],['fi','FECHA INICIO'],
-    ['ff','FECHA FINALIZACIÓN'],['anio','AÑO'],['m','MES'],['ie','INGRESO ESTIMADO (USD)'],
-    ['ir','INGRESO REAL (USD)'],['l','LINEA DE SERVICIO'],['cst','CODIGO ST'],
-    ['s','STATUS'],['co','COMENTARIOS']
-  ];
-  var D=ALL.filter(function(r){return !G_ANIO||String(r.anio)===String(G_ANIO);});
-  function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function vacio(v){return v===undefined||v===null||String(v).trim()==='';}
-  function tiene(k){return D.some(function(r){return !vacio(r[k]);});}
-  var vacias=COLS.filter(function(cd){return !tiene(cd[0]);}).map(function(cd){return cd[1];});
-  document.getElementById('raw-meta').textContent=D.length+' registros'+(G_ANIO?(' · Año '+G_ANIO):'')+(vacias.length?(' · No se están trayendo: '+vacias.join(', ')):' · Todas las columnas traen datos ✓');
-  document.getElementById('raw-thead').innerHTML='<tr>'+COLS.map(function(cd){
-    var v=!tiene(cd[0]);
-    return '<th style="font-size:10px;font-weight:700;letter-spacing:.03em;white-space:nowrap;padding:6px 8px;position:sticky;top:0;'+(v?'color:#c0392b;background:#fdecea':'color:var(--navy);background:#fff')+'">'+esc(cd[1])+(v?'<br><span style="font-weight:600;font-size:9px">(vacío)</span>':'')+'</th>';
-  }).join('')+'</tr>';
-  var tbody=document.getElementById('raw-tbody');
-  if(!D.length){tbody.innerHTML='<tr><td colspan="'+COLS.length+'"><div class="empty-s">Sin datos</div></td></tr>';return;}
-  tbody.innerHTML=D.map(function(r){
-    return '<tr>'+COLS.map(function(cd){
-      var val=r[cd[0]];var vc=vacio(val);var txt=vc?'—':esc(val);
-      return '<td style="font-size:11px;padding:5px 8px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;color:'+(vc?'var(--muted)':'var(--slate)')+'" title="'+txt+'">'+txt+'</td>';
-    }).join('')+'</tr>';
-  }).join('');
-}
 function renderTable(){
   const q=(document.getElementById('srch').value||'').toLowerCase();
   const fSt=document.getElementById('fSt').value;
@@ -3312,7 +3304,7 @@ function renderTable(){
     const isCan=r.s==='CANCELADO'||r.s==='RECHAZADO';
     return`<tr class="${isCan?'rcan':r.t==='A'?'ra':'ro'}">
       <td style="font-family:'Inter',sans-serif;font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--navy)">${r.c}</td>
-      <td><span class="rep-pill" style="background:${repBg(r.r)};color:${repColor(r.r)}">${repLabel(r.r)}</span></td>
+      <td><span class="rep-pill" style="background:${repBg(r.r)};color:${repColor(r.r)}">${repNombre(r.r)}</span></td>
       <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;${r.t==='A'?'background:var(--asig-bg);color:var(--navy)':'background:var(--opor-bg);color:var(--gold-d)'}">${r.t==='A'?'Asignado':'Oportunidad'}</span></td>
       <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Inter',sans-serif">${r.m}</td>
       <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:130px" title="${r.pz}">${r.pz}</td>
@@ -3379,6 +3371,15 @@ async function cargarDatos(esManual){
       // nuevo como si fueran nuevos, duplicando el mes completo.
       ['c','ger','pz','sv','l','s','co'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).trim();});
       ['fi','ff'].forEach(function(k){if(rec[k])rec[k]=String(rec[k]).slice(0,10);});
+      // El campo REPRESENTANTE en SharePoint/Excel trae el nombre completo (ej. "JOHAN DUITAMA"),
+      // pero el resto del dashboard (colores, filtro de Rep., pestaña Representantes) agrupa por
+      // el código corto (MICHELL/JULIANA/JOHAN/JUAN). Si esto no se traduce aquí, cualquier
+      // registro que llegue en vivo "no se reconoce": sale sin color y no cuenta en ningún filtro
+      // ni tarjeta por representante.
+      if(rec.r){
+        var rn=String(rec.r).trim().replace(/\s+/g,' ').toUpperCase();
+        rec.r=REP_NAME_A_CODIGO[rn]||rec.r;
+      }
       return rec;
     });
     // Fusión ADITIVA y segura: el flujo de Power Automate puede devolver la tabla completa
@@ -3519,7 +3520,7 @@ function renderFinalizados(){
       if(G_REP&&r.r!==G_REP) return false;
       if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep) return false;
       if(FIN_FILTER.cli){
-        var cn=/^ECP/i.test(r.c)?'ECOPETROL':r.c;
+        var cn=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
         if(cn!==FIN_FILTER.cli) return false;
       }
       if(FIN_FILTER.lin){
@@ -3547,7 +3548,7 @@ function renderFinalizados(){
   // ── KPIs ──────────────────────────────────────────────────────────────
   var vYear=fin.reduce(function(s,r){return s+val(r);},0);
   var nYear=fin.length;
-  var vEcop=fin.filter(function(r){return /^ECP/i.test(r.c);}).reduce(function(s,r){return s+val(r);},0);
+  var vEcop=fin.filter(function(r){return /^ECOPETROL/i.test(r.c);}).reduce(function(s,r){return s+val(r);},0);
   var vYearAll=ALL.filter(function(r){return esEjecutado(r)&&r.t==='A'&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(!G_REP||r.r===G_REP);}).reduce(function(s,r){return s+val(r);},0);
   var pctEcop=vYearAll>0?Math.round(vEcop/vYearAll*100):0;
   var mesesConFin=MES.filter(function(m){return fin.some(function(r){return r.m===m;});}).length||1;
@@ -3560,7 +3561,7 @@ function renderFinalizados(){
     if(G_REP&&r.r!==G_REP) return false;
     if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep) return false;
     if(FIN_FILTER.cli){
-      var cnH=/^ECP/i.test(r.c)?'ECOPETROL':r.c;
+      var cnH=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
       if(cnH!==FIN_FILTER.cli) return false;
     }
     if(FIN_FILTER.lin){
@@ -3626,14 +3627,7 @@ function renderFinalizados(){
     ]},
     options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
       pctLabels:{enabled:false},
-      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,
-        generateLabels:function(){return[
-          {text:'≥80% ejecutado',fillStyle:'#1E8449',strokeStyle:'#1E8449',lineWidth:0,hidden:false},
-          {text:'50-79%',fillStyle:'#D4AC0D',strokeStyle:'#D4AC0D',lineWidth:0,hidden:false},
-          {text:'<50%',fillStyle:'#E74C3C',strokeStyle:'#E74C3C',lineWidth:0,hidden:false},
-          {text:'Pendiente',fillStyle:'#AED6F1',strokeStyle:'#AED6F1',lineWidth:0,hidden:false}
-        ];}
-      }},
+      legend:{display:false},
       tooltip:{callbacks:{
         title:function(it){return mesLabels[it[0].dataIndex]+' 2026';},
         label:function(c){
@@ -3692,7 +3686,7 @@ function renderFinalizados(){
 
   dc('cFinRep');CH.cFinRep=new Chart(document.getElementById('cFinRep'),{
     type:'doughnut',
-    data:{labels:repLabels,datasets:[{
+    data:{labels:repLabels.map(repLabel),datasets:[{
       data:repVals,
       backgroundColor:repLabels.map(function(rp){
         var c=REP_PAL[rp]||'#435D74';
@@ -3708,7 +3702,7 @@ function renderFinalizados(){
           generateLabels:function(chart){
             return repLabels.map(function(rp,i){
               var c=REP_PAL[rp]||'#435D74';
-              return {text:rp+' — '+fmt(repVals[i]),fillStyle:c,strokeStyle:c,lineWidth:0,
+              return {text:repLabel(rp)+' — '+fmt(repVals[i]),fillStyle:c,strokeStyle:c,lineWidth:0,
                 hidden:false,index:i};
             });
           }
@@ -3731,7 +3725,7 @@ function renderFinalizados(){
   // ── CHART 3: Client donut ──────────────────────────────────────────────
   var cliMap={};
   fin.forEach(function(r){
-    var n=/^ECP/i.test(r.c)?'ECOPETROL':r.c;
+    var n=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
     cliMap[n]=(cliMap[n]||0)+val(r);
   });
   var topCli=Object.entries(cliMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
@@ -3776,38 +3770,46 @@ function renderFinalizados(){
     renderFinalizados();
   };
 
-  // ── CHART 4: Line of service ───────────────────────────────────────────
-  var linMap={};
+  // ── CHART 4: Ingresos por Gerencia ECP ─────────────────────────────────
+  // Solo gerencias reales (se ignora "NA", que es lo que traen los clientes que no son
+  // Ecopetrol — solo Ecopetrol tiene gerencia interna).
+  var gerFinMap={};
   fin.forEach(function(r){
-    if(!r.l)return;
-    r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(function(p){
-      p=p.trim();if(p&&p.length<6&&/^[A-Za-z]+$/.test(p))linMap[p]=(linMap[p]||0)+val(r);
-    });
+    if(r.ger&&r.ger!=='NA') gerFinMap[r.ger]=(gerFinMap[r.ger]||0)+val(r);
   });
-  var topLin=Object.entries(linMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  var linHighlight=FIN_FILTER.lin;
-
-  dc('cFinLin');CH.cFinLin=new Chart(document.getElementById('cFinLin'),{
+  var topGerFin=Object.entries(gerFinMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  dc('cFinGer');CH.cFinGer=new Chart(document.getElementById('cFinGer'),{
     type:'bar',
-    data:{labels:topLin.map(function(x){return x[0];}),datasets:[{
-      data:topLin.map(function(x){return x[1];}),
-      backgroundColor:topLin.map(function(x){
-        var c=LINE_COL[x[0]]||'#435D74';
-        return (linHighlight&&linHighlight!==x[0])?c+'44':c;
-      }),
+    data:{labels:topGerFin.map(function(x){return x[0];}),datasets:[{
+      data:topGerFin.map(function(x){return x[1];}),
+      backgroundColor:B.NAVY,
       borderRadius:4
     }]},
     options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
       pctLabels:{enabled:true,color:'#3D4D63'},legend:{display:false}
     })})
   });
-  document.getElementById('cFinLin').onclick=function(e){
-    var pts=CH.cFinLin.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
-    if(!pts.length)return;
-    var ln=topLin[pts[0].index][0];
-    FIN_FILTER.lin=FIN_FILTER.lin===ln?null:ln;
-    renderFinalizados();
-  };
+
+  // ── CHART 5: Ingresos por Tipo de Trabajo ──────────────────────────────
+  // Usa SERVICIO (columna 'sv') como tipo de trabajo, porque TIPO OPERACIÓN (campo 'top')
+  // todavía llega vacío en el histórico — en cuanto el Excel traiga esa columna con datos,
+  // esta gráfica se puede migrar a 'top' sin más cambios (solo cambiar r.sv por r.top abajo).
+  var topMap={};
+  fin.forEach(function(r){
+    if(r.sv) topMap[r.sv]=(topMap[r.sv]||0)+val(r);
+  });
+  var topTop=Object.entries(topMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  dc('cFinTop');CH.cFinTop=new Chart(document.getElementById('cFinTop'),{
+    type:'bar',
+    data:{labels:topTop.map(function(x){return x[0];}),datasets:[{
+      data:topTop.map(function(x){return x[1];}),
+      backgroundColor:B.GOLD,
+      borderRadius:4
+    }]},
+    options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
+      pctLabels:{enabled:true,color:'#3D4D63'},legend:{display:false}
+    })})
+  });
 }
 </script>
 </body>
