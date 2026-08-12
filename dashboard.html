@@ -351,13 +351,13 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <table>
       <thead><tr>
         <th onclick="ts('c')" style="cursor:pointer" title="Ordenar">Cliente ↕</th>
+        <th onclick="ts('ger')" style="cursor:pointer" title="Ordenar">Gerencia ↕</th>
         <th onclick="ts('r')" style="cursor:pointer" title="Ordenar">Rep. ↕</th>
         <th onclick="ts('t')" style="cursor:pointer" title="Ordenar">Tipo ↕</th>
         <th onclick="ts('m')" style="cursor:pointer" title="Ordenar">Mes ↕</th>
         <th onclick="ts('pz')" style="cursor:pointer" title="Ordenar">Pozo ↕</th>
         <th onclick="ts('sv')" style="cursor:pointer" title="Ordenar">Servicio ↕</th>
         <th onclick="ts('l')" style="cursor:pointer" title="Ordenar">Línea ↕</th>
-        <th onclick="ts('v')" style="text-align:right;cursor:pointer" title="Ordenar">Valor Efectivo ↕</th>
         <th onclick="ts('ie')" style="text-align:right;cursor:pointer" title="Ordenar">Estimado ↕</th>
         <th onclick="ts('ir')" style="text-align:right;cursor:pointer" title="Ordenar">Real ↕</th>
         <th onclick="ts('s')" style="cursor:pointer" title="Ordenar">Estado ↕</th>
@@ -2697,8 +2697,14 @@ function buildMesStats(all,anio){
 // ingreso de un pozo que cruza de mes se reparta también ahí, no solo en Ejecutados. La
 // pestaña Detalle sigue usando ALL directo (sin fragmentar), a propósito, para no partir un
 // mismo pozo/servicio en varias filas.
+// Valor de "Asignado": mientras no esté FINALIZADO, solo cuenta el ingreso ESTIMADO (ie),
+// aunque ya tenga algo en ingreso real. Ya FINALIZADO, se toma el ingreso REAL (ir) si está
+// diligenciado, y si no, el estimado como respaldo. Se devuelve una copia (no se modifica el
+// registro original) para no afectar Detalle, Ejecutados ni el CSV, que siguen usando su
+// propio criterio de valor.
+function valAsignado(r){return r.s==='FINALIZADO'?(r.ir>0?r.ir:r.ie):r.ie;}
 function getBase(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
-function getAsig(){return getBase().filter(r=>r.t==='A');}
+function getAsig(){return getBase().filter(r=>r.t==='A').map(function(r){return Object.assign({},r,{v:valAsignado(r)});});}
 function getOpor(){return getBase().filter(r=>r.t==='O');}
 function getAll(){return getBase();}
 function getCancelled(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(r.s==='CANCELADO'||r.s==='RECHAZADO'));}
@@ -3349,7 +3355,7 @@ function renderTable(){
   const tbl=document.querySelector('#view-detalle table');
   if(tbl&&!tbl.querySelector('colgroup')){
     const cg=document.createElement('colgroup');
-    ['12%','7%','7%','7%','8%','12%','5%','6%','5%','5%','5%','14%'].forEach(w=>{
+    ['11%','9%','6%','6%','6%','8%','12%','5%','6%','6%','5%','13%'].forEach(w=>{
       const col=document.createElement('col');
       col.style.width=w;
       cg.appendChild(col);
@@ -3362,13 +3368,13 @@ function renderTable(){
     const isCan=r.s==='CANCELADO'||r.s==='RECHAZADO';
     return`<tr class="${isCan?'rcan':r.t==='A'?'ra':'ro'}">
       <td style="font-family:'Inter',sans-serif;font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--navy)">${r.c}</td>
+      <td style="color:var(--slate);font-size:11px">${r.ger&&r.ger!=='NA'?r.ger:''}</td>
       <td><span class="rep-pill" style="background:${repBg(r.r)};color:${repColor(r.r)}">${repNombre(r.r)}</span></td>
       <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;${r.t==='A'?'background:var(--asig-bg);color:var(--navy)':'background:var(--opor-bg);color:var(--gold-d)'}">${r.t==='A'?'Asignado':'Oportunidad'}</span></td>
       <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Inter',sans-serif">${r.m}</td>
       <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:130px" title="${r.pz}">${r.pz}</td>
       <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:160px" title="${r.sv}">${r.sv}</td>
       <td style="color:var(--muted);font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.l||'—'}</td>
-      <td style="text-align:right;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;color:${isCan?'var(--can)':r.t==='A'?'var(--navy)':'var(--gold-d)'}">${isCan?'<s>'+fmt(r.v)+'</s>':fmt(r.v)}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--dim)">${fmt(r.ie)}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:${r.ir>0?'var(--fin)':'var(--dim)'}">${r.ir>0?fmt(r.ir):'—'}</td>
       <td>${sb(r.s)}</td>
