@@ -44,6 +44,32 @@ const pctLabelPlugin = {
   }
 };
 Chart.register(pctLabelPlugin);
+
+// Crosshair: al pasar el mouse sobre una gráfica de línea, dibuja una línea vertical punteada
+// en el mes activo para que sea fácil leer el valor exacto de cada serie en ese punto. Solo se
+// activa si el chart lo pide explícitamente vía options.plugins.crosshair.enabled (para no
+// afectar las demás gráficas de barras/donut del dashboard).
+const crosshairPlugin = {
+  id: 'crosshair',
+  afterDatasetsDraw(chart, args, opts) {
+    if(!opts || !opts.enabled) return;
+    const active = chart.tooltip && chart.tooltip._active;
+    if(!active || !active.length) return;
+    const x = active[0].element.x;
+    const {top, bottom} = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#A8B4CC';
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+Chart.register(crosshairPlugin);
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -407,26 +433,26 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 </div>
 
 <div class="view" id="view-metas">
-  <div class="card" style="margin-bottom:14px;display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:12px 16px">
+  <div class="card" style="margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:8px 14px">
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Escenario</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Escenario</span>
       <div id="meta-esc-sel" style="display:flex;gap:4px"></div>
     </div>
     <div style="flex:1"></div>
-    <span id="meta-filter-label" style="font-size:11px;color:var(--gold-d);font-weight:700"></span>
+    <span id="meta-filter-label" style="font-size:10px;color:var(--gold-d);font-weight:700"></span>
   </div>
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
-    <div class="card"><div class="ct" id="meta-cli-title">Cumplimiento — Cliente</div><div style="height:290px"><canvas id="cMetaCli"></canvas></div></div>
-    <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="height:250px;width:100%;position:relative"><canvas id="cMetaDonut"></canvas><div id="meta-donut-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none"></div></div></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="card" style="padding:10px 14px"><div class="ct" id="meta-cli-title" style="font-size:11px;margin-bottom:6px">Cumplimiento — Cliente</div><div style="height:230px"><canvas id="cMetaCli"></canvas></div></div>
+    <div class="card" style="padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="height:210px;width:100%;position:relative"><canvas id="cMetaDonut"></canvas><div id="meta-donut-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none"></div></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px">
-    <div class="card"><div class="ct">Metas — Rep. Cuenta</div><div style="height:260px"><canvas id="cMetaRep"></canvas></div></div>
-    <div class="card"><div class="ct">Cumplimiento — Gerencia ECP</div><div style="height:260px"><canvas id="cMetaGer"></canvas></div></div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
+    <div class="card" style="padding:10px 14px"><div class="ct" style="font-size:11px;margin-bottom:6px">Metas — Rep. Cuenta</div><div style="height:200px"><canvas id="cMetaRep"></canvas></div></div>
+    <div class="card" style="padding:10px 14px"><div class="ct" style="font-size:11px;margin-bottom:6px">Cumplimiento — Gerencia ECP</div><div style="height:200px"><canvas id="cMetaGer"></canvas></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px" id="meta-quarters"></div>
-  <div class="card">
-    <div class="ct" id="meta-hist-title">Histórico Metas</div>
-    <div style="height:260px"><canvas id="cMetaHist"></canvas></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px" id="meta-quarters"></div>
+  <div class="card" style="padding:10px 14px">
+    <div class="ct" id="meta-hist-title" style="font-size:11px;margin-bottom:6px">Histórico Metas</div>
+    <div style="height:210px"><canvas id="cMetaHist"></canvas></div>
   </div>
 </div>
 
@@ -4967,11 +4993,12 @@ function renderMetas(){
   var TRIM=[{n:'Q1',meses:['enero','febrero','marzo']},{n:'Q2',meses:['abril','mayo','junio']},
     {n:'Q3',meses:['julio','agosto','septiembre']},{n:'Q4',meses:['octubre','noviembre','diciembre']}];
   var contQ=document.getElementById('meta-quarters');
-  contQ.innerHTML=TRIM.map(function(t){return '<div class="card" style="text-align:center">'
-    +'<div style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:2px">'+t.n+'</div>'
-    +'<div style="height:110px;position:relative"><canvas id="cQ-'+t.n+'"></canvas>'
-    +'<div id="cQ-'+t.n+'-val" style="position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:13px;font-weight:800;color:var(--navy)"></div></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:600;padding:0 6px">'
+  contQ.innerHTML=TRIM.map(function(t){return '<div class="card" style="text-align:center;padding:10px 10px 12px">'
+    +'<div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:0">'+t.n+'</div>'
+    +'<div style="height:88px;position:relative"><canvas id="cQ-'+t.n+'"></canvas>'
+    +'<div id="cQ-'+t.n+'-val" style="position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:13px;font-weight:800;color:var(--navy)"></div>'
+    +'<div id="cQ-'+t.n+'-pct" style="position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:10px;font-weight:700"></div></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-weight:600;padding:0 6px;margin-top:2px">'
     +'<span>$0</span><span id="cQ-'+t.n+'-max"></span></div>'
     +'</div>';}).join('');
   TRIM.forEach(function(t){
@@ -4980,15 +5007,20 @@ function renderMetas(){
       aQ+=actualMes.filter(function(r){return r.m===mo;}).reduce(function(s,r){return s+val(r);},0);
       mQ+=metasF.filter(function(x){return x.m===mo;}).reduce(function(s,x){return s+x.meta;},0);
     });
-    var pctQ=mQ>0?Math.min(aQ/mQ*100,100):0;
+    var pctReal=mQ>0?(aQ/mQ*100):0;
+    var pctQ=Math.min(pctReal,100);
+    var colorQ=pctReal>=80?B.FIN:pctReal>=50?B.GOLD_D:B.CAN;
     var cv=document.getElementById('cQ-'+t.n);
     dc('cQ-'+t.n);CH['cQ-'+t.n]=new Chart(cv,{
       type:'doughnut',
-      data:{datasets:[{data:[pctQ,100-pctQ],backgroundColor:[pctQ>=80?B.FIN:pctQ>=50?B.GOLD_D:B.CAN,B.LIGHT],borderWidth:0}]},
+      data:{datasets:[{data:[pctQ,100-pctQ],backgroundColor:[colorQ,B.LIGHT],borderWidth:0}]},
       options:{cutout:'74%',circumference:180,rotation:-90,responsive:true,maintainAspectRatio:false,
         plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{enabled:false}}}
     });
     document.getElementById('cQ-'+t.n+'-val').textContent=fmt(aQ);
+    var pctEl=document.getElementById('cQ-'+t.n+'-pct');
+    pctEl.textContent=pctReal.toFixed(1)+'%';
+    pctEl.style.color=colorQ;
     document.getElementById('cQ-'+t.n+'-max').textContent=fmt(mQ);
   });
 
@@ -4999,13 +5031,19 @@ function renderMetas(){
   dc('cMetaHist');CH.cMetaHist=new Chart(document.getElementById('cMetaHist'),{
     type:'line',
     data:{labels:mesLabels,datasets:[
-      {label:'Real',data:histAct,borderColor:B.FIN,backgroundColor:B.FIN_BG,fill:true,tension:.4,pointRadius:0,borderWidth:2},
-      {label:'Meta ('+META_ESC_LABEL[META_ESC]+')',data:histMeta,borderColor:B.NAVY,backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:2}
+      {label:'Real',data:histAct,borderColor:B.FIN,backgroundColor:B.FIN_BG,fill:true,tension:0,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:B.FIN,borderWidth:2},
+      {label:'Meta ('+META_ESC_LABEL[META_ESC]+')',data:histMeta,borderColor:B.NAVY,backgroundColor:'transparent',fill:false,tension:0,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:B.NAVY,borderWidth:2}
     ]},
-    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
-      pctLabels:{enabled:false},
-      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10}}
-    })})
+    options:Object.assign(sopts(),{
+      interaction:{mode:'index',intersect:false},
+      hover:{mode:'index',intersect:false},
+      plugins:Object.assign({},sopts().plugins,{
+        pctLabels:{enabled:false},
+        crosshair:{enabled:true},
+        legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10}},
+        tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return c.dataset.label+': '+fmt(c.raw);}}}
+      })
+    })
   });
 }
 
@@ -5031,27 +5069,32 @@ function renderHistorico(){
   dc('cHistAnio');CH.cHistAnio=new Chart(document.getElementById('cHistAnio'),{
     type:'line',
     data:{labels:mesLabels,datasets:[
-      {label:'Máximo 2022-2025',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:.35},
-      {label:'Rango histórico 2022-2025',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:B.LIGHT,tension:.35},
-      {label:'Promedio 2022-2025',data:bandAvg,borderColor:B.DIM,borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false,tension:.35},
-      {label:'2026 (año en curso)',data:datos[2026],borderColor:B.GOLD_D,backgroundColor:'transparent',borderWidth:3,pointRadius:0,fill:false,tension:.35}
+      {label:'Máximo 2022-2025',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:0},
+      {label:'Rango histórico 2022-2025',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:B.LIGHT,tension:0},
+      {label:'Promedio 2022-2025',data:bandAvg,borderColor:B.DIM,borderDash:[4,4],borderWidth:1.5,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:B.DIM,fill:false,tension:0},
+      {label:'2026 (año en curso)',data:datos[2026],borderColor:B.GOLD_D,backgroundColor:'transparent',borderWidth:3,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.GOLD_D,fill:false,tension:0}
     ]},
-    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
-      pctLabels:{enabled:false},
-      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,
-        filter:function(item){return item.text!=='Máximo 2022-2025';}}},
-      tooltip:{callbacks:{
-        label:function(c){
-          if(c.dataset.label==='Máximo 2022-2025')return null;
-          if(c.dataset.label==='Rango histórico 2022-2025'){
-            var i=c.dataIndex;
-            return 'Rango 2022-2025: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
-          }
-          return c.dataset.label+': '+fmt(c.raw);
-        },
-        filter:function(c){return c.dataset.label!=='Máximo 2022-2025';}
-      }}
-    })})
+    options:Object.assign(sopts(),{
+      interaction:{mode:'index',intersect:false},
+      hover:{mode:'index',intersect:false},
+      plugins:Object.assign({},sopts().plugins,{
+        pctLabels:{enabled:false},
+        crosshair:{enabled:true},
+        legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,
+          filter:function(item){return item.text!=='Máximo 2022-2025';}}},
+        tooltip:{mode:'index',intersect:false,callbacks:{
+          label:function(c){
+            if(c.dataset.label==='Máximo 2022-2025')return null;
+            if(c.dataset.label==='Rango histórico 2022-2025'){
+              var i=c.dataIndex;
+              return 'Rango 2022-2025: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
+            }
+            return c.dataset.label+': '+fmt(c.raw);
+          },
+          filter:function(c){return c.dataset.label!=='Máximo 2022-2025';}
+        }}
+      })
+    })
   });
 }
 </script>
