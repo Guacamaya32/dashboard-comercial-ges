@@ -74,7 +74,7 @@ body{font-family:'Inter',sans-serif;background:var(--off-white);color:var(--ink)
 .badge-w{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.03em}
 .hdr-date{font-size:10px;color:rgba(255,255,255,.35);font-family:'Inter',sans-serif}
 .hdr-ver{font-size:10px;color:rgba(255,255,255,.5);font-family:'Inter',sans-serif;letter-spacing:.02em;margin-top:2px}
-.fbar{background:var(--white);border-bottom:3px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:106px;z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
+.fbar{background:var(--white);border-bottom:3px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:var(--stick-fbar,106px);z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
 .fl{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);white-space:nowrap}
 .fsep{width:1px;height:18px;background:var(--light);flex-shrink:0}
 select{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;background:var(--white);border:1.5px solid var(--light);color:var(--ink);border-radius:var(--r);padding:5px 9px;outline:none;height:30px}
@@ -87,13 +87,13 @@ select:focus{border-color:var(--navy)}
 .refresh-btn.loading .ric{animation:spin .8s linear infinite}
 .clr-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--can);cursor:pointer;margin-left:auto;background:none;border:none}
 .clr-btn:hover{text-decoration:underline}
-.snav{background:var(--navy-d);padding:0 32px;display:flex;gap:4px;position:sticky;top:62px;z-index:195;box-shadow:0 2px 8px rgba(0,32,96,.15)}
-.sb{padding:12px 22px;border:none;background:transparent;color:rgba(255,255,255,.55);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .12s;border-bottom:3px solid transparent;display:flex;align-items:center;gap:7px}
-.sb:hover{color:rgba(255,255,255,.85)}
-.sb.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.06)}
-.sb .sb-tag{font-size:9px;font-weight:700;background:rgba(255,255,255,.15);padding:2px 6px;border-radius:3px;letter-spacing:.03em}
-.sb.active .sb-tag{background:var(--gold);color:var(--navy-d)}
-.mnav{background:var(--white);border-bottom:1px solid var(--light);padding:0 32px;display:flex;gap:0;box-shadow:0 1px 4px rgba(0,32,96,.04);position:sticky;top:152px;z-index:180}
+.snav{background:var(--pale);border-bottom:2px solid var(--light);padding:0 32px;display:flex;gap:4px;position:sticky;top:var(--stick-snav,62px);z-index:195;box-shadow:0 1px 3px rgba(0,32,96,.05)}
+.sb{padding:12px 22px;border:none;background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .12s;border-bottom:3px solid transparent;display:flex;align-items:center;gap:7px}
+.sb:hover{color:var(--navy)}
+.sb.active{color:var(--navy);border-bottom-color:var(--gold);background:var(--white)}
+.sb .sb-tag{font-size:9px;font-weight:700;background:var(--light);color:var(--muted);padding:2px 6px;border-radius:3px;letter-spacing:.03em}
+.sb.active .sb-tag{background:var(--gold);color:var(--navy)}
+.mnav{background:var(--white);border-bottom:1px solid var(--light);padding:0 32px;display:flex;gap:0;box-shadow:0 1px 4px rgba(0,32,96,.04);position:sticky;top:var(--stick-mnav,152px);z-index:180}
 .mb{padding:11px 18px;border:none;background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:3px solid transparent;cursor:pointer;transition:all .12s;margin-bottom:-1px}
 .mb:hover{color:var(--navy)}
 .mb.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
@@ -270,6 +270,11 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </div>
 </div>
 
+<div class="snav">
+  <button class="sb active" id="sec-proy" onclick="showSection('proy',event)">📊 Proyecciones<span class="sb-tag">4</span></button>
+  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">1</span></button>
+</div>
+
 <div class="fbar">
   <span class="fl">Año</span>
   <select id="g-anio" onchange="applyFilters()" style="min-width:90px">
@@ -300,19 +305,14 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="clr-btn" id="clr-btn" onclick="clearFilters()"></button>
 </div>
 
-<div class="snav">
-  <button class="sb active" id="sec-proy" onclick="showSection('proy',event)">📊 Proyecciones<span class="sb-tag">4</span></button>
-  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">1</span></button>
-</div>
-
 <div class="mnav" id="mnav-proy">
-  <button class="mb active" data-view="mensual" onclick="showView('mensual',event)">📊 Proyecciones</button>
+  <button class="mb active" data-view="mensual" onclick="showView('mensual',event)">🗓️ Mensual</button>
   <button class="mb" data-view="representantes" onclick="showView('representantes',event)">👤 Representantes</button>
   <button class="mb" data-view="clientes" onclick="showView('clientes',event)">🏢 Clientes</button>
   <button class="mb" data-view="detalle" onclick="showView('detalle',event)">📋 Detalle</button>
 </div>
 <div class="mnav" id="mnav-ejec" style="display:none">
-  <button class="mb" data-view="finalizados" onclick="showView('finalizados',event)">✅ Evolución y Resultados</button>
+  <button class="mb" data-view="finalizados" onclick="showView('finalizados',event)">💰 Ingresos Anuales</button>
 </div>
 
 <main>
@@ -3422,6 +3422,31 @@ function exportCSV(){
 document.getElementById('live-date').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
 var _av=document.getElementById('app-ver');if(_av)_av.textContent=APP_VERSION+' · '+APP_FECHA;
 updateClrBtn();
+
+// Las barras fijas (encabezado, secciones, filtros, pestañas) se apilan una debajo de otra
+// mientras se hace scroll. Antes sus posiciones "top" estaban fijas a mano en el CSS, y no
+// siempre coincidían exactamente con la altura real que ocupa cada barra (que puede variar
+// un poco según la fuente, el zoom del navegador, etc.) — eso dejaba un hueco en blanco al
+// hacer scroll. Ahora se mide la altura real de cada barra y se ajustan los offsets para que
+// siempre queden pegadas una debajo de otra sin espacio, y todos los filtros/pestañas se
+// mantengan visibles.
+function ajustarBarrasFijas(){
+  var hdr=document.querySelector('.hdr');
+  var snav=document.querySelector('.snav');
+  var fbar=document.querySelector('.fbar');
+  var hHdr=hdr?hdr.getBoundingClientRect().height:62;
+  var hSnav=snav?snav.getBoundingClientRect().height:44;
+  var hFbar=fbar?fbar.getBoundingClientRect().height:46;
+  var root=document.documentElement.style;
+  root.setProperty('--stick-snav',hHdr+'px');
+  root.setProperty('--stick-fbar',(hHdr+hSnav)+'px');
+  root.setProperty('--stick-mnav',(hHdr+hSnav+hFbar)+'px');
+}
+ajustarBarrasFijas();
+window.addEventListener('resize',ajustarBarrasFijas);
+// Un pequeño reintento tras el primer render por si las fuentes web tardan en cargar y
+// cambian la altura de las barras después de la medición inicial.
+setTimeout(ajustarBarrasFijas,300);
 
 const FLOW_URL='https://defaultfc8bd45f535140818eca55ef07ba2c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f78a376e4074404ca0578a5d6c0c3980/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=QYVUkOW1nkipMTquS5oXt3Oy81vjXPIf-_X-dTZl-S8';
 
