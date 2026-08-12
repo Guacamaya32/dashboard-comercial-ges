@@ -97,8 +97,12 @@ select:focus{border-color:var(--navy)}
 .mb{padding:11px 18px;border:none;background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:3px solid transparent;cursor:pointer;transition:all .12s;margin-bottom:-1px}
 .mb:hover{color:var(--navy)}
 .mb.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
+.esc-btn{padding:6px 14px;border:1px solid var(--light);background:var(--white);color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:5px;cursor:pointer;transition:all .12s}
+.esc-btn:hover{border-color:var(--gold)}
+.esc-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
 main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 body.detalle-active main{max-width:none;padding:10px 12px 40px}
+body.metas-active main,body.historico-active main{max-width:none;padding:20px 24px 60px}
 .view{display:none}.view.active{display:block}
 .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
 .kpi{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
@@ -272,7 +276,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 
 <div class="snav">
   <button class="sb active" id="sec-proy" onclick="showSection('proy',event)">📊 Proyecciones<span class="sb-tag">4</span></button>
-  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">2</span></button>
+  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">3</span></button>
 </div>
 
 <div class="fbar">
@@ -314,6 +318,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 <div class="mnav" id="mnav-ejec" style="display:none">
   <button class="mb" data-view="finalizados" onclick="showView('finalizados',event)">💰 Ingresos Anuales</button>
   <button class="mb" data-view="metas" onclick="showView('metas',event)">🎯 Seguimiento de Metas</button>
+  <button class="mb" data-view="historico" onclick="showView('historico',event)">📈 Histórico por Año</button>
 </div>
 
 <main>
@@ -402,8 +407,16 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 </div>
 
 <div class="view" id="view-metas">
+  <div class="card" style="margin-bottom:14px;display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Escenario</span>
+      <div id="meta-esc-sel" style="display:flex;gap:4px"></div>
+    </div>
+    <div style="flex:1"></div>
+    <span id="meta-filter-label" style="font-size:11px;color:var(--gold-d);font-weight:700"></span>
+  </div>
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
-    <div class="card"><div class="ct">Cumplimiento Escenario Esperado — Cliente</div><div style="height:290px"><canvas id="cMetaCli"></canvas></div></div>
+    <div class="card"><div class="ct" id="meta-cli-title">Cumplimiento — Cliente</div><div style="height:290px"><canvas id="cMetaCli"></canvas></div></div>
     <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="height:250px;width:100%;position:relative"><canvas id="cMetaDonut"></canvas><div id="meta-donut-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none"></div></div></div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px">
@@ -412,8 +425,15 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px" id="meta-quarters"></div>
   <div class="card">
-    <div class="ct">Histórico Metas</div>
+    <div class="ct" id="meta-hist-title">Histórico Metas</div>
     <div style="height:260px"><canvas id="cMetaHist"></canvas></div>
+  </div>
+</div>
+
+<div class="view" id="view-historico">
+  <div class="card">
+    <div class="ct">Histórico Ingresos por Año — 2022-2025 (rango) vs 2026</div>
+    <div style="height:420px"><canvas id="cHistAnio"></canvas></div>
   </div>
 </div>
 
@@ -2618,258 +2638,762 @@ let ALL=[{c:'FRONTERA',ger:'NA',t:'A',r:'MICHELL',m:'mayo',anio:2026,pz:'YAGUAZO
 {c:'FRONTERA',ger:'NA',t:'A',r:'MICHELL',m:'mayo',anio:2026,pz:'QUIFA 796D',sv:'ABANDONO INTEGRADO QUIFA',top:'',ie:119879.299048,ir:119879.299048,v:119879.299048,l:'',s:'FINALIZADO',co:'',fi:'2026-05-20',ff:'2026-05-29'},
 {c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',t:'A',r:'JOHAN',m:'mayo',anio:2026,pz:'RENTA MENSUAL CT',sv:'LIMPIEZA QUIMICA + ESTIMULACION',top:'',ie:357143.48,ir:357143.48,v:357143.48,l:'',s:'FINALIZADO',co:'',fi:'2026-05-01',ff:'2026-05-31'}];
 // Metas 2026 (escenario ESPERADO), extraídas de Presupuesto_2026 - BD.xlsx, hoja PBI CLIENTE.
-let METAS=[{anio:2026,m:'enero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:389760.00000000006,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:389760.00000000006,rep:'JUAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:501120.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:501120.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:556800.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:556800.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'GCT (CIRA)',meta:28000.000000000004,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:28000.000000000004,rep:'JUAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:36000.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:36000.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:40000.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:40000.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:47040.00000000001,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:47040.00000000001,rep:'JUAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:60480.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:60480.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:67200.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:67200.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:28000.000000000004,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:28000.000000000004,rep:'JUAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:36000.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:36000.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:40000.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:40000.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:130000.0,rep:'MICHELL'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:280000.0,rep:'MICHELL'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:380000.0,rep:'MICHELL'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:459430.0,rep:'MICHELL'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:465720.0,rep:'MICHELL'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:466070.0,rep:'MICHELL'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:550520.0,rep:'MICHELL'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:564820.0,rep:'MICHELL'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:623890.0,rep:'MICHELL'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:668750.0,rep:'MICHELL'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:616400.0,rep:'MICHELL'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:643400.0,rep:'MICHELL'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:177000.0,rep:'JULIANA'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:174000.0,rep:'JULIANA'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:175000.0,rep:'JULIANA'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:174000.0,rep:'JULIANA'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:294680.0,rep:'JULIANA'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:196200.0,rep:'JULIANA'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:165120.0,rep:'JULIANA'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:206080.00000000003,rep:'MICHELL'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:206080.00000000003,rep:'MICHELL'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:264960.0,rep:'MICHELL'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:264960.0,rep:'MICHELL'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:294400.0,rep:'MICHELL'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:294400.0,rep:'MICHELL'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:0.0,rep:'JOHAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:278150.0,rep:'JOHAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:278150.0,rep:'JOHAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:349050.0,rep:'JOHAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:349050.0,rep:'JOHAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:384500.0,rep:'JOHAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:354500.0,rep:'JOHAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:159600.00000000003,rep:'JOHAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:159600.00000000003,rep:'JOHAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:205200.0,rep:'JOHAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:205200.0,rep:'JOHAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:228000.0,rep:'JOHAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:228000.0,rep:'JOHAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'GDA (APIAY)',meta:153300.00000000003,rep:'JOHAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:153300.00000000003,rep:'JOHAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:197100.0,rep:'JOHAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:197100.0,rep:'JOHAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:219000.0,rep:'JOHAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:219000.0,rep:'JOHAN'},
-{anio:2026,m:'enero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
-{anio:2026,m:'febrero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
-{anio:2026,m:'marzo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
-{anio:2026,m:'abril',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:221200.00000000003,rep:'JOHAN'},
-{anio:2026,m:'mayo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:221200.00000000003,rep:'JOHAN'},
-{anio:2026,m:'junio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
-{anio:2026,m:'julio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
-{anio:2026,m:'agosto',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
-{anio:2026,m:'septiembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:284400.0,rep:'JOHAN'},
-{anio:2026,m:'octubre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:284400.0,rep:'JOHAN'},
-{anio:2026,m:'noviembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:316000.0,rep:'JOHAN'},
-{anio:2026,m:'diciembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:316000.0,rep:'JOHAN'},
-{anio:2026,m:'enero',c:'FRONTERA',ger:null,meta:266000.0,rep:'MICHELL'},
-{anio:2026,m:'febrero',c:'FRONTERA',ger:null,meta:678000.0,rep:'MICHELL'},
-{anio:2026,m:'marzo',c:'FRONTERA',ger:null,meta:911742.864,rep:'MICHELL'},
-{anio:2026,m:'abril',c:'FRONTERA',ger:null,meta:801107.148,rep:'MICHELL'},
-{anio:2026,m:'mayo',c:'FRONTERA',ger:null,meta:837711.006,rep:'MICHELL'},
-{anio:2026,m:'junio',c:'FRONTERA',ger:null,meta:761742.864,rep:'MICHELL'},
-{anio:2026,m:'julio',c:'FRONTERA',ger:null,meta:721741.264,rep:'MICHELL'},
-{anio:2026,m:'agosto',c:'FRONTERA',ger:null,meta:773060.722,rep:'MICHELL'},
-{anio:2026,m:'septiembre',c:'FRONTERA',ger:null,meta:621002.864,rep:'MICHELL'},
-{anio:2026,m:'octubre',c:'FRONTERA',ger:null,meta:701188.58,rep:'MICHELL'},
-{anio:2026,m:'noviembre',c:'FRONTERA',ger:null,meta:501188.58,rep:'MICHELL'},
-{anio:2026,m:'diciembre',c:'FRONTERA',ger:null,meta:402299.58,rep:'MICHELL'},
-{anio:2026,m:'enero',c:'HOCOL',ger:null,meta:523800.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'HOCOL',ger:null,meta:523800.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
-{anio:2026,m:'junio',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'HOCOL',ger:null,meta:349000.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'PAREX',ger:null,meta:900000.0,rep:'JOHAN'},
-{anio:2026,m:'febrero',c:'PAREX',ger:null,meta:900000.0,rep:'JOHAN'},
-{anio:2026,m:'marzo',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
-{anio:2026,m:'abril',c:'PAREX',ger:null,meta:330000.0,rep:'JOHAN'},
-{anio:2026,m:'mayo',c:'PAREX',ger:null,meta:330000.0,rep:'JOHAN'},
-{anio:2026,m:'junio',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
-{anio:2026,m:'julio',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
-{anio:2026,m:'agosto',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
-{anio:2026,m:'septiembre',c:'PAREX',ger:null,meta:370000.0,rep:'JOHAN'},
-{anio:2026,m:'octubre',c:'PAREX',ger:null,meta:370000.0,rep:'JOHAN'},
-{anio:2026,m:'noviembre',c:'PAREX',ger:null,meta:400000.0,rep:'JOHAN'},
-{anio:2026,m:'diciembre',c:'PAREX',ger:null,meta:327000.0,rep:'JOHAN'},
-{anio:2026,m:'enero',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
-{anio:2026,m:'febrero',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
-{anio:2026,m:'marzo',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
-{anio:2026,m:'abril',c:'GEOPARK',ger:null,meta:186900.00000000003,rep:'JOHAN'},
-{anio:2026,m:'mayo',c:'GEOPARK',ger:null,meta:186900.00000000003,rep:'JOHAN'},
-{anio:2026,m:'junio',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
-{anio:2026,m:'julio',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
-{anio:2026,m:'agosto',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
-{anio:2026,m:'septiembre',c:'GEOPARK',ger:null,meta:240300.0,rep:'JOHAN'},
-{anio:2026,m:'octubre',c:'GEOPARK',ger:null,meta:240300.0,rep:'JOHAN'},
-{anio:2026,m:'noviembre',c:'GEOPARK',ger:null,meta:267000.0,rep:'JOHAN'},
-{anio:2026,m:'diciembre',c:'GEOPARK',ger:null,meta:267000.0,rep:'JOHAN'},
-{anio:2026,m:'enero',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
-{anio:2026,m:'febrero',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'marzo',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'abril',c:'SIERRACOL',ger:null,meta:523500.0,rep:'JULIANA'},
-{anio:2026,m:'mayo',c:'SIERRACOL',ger:null,meta:698000.0,rep:'JULIANA'},
-{anio:2026,m:'junio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'julio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'agosto',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
-{anio:2026,m:'septiembre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'octubre',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
-{anio:2026,m:'noviembre',c:'SIERRACOL',ger:null,meta:698000.0,rep:'JULIANA'},
-{anio:2026,m:'diciembre',c:'SIERRACOL',ger:null,meta:523500.0,rep:'JULIANA'},
-{anio:2026,m:'enero',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'ONGC',ger:null,meta:100000.0,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'junio',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'ONGC',ger:null,meta:100000.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'febrero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'marzo',c:'SAINT_AUBIN',ger:null,meta:100000.0,rep:'JUAN'},
-{anio:2026,m:'abril',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'mayo',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'junio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'julio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'agosto',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'septiembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'octubre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'noviembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'diciembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
-{anio:2026,m:'enero',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'febrero',c:'GRANTIERRA',ger:null,meta:90000.0,rep:'JULIANA'},
-{anio:2026,m:'marzo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'abril',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'mayo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'junio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'julio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'agosto',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'septiembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'octubre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'noviembre',c:'GRANTIERRA',ger:null,meta:90000.0,rep:'JULIANA'},
-{anio:2026,m:'diciembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'enero',c:'NEW_GRANADA',ger:null,meta:105000.0,rep:'JULIANA'},
-{anio:2026,m:'febrero',c:'NEW_GRANADA',ger:null,meta:45000.0,rep:'JULIANA'},
-{anio:2026,m:'marzo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'abril',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'mayo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'junio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'julio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'agosto',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'septiembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'octubre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'noviembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'diciembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
-{anio:2026,m:'enero',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
-{anio:2026,m:'febrero',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
-{anio:2026,m:'marzo',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
-{anio:2026,m:'abril',c:'OTROS',ger:null,meta:22190.000000000004,rep:'JULIANA'},
-{anio:2026,m:'mayo',c:'OTROS',ger:null,meta:22190.000000000004,rep:'JULIANA'},
-{anio:2026,m:'junio',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
-{anio:2026,m:'julio',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
-{anio:2026,m:'agosto',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
-{anio:2026,m:'septiembre',c:'OTROS',ger:null,meta:28530.0,rep:'JULIANA'},
-{anio:2026,m:'octubre',c:'OTROS',ger:null,meta:28530.0,rep:'JULIANA'},
-{anio:2026,m:'noviembre',c:'OTROS',ger:null,meta:31700.0,rep:'JULIANA'},
-{anio:2026,m:'diciembre',c:'OTROS',ger:null,meta:31700.0,rep:'JULIANA'}];
+let METAS=[{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:348320.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:348320.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:348320.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:304780.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:304780.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:348320.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:348320.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:348320.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:391860.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:391860.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:435400.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:435400.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:389760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:389760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:445440.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:501120.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:501120.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:556800.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:556800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:425840.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:425840.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:425840.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:372610.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:372610.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:425840.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:425840.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:425840.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:479070.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:479070.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:532300.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GRM (RIO MARES)',meta:532300.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'GCT (CIRA)',meta:28000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:28000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:36000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:36000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:40000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:40000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'GCT (CIRA)',meta:28000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:28000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GCT (CIRA)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:36000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:36000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:40000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:40000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:52800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GCT (CIRA)',meta:52800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:52800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'GCT (CIRA)',meta:46200.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GCT (CIRA)',meta:46200.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:52800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'GCT (CIRA)',meta:52800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GCT (CIRA)',meta:52800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:59400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:59400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:66000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GCT (CIRA)',meta:66000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:11600.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:11600.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:11600.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:10150.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:10150.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:11600.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:11600.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:11600.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:13050.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:13050.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:14500.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:14500.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:47040.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:47040.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:53760.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:60480.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:60480.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:67200.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:67200.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:33680.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:33680.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:33680.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:29470.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:29470.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:33680.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:33680.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:33680.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:37890.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:37890.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:42100.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (TECA NARE)',meta:42100.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:8000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:8000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:8000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:7000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:7000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:8000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:8000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:8000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:9000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:9000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:10000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:10000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:28000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:28000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:32000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:36000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:36000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:40000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:40000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:34400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:34400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:34400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:30100.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:30100.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:34400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:34400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:34400.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:38700.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:38700.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:43000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PTN (CATATUMBO)',meta:43000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:80000.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:105000.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:160000.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:189888.78,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:488333.33,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:309277.78,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:352333.33,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:623333.33,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:732500.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:813888.89,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:505555.56,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:520888.89,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:130000.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:280000.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:380000.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:459430.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:465720.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:466070.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:550520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:564820.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:623890.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:668750.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:616400.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:643400.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:385200.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:312050.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:326000.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:593200.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:412050.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:585200.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:410588.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:613350.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:620200.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:587000.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:561500.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',meta:678662.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:73400.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:81000.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:35691.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:47909.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:177000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:174000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:175000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:174000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:294680.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:196200.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:165120.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:120000.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:210000.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:197061.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:269000.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:139469.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:154470.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:293000.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPU (PUTUMAYO)',meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:0.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:45000.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:70456.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:60630.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:145684.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:100840.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:78900.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:122850.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:100540.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:95500.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:90050.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:100050.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:206080.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:206080.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:235520.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:264960.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:264960.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:294400.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:294400.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:236160.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:236160.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:236160.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:206640.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:206640.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:236160.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:236160.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:236160.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:265680.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:265680.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:295200.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',meta:295200.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:6400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:314400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:314400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:278600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:278600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:314400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:314400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:314400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:350200.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:350200.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:386000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:358000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:0.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:278150.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:278150.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:313600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:349050.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:349050.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:384500.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:354500.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:413600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:413600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:413600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:361900.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:361900.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:413600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:413600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:413600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:465300.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:465300.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:517000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDP (PIEDEMONTE)',meta:517000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:220400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:220400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:220400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:192850.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:192850.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:220400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:220400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:220400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:247950.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:247950.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:275500.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:275500.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:159600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:159600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:182400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:205200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:205200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:228000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:228000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:248400.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:248400.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:248400.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:217350.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:217350.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:248400.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:248400.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:248400.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:279450.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:279450.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:310500.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDT (CASTILLA)',meta:310500.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:146800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:146800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:146800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDA (APIAY)',meta:128450.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:128450.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:146800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:146800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDA (APIAY)',meta:146800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:165150.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:165150.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:183500.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:183500.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDA (APIAY)',meta:153300.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:153300.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDA (APIAY)',meta:175200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:197100.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:197100.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:219000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:219000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:179600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'GDA (APIAY)',meta:179600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:179600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'GDA (APIAY)',meta:157150.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'GDA (APIAY)',meta:157150.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:179600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'GDA (APIAY)',meta:179600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'GDA (APIAY)',meta:179600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:202050.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:202050.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:224500.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'GDA (APIAY)',meta:224500.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:177600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:177600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:177600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:155400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:155400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:177600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:177600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:177600.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:199800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:199800.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:222000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:222000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:221200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:221200.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:252800.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:284400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:284400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:316000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:316000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:258800.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:258800.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:258800.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:226450.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:226450.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:258800.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:258800.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:258800.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:291150.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:291150.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:323500.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ECOPETROL',ger:'CHICHIMENE / CPO_09',meta:323500.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'FRONTERA',ger:null,meta:220003.75,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'febrero',c:'FRONTERA',ger:null,meta:228003.75,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'marzo',c:'FRONTERA',ger:null,meta:524003.75,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'abril',c:'FRONTERA',ger:null,meta:618002.81,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'mayo',c:'FRONTERA',ger:null,meta:746165.08,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'junio',c:'FRONTERA',ger:null,meta:700003.75,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'julio',c:'FRONTERA',ger:null,meta:744003.75,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'agosto',c:'FRONTERA',ger:null,meta:777004.22,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'FRONTERA',ger:null,meta:724003.75,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'octubre',c:'FRONTERA',ger:null,meta:730004.68,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'FRONTERA',ger:null,meta:730004.68,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'FRONTERA',ger:null,meta:638581.88,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'enero',c:'FRONTERA',ger:null,meta:266000.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'febrero',c:'FRONTERA',ger:null,meta:678000.0,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'marzo',c:'FRONTERA',ger:null,meta:911742.86,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'abril',c:'FRONTERA',ger:null,meta:801107.15,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'mayo',c:'FRONTERA',ger:null,meta:837711.01,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'junio',c:'FRONTERA',ger:null,meta:761742.86,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'julio',c:'FRONTERA',ger:null,meta:721741.26,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'agosto',c:'FRONTERA',ger:null,meta:773060.72,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'FRONTERA',ger:null,meta:621002.86,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'octubre',c:'FRONTERA',ger:null,meta:701188.58,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'FRONTERA',ger:null,meta:501188.58,rep:'MICHELL'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'FRONTERA',ger:null,meta:402299.58,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'enero',c:'FRONTERA',ger:null,meta:300000.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'febrero',c:'FRONTERA',ger:null,meta:739102.86,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'marzo',c:'FRONTERA',ger:null,meta:939000.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'abril',c:'FRONTERA',ger:null,meta:820000.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'mayo',c:'FRONTERA',ger:null,meta:860465.01,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'junio',c:'FRONTERA',ger:null,meta:789102.86,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'julio',c:'FRONTERA',ger:null,meta:764000.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'agosto',c:'FRONTERA',ger:null,meta:790345.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'FRONTERA',ger:null,meta:630013.0,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'octubre',c:'FRONTERA',ger:null,meta:616378.58,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'FRONTERA',ger:null,meta:426378.58,rep:'MICHELL'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'FRONTERA',ger:null,meta:420000.0,rep:'MICHELL'},
+{esc:'ADV',anio:2026,m:'enero',c:'HOCOL',ger:null,meta:382400.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'HOCOL',ger:null,meta:382400.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'HOCOL',ger:null,meta:191200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'HOCOL',ger:null,meta:191200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'HOCOL',ger:null,meta:191200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'HOCOL',ger:null,meta:191200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'HOCOL',ger:null,meta:191200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'HOCOL',ger:null,meta:191200.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'HOCOL',ger:null,meta:523800.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'HOCOL',ger:null,meta:523800.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'HOCOL',ger:null,meta:261900.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'HOCOL',ger:null,meta:349000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'HOCOL',ger:null,meta:569800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'HOCOL',ger:null,meta:569800.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'HOCOL',ger:null,meta:284900.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'HOCOL',ger:null,meta:284900.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'HOCOL',ger:null,meta:284900.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'HOCOL',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'HOCOL',ger:null,meta:284900.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'HOCOL',ger:null,meta:284900.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'HOCOL',ger:null,meta:284900.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'PAREX',ger:null,meta:750000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'PAREX',ger:null,meta:750000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'PAREX',ger:null,meta:300000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'PAREX',ger:null,meta:301000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'PAREX',ger:null,meta:900000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'PAREX',ger:null,meta:900000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'PAREX',ger:null,meta:330000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'PAREX',ger:null,meta:330000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'PAREX',ger:null,meta:350000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'PAREX',ger:null,meta:370000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'PAREX',ger:null,meta:370000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'PAREX',ger:null,meta:400000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'PAREX',ger:null,meta:327000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'PAREX',ger:null,meta:900000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'PAREX',ger:null,meta:900000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'PAREX',ger:null,meta:459200.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'GEOPARK',ger:null,meta:248320.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'GEOPARK',ger:null,meta:248320.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'GEOPARK',ger:null,meta:248320.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'GEOPARK',ger:null,meta:217280.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'GEOPARK',ger:null,meta:217280.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'GEOPARK',ger:null,meta:248320.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'GEOPARK',ger:null,meta:248320.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'GEOPARK',ger:null,meta:248320.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'GEOPARK',ger:null,meta:279360.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'GEOPARK',ger:null,meta:279360.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'GEOPARK',ger:null,meta:310400.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'GEOPARK',ger:null,meta:310400.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'GEOPARK',ger:null,meta:186900.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'GEOPARK',ger:null,meta:186900.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'GEOPARK',ger:null,meta:213600.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'GEOPARK',ger:null,meta:240300.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'GEOPARK',ger:null,meta:240300.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'GEOPARK',ger:null,meta:267000.0,rep:'JOHAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'GEOPARK',ger:null,meta:267000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'GEOPARK',ger:null,meta:333600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'GEOPARK',ger:null,meta:333600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'GEOPARK',ger:null,meta:333600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'GEOPARK',ger:null,meta:291900.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'GEOPARK',ger:null,meta:291900.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'GEOPARK',ger:null,meta:333600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'GEOPARK',ger:null,meta:333600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'GEOPARK',ger:null,meta:333600.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'GEOPARK',ger:null,meta:375300.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'GEOPARK',ger:null,meta:375300.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'GEOPARK',ger:null,meta:417000.0,rep:'JOHAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'GEOPARK',ger:null,meta:417000.0,rep:'JOHAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'febrero',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'marzo',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'abril',c:'SIERRACOL',ger:null,meta:523500.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'mayo',c:'SIERRACOL',ger:null,meta:693500.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'junio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'julio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'agosto',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'octubre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'enero',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'febrero',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'marzo',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'abril',c:'SIERRACOL',ger:null,meta:523500.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'mayo',c:'SIERRACOL',ger:null,meta:698000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'junio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'julio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'agosto',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'octubre',c:'SIERRACOL',ger:null,meta:349000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'SIERRACOL',ger:null,meta:698000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'SIERRACOL',ger:null,meta:523500.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'enero',c:'SIERRACOL',ger:null,meta:415200.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'febrero',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'marzo',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'abril',c:'SIERRACOL',ger:null,meta:622800.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'mayo',c:'SIERRACOL',ger:null,meta:830400.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'junio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'julio',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'agosto',c:'SIERRACOL',ger:null,meta:415200.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'SIERRACOL',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'octubre',c:'SIERRACOL',ger:null,meta:415200.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'SIERRACOL',ger:null,meta:830400.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'SIERRACOL',ger:null,meta:622800.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'enero',c:'ONGC',ger:null,meta:7200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'ONGC',ger:null,meta:7200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'ONGC',ger:null,meta:7200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'ONGC',ger:null,meta:6300.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'ONGC',ger:null,meta:6300.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'ONGC',ger:null,meta:7200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'ONGC',ger:null,meta:7200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'ONGC',ger:null,meta:7200.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'ONGC',ger:null,meta:8100.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'ONGC',ger:null,meta:8100.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'ONGC',ger:null,meta:9000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'ONGC',ger:null,meta:9000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'ONGC',ger:null,meta:100000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'ONGC',ger:null,meta:100000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'ONGC',ger:null,meta:120000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'ONGC',ger:null,meta:120000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'ONGC',ger:null,meta:120000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'ONGC',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'ONGC',ger:null,meta:120000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'ONGC',ger:null,meta:120000.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'febrero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'marzo',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'abril',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'mayo',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'junio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'julio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'agosto',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'octubre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'enero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'febrero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'marzo',c:'SAINT_AUBIN',ger:null,meta:100000.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'abril',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'mayo',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'junio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'julio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'agosto',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'octubre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'enero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'febrero',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'marzo',c:'SAINT_AUBIN',ger:null,meta:100000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'abril',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'mayo',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'junio',c:'SAINT_AUBIN',ger:null,meta:215000.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'julio',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'agosto',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'octubre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'SAINT_AUBIN',ger:null,meta:0.0,rep:'JUAN'},
+{esc:'ADV',anio:2026,m:'enero',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'febrero',c:'GRANTIERRA',ger:null,meta:20000.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'marzo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'abril',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'mayo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'junio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'julio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'agosto',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'octubre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'GRANTIERRA',ger:null,meta:20000.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'enero',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'febrero',c:'GRANTIERRA',ger:null,meta:90000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'marzo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'abril',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'mayo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'junio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'julio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'agosto',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'octubre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'GRANTIERRA',ger:null,meta:90000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'enero',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'febrero',c:'GRANTIERRA',ger:null,meta:160000.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'marzo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'abril',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'mayo',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'junio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'julio',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'agosto',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'octubre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'GRANTIERRA',ger:null,meta:160000.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'GRANTIERRA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'enero',c:'NEW_GRANADA',ger:null,meta:84000.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'febrero',c:'NEW_GRANADA',ger:null,meta:36000.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'marzo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'abril',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'mayo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'junio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'julio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'agosto',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'octubre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'enero',c:'NEW_GRANADA',ger:null,meta:105000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'febrero',c:'NEW_GRANADA',ger:null,meta:45000.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'marzo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'abril',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'mayo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'junio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'julio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'agosto',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'octubre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'enero',c:'NEW_GRANADA',ger:null,meta:100750.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'febrero',c:'NEW_GRANADA',ger:null,meta:50375.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'marzo',c:'NEW_GRANADA',ger:null,meta:50375.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'abril',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'mayo',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'junio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'julio',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'agosto',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'octubre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'NEW_GRANADA',ger:null,meta:0.0,rep:'JULIANA'},
+{esc:'ADV',anio:2026,m:'enero',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'febrero',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'marzo',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'abril',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'mayo',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'junio',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'julio',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'agosto',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'septiembre',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'octubre',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'noviembre',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ADV',anio:2026,m:'diciembre',c:'OTROS',ger:null,meta:0.0,rep:'TODOS'},
+{esc:'ESP',anio:2026,m:'enero',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'febrero',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'marzo',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'abril',c:'OTROS',ger:null,meta:22190.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'mayo',c:'OTROS',ger:null,meta:22190.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'junio',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'julio',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'agosto',c:'OTROS',ger:null,meta:25360.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'septiembre',c:'OTROS',ger:null,meta:28530.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'octubre',c:'OTROS',ger:null,meta:28530.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'noviembre',c:'OTROS',ger:null,meta:31700.0,rep:'JULIANA'},
+{esc:'ESP',anio:2026,m:'diciembre',c:'OTROS',ger:null,meta:31700.0,rep:'JULIANA'},
+{esc:'OPT',anio:2026,m:'enero',c:'OTROS',ger:null,meta:25360.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'febrero',c:'OTROS',ger:null,meta:25360.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'marzo',c:'OTROS',ger:null,meta:25360.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'abril',c:'OTROS',ger:null,meta:22190.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'mayo',c:'OTROS',ger:null,meta:22190.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'junio',c:'OTROS',ger:null,meta:25360.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'julio',c:'OTROS',ger:null,meta:25360.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'agosto',c:'OTROS',ger:null,meta:25360.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'septiembre',c:'OTROS',ger:null,meta:28530.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'octubre',c:'OTROS',ger:null,meta:28530.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'noviembre',c:'OTROS',ger:null,meta:31700.0,rep:'TODOS'},
+{esc:'OPT',anio:2026,m:'diciembre',c:'OTROS',ger:null,meta:31700.0,rep:'TODOS'}];
 // Copia base del histórico embebido (2022-2026). Se usa para fusionar con la
 // respuesta en vivo de SharePoint sin perder años/meses que el flujo no traiga.
 const ALL_SEED=ALL.slice();
@@ -3029,11 +3553,11 @@ function animateCounters(){
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='metas')renderMetas();animateCounters();}
-const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec'};
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='metas')renderMetas();else if(id==='historico')renderHistorico();animateCounters();}
+const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
 function showSection(sec,e){
   document.querySelectorAll('.sb').forEach(b=>b.classList.remove('active'));
   (e&&e.currentTarget?e.currentTarget:document.getElementById('sec-'+sec)).classList.add('active');
@@ -4220,45 +4744,102 @@ function renderFinalizados(){
   });
 }
 
+// Estado de la pestaña Seguimiento de Metas: escenario elegido (por defecto Esperado) y filtro
+// cruzado interactivo (clic en una barra de cliente/rep/gerencia filtra las demás gráficas de
+// esta pestaña, al estilo Power BI).
+let META_ESC='ESP';
+let META_FILTER={cli:null,rep:null,ger:null};
+const META_ESC_LABEL={ADV:'Adverso',ESP:'Esperado',OPT:'Optimista'};
+
+function setMetaEsc(esc){META_ESC=esc;renderMetas();}
+function toggleMetaFilter(tipo,valor){
+  META_FILTER[tipo]=META_FILTER[tipo]===valor?null:valor;
+  renderMetas();
+}
+function clearMetaFilter(){META_FILTER={cli:null,rep:null,ger:null};renderMetas();}
+
 function renderMetas(){
   function val(r){return r.ir>0?r.ir:r.v;}
   function normC(c){return String(c||'').toUpperCase().replace(/[_\s]/g,'');}
-  // Base "actual" 2026: mismo criterio que Ingresos Anuales (tipo Asignación, Finalizado +
-  // En Ejecución), tomando los fragmentos prorrateados por día para poder agrupar por mes y
-  // trimestre correctamente cuando un pozo cruza de mes.
-  var actual=getAllMes().filter(function(r){
+
+  // Selector de escenario
+  document.getElementById('meta-esc-sel').innerHTML=['ADV','ESP','OPT'].map(function(e){
+    return '<button class="esc-btn'+(META_ESC===e?' active':'')+'" onclick="setMetaEsc(\''+e+'\')">'+META_ESC_LABEL[e]+'</button>';
+  }).join('');
+
+  // Etiqueta de filtro activo (clic en una barra para filtrar; clic de nuevo para quitar)
+  var filtros=[];
+  if(META_FILTER.cli)filtros.push('Cliente: '+META_FILTER.cli);
+  if(META_FILTER.rep)filtros.push('Rep: '+repLabel(META_FILTER.rep));
+  if(META_FILTER.ger)filtros.push('Gerencia: '+META_FILTER.ger);
+  document.getElementById('meta-filter-label').innerHTML=filtros.length
+    ? '🔎 '+filtros.join(' · ')+' <span style="cursor:pointer;text-decoration:underline;margin-left:6px" onclick="clearMetaFilter()">Quitar filtro</span>'
+    : '';
+
+  var metasEsc=METAS.filter(function(x){return x.esc===META_ESC;});
+
+  // Base "actual" 2026: MISMO criterio y MISMA fuente (sin prorratear) que el KPI de la
+  // pestaña Ingresos Anuales, para que los totales coincidan exactamente ahí y aquí. El
+  // prorrateo por día solo se usa más abajo, específicamente para trimestres e histórico
+  // mensual, donde sí importa a qué mes exacto corresponde cada fracción.
+  var actualTotalBase=ALL.filter(function(r){
+    return r.anio===2026&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');
+  });
+  // Versión prorrateada (para trimestres / histórico mensual)
+  var actualMesBase=getAllMes().filter(function(r){
     return r.anio===2026&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');
   });
 
+  // Aplicar el filtro cruzado interactivo a ambas fuentes y a las metas
+  function pasaFiltro(r){
+    if(META_FILTER.cli&&normC(r.c)!==META_FILTER.cli)return false;
+    if(META_FILTER.rep&&r.r!==META_FILTER.rep)return false;
+    if(META_FILTER.ger&&r.ger!==META_FILTER.ger)return false;
+    return true;
+  }
+  function pasaFiltroMeta(x){
+    if(META_FILTER.cli&&normC(x.c)!==META_FILTER.cli)return false;
+    if(META_FILTER.rep&&x.rep!==META_FILTER.rep)return false;
+    if(META_FILTER.ger&&x.ger!==META_FILTER.ger)return false;
+    return true;
+  }
+  var actual=actualTotalBase.filter(pasaFiltro);
+  var actualMes=actualMesBase.filter(pasaFiltro);
+  var metasF=metasEsc.filter(pasaFiltroMeta);
+
+  document.getElementById('meta-cli-title').textContent='Cumplimiento Escenario '+META_ESC_LABEL[META_ESC]+' — Cliente';
+  document.getElementById('meta-hist-title').textContent='Histórico Metas — Real vs. Escenario '+META_ESC_LABEL[META_ESC];
+
   // ── Totales generales (donut) ───────────────────────────────────────────
   var totalActual=actual.reduce(function(s,r){return s+val(r);},0);
-  var totalMeta=METAS.reduce(function(s,x){return s+x.meta;},0);
+  var totalMeta=metasF.reduce(function(s,x){return s+x.meta;},0);
   var pctTotal=totalMeta>0?(totalActual/totalMeta*100):0;
   dc('cMetaDonut');CH.cMetaDonut=new Chart(document.getElementById('cMetaDonut'),{
     type:'doughnut',
     data:{labels:['Cumplido','Restante'],datasets:[{
       data:[Math.min(totalActual,totalMeta),Math.max(totalMeta-totalActual,0)],
-      backgroundColor:['#4C9F5D','#E3E7EF'],borderWidth:0
+      backgroundColor:[B.FIN,B.LIGHT],borderWidth:0
     }]},
     options:{cutout:'72%',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.raw);}}}}}
+      plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.raw);}}}}}
   });
   document.getElementById('meta-donut-center').innerHTML=
-    '<div style="text-align:center;line-height:1.5">'
+    '<div style="text-align:center;line-height:1.5;font-family:\'Inter\',sans-serif">'
     +'<div style="font-size:19px;font-weight:800;color:var(--navy)">'+fmt(totalActual)+'</div>'
     +'<div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--light);padding-bottom:6px;margin-bottom:4px">Ingresos 2026</div>'
     +'<div style="font-size:19px;font-weight:800;color:var(--navy)">'+fmt(totalMeta)+'</div>'
-    +'<div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--light);padding-bottom:6px;margin-bottom:4px">Meta 2026</div>'
-    +'<div style="font-size:19px;font-weight:800;color:#2E7D4F">'+pctTotal.toFixed(1)+'%</div>'
+    +'<div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--light);padding-bottom:6px;margin-bottom:4px">Meta '+META_ESC_LABEL[META_ESC]+'</div>'
+    +'<div style="font-size:19px;font-weight:800;color:'+B.FIN+'">'+pctTotal.toFixed(1)+'%</div>'
     +'<div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Cumplimiento</div>'
     +'</div>';
 
   // ── Cliente ──────────────────────────────────────────────────────────────
   var actPorCli={},metaPorCli={},nombreCli={};
   actual.forEach(function(r){var k=normC(r.c);actPorCli[k]=(actPorCli[k]||0)+val(r);});
-  METAS.forEach(function(x){var k=normC(x.c);metaPorCli[k]=(metaPorCli[k]||0)+x.meta;nombreCli[k]=nombreCli[k]||x.c;});
-  var cliRows=Object.keys(metaPorCli).filter(function(k){return metaPorCli[k]>0;}).map(function(k){
-    return {label:nombreCli[k],actual:actPorCli[k]||0,meta:metaPorCli[k]};
+  metasF.forEach(function(x){var k=normC(x.c);metaPorCli[k]=(metaPorCli[k]||0)+x.meta;nombreCli[k]=nombreCli[k]||x.c;});
+  var cliKeys=Object.keys(metaPorCli).filter(function(k){return metaPorCli[k]>0;});
+  var cliRows=cliKeys.map(function(k){
+    return {key:k,label:nombreCli[k],actual:actPorCli[k]||0,meta:metaPorCli[k]};
   }).sort(function(a,b){return (b.actual/b.meta)-(a.actual/a.meta);});
   var cliLabels=cliRows.map(function(x){return x.label;});
   var cliPct=cliRows.map(function(x){return x.meta>0?Math.min(x.actual/x.meta*100,100):0;});
@@ -4266,15 +4847,15 @@ function renderMetas(){
   dc('cMetaCli');CH.cMetaCli=new Chart(document.getElementById('cMetaCli'),{
     type:'bar',
     data:{labels:cliLabels,datasets:[
-      {data:cliPct,backgroundColor:'#4C9F5D',borderRadius:3,stack:'s',barPercentage:.7},
-      {data:cliRem,backgroundColor:'#E3E7EF',borderRadius:3,stack:'s',barPercentage:.7}
+      {data:cliPct,backgroundColor:cliRows.map(function(x){return META_FILTER.cli&&META_FILTER.cli!==x.key?B.FIN+'55':B.FIN;}),borderRadius:3,stack:'s',barPercentage:.7},
+      {data:cliRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.7}
     ]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       scales:{
         x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
         y:{ticks:{font:{size:10,family:'Inter',weight:'700'},color:B.NAVY},grid:{display:false},stacked:true}
       },
-      plugins:{legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
+      plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
         var row=cliRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
         return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
       }}}}
@@ -4291,13 +4872,18 @@ function renderMetas(){
       ctx.restore();
     }}]
   });
+  document.getElementById('cMetaCli').onclick=function(e){
+    var pts=CH.cMetaCli.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+    if(!pts.length)return;
+    toggleMetaFilter('cli',cliRows[pts[0].index].key);
+  };
 
   // ── Representante ────────────────────────────────────────────────────────
   var actPorRep={},metaPorRep={};
   actual.forEach(function(r){actPorRep[r.r]=(actPorRep[r.r]||0)+val(r);});
-  METAS.forEach(function(x){if(x.rep)metaPorRep[x.rep]=(metaPorRep[x.rep]||0)+x.meta;});
+  metasF.forEach(function(x){if(x.rep)metaPorRep[x.rep]=(metaPorRep[x.rep]||0)+x.meta;});
   var repRows=REPS.filter(function(rp){return metaPorRep[rp]>0;}).map(function(rp){
-    return {label:repLabel(rp),actual:actPorRep[rp]||0,meta:metaPorRep[rp]};
+    return {key:rp,label:repLabel(rp),actual:actPorRep[rp]||0,meta:metaPorRep[rp]};
   }).sort(function(a,b){return (b.actual/b.meta)-(a.actual/a.meta);});
   var repLabels=repRows.map(function(x){return x.label;});
   var repPct=repRows.map(function(x){return x.meta>0?Math.min(x.actual/x.meta*100,100):0;});
@@ -4305,13 +4891,13 @@ function renderMetas(){
   dc('cMetaRep');CH.cMetaRep=new Chart(document.getElementById('cMetaRep'),{
     type:'bar',
     data:{labels:repLabels,datasets:[
-      {data:repPct,backgroundColor:B.NAVY,borderRadius:3,stack:'s',barPercentage:.7},
-      {data:repRem,backgroundColor:'#E3E7EF',borderRadius:3,stack:'s',barPercentage:.7}
+      {data:repPct,backgroundColor:repRows.map(function(x){return META_FILTER.rep&&META_FILTER.rep!==x.key?B.NAVY+'55':B.NAVY;}),borderRadius:3,stack:'s',barPercentage:.7},
+      {data:repRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.7}
     ]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
         y:{ticks:{font:{size:10,family:'Inter',weight:'700'},color:B.NAVY},grid:{display:false},stacked:true}},
-      plugins:{legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
+      plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
         var row=repRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
         return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
       }}}}
@@ -4328,13 +4914,18 @@ function renderMetas(){
       ctx.restore();
     }}]
   });
+  document.getElementById('cMetaRep').onclick=function(e){
+    var pts=CH.cMetaRep.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+    if(!pts.length)return;
+    toggleMetaFilter('rep',repRows[pts[0].index].key);
+  };
 
   // ── Gerencia ECP (barras verticales) ────────────────────────────────────
   var actPorGer={},metaPorGer={};
   actual.forEach(function(r){if(r.ger&&r.ger!=='NA')actPorGer[r.ger]=(actPorGer[r.ger]||0)+val(r);});
-  METAS.forEach(function(x){if(x.ger)metaPorGer[x.ger]=(metaPorGer[x.ger]||0)+x.meta;});
+  metasF.forEach(function(x){if(x.ger)metaPorGer[x.ger]=(metaPorGer[x.ger]||0)+x.meta;});
   var gerRows=Object.keys(metaPorGer).filter(function(g){return metaPorGer[g]>0;}).map(function(g){
-    return {label:g,actual:actPorGer[g]||0,meta:metaPorGer[g]};
+    return {key:g,label:g,actual:actPorGer[g]||0,meta:metaPorGer[g]};
   }).sort(function(a,b){return (b.actual/b.meta)-(a.actual/a.meta);});
   var gerLabels=gerRows.map(function(x){return x.label;});
   var gerPct=gerRows.map(function(x){return x.meta>0?Math.min(x.actual/x.meta*100,100):0;});
@@ -4342,13 +4933,13 @@ function renderMetas(){
   dc('cMetaGer');CH.cMetaGer=new Chart(document.getElementById('cMetaGer'),{
     type:'bar',
     data:{labels:gerLabels,datasets:[
-      {data:gerPct,backgroundColor:B.GOLD,borderRadius:3,stack:'s',barPercentage:.6},
-      {data:gerRem,backgroundColor:'#E3E7EF',borderRadius:3,stack:'s',barPercentage:.6}
+      {data:gerPct,backgroundColor:gerRows.map(function(x){return META_FILTER.ger&&META_FILTER.ger!==x.key?B.GOLD+'99':B.GOLD;}),borderRadius:3,stack:'s',barPercentage:.6},
+      {data:gerRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.6}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       scales:{y:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
         x:{ticks:{font:{size:8,family:'Inter',weight:'600'},color:B.MUTED,maxRotation:0,autoSkip:false,callback:function(v,i){var l=gerLabels[i]||'';return l.length>10?l.slice(0,9)+'…':l;}},grid:{display:false},stacked:true}},
-      plugins:{legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
+      plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
         var row=gerRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
         return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
       },title:function(items){return gerRows[items[0].dataIndex].label;}}}}
@@ -4366,6 +4957,11 @@ function renderMetas(){
       ctx.restore();
     }}]
   });
+  document.getElementById('cMetaGer').onclick=function(e){
+    var pts=CH.cMetaGer.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+    if(!pts.length)return;
+    toggleMetaFilter('ger',gerRows[pts[0].index].key);
+  };
 
   // ── Trimestres (gauges Q1-Q4) ───────────────────────────────────────────
   var TRIM=[{n:'Q1',meses:['enero','febrero','marzo']},{n:'Q2',meses:['abril','mayo','junio']},
@@ -4381,32 +4977,81 @@ function renderMetas(){
   TRIM.forEach(function(t){
     var aQ=0,mQ=0;
     t.meses.forEach(function(mo){
-      aQ+=actual.filter(function(r){return r.m===mo;}).reduce(function(s,r){return s+val(r);},0);
-      mQ+=METAS.filter(function(x){return x.m===mo;}).reduce(function(s,x){return s+x.meta;},0);
+      aQ+=actualMes.filter(function(r){return r.m===mo;}).reduce(function(s,r){return s+val(r);},0);
+      mQ+=metasF.filter(function(x){return x.m===mo;}).reduce(function(s,x){return s+x.meta;},0);
     });
     var pctQ=mQ>0?Math.min(aQ/mQ*100,100):0;
     var cv=document.getElementById('cQ-'+t.n);
     dc('cQ-'+t.n);CH['cQ-'+t.n]=new Chart(cv,{
       type:'doughnut',
-      data:{datasets:[{data:[pctQ,100-pctQ],backgroundColor:[pctQ>=80?'#4C9F5D':pctQ>=50?'#D4AC0D':'#C0392B','#E3E7EF'],borderWidth:0}]},
+      data:{datasets:[{data:[pctQ,100-pctQ],backgroundColor:[pctQ>=80?B.FIN:pctQ>=50?B.GOLD_D:B.CAN,B.LIGHT],borderWidth:0}]},
       options:{cutout:'74%',circumference:180,rotation:-90,responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{enabled:false}}}
+        plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{enabled:false}}}
     });
     document.getElementById('cQ-'+t.n+'-val').textContent=fmt(aQ);
     document.getElementById('cQ-'+t.n+'-max').textContent=fmt(mQ);
   });
 
-  // ── Histórico Metas (mensual: real vs meta) ─────────────────────────────
-  var histAct=MO.map(function(mo){return actual.filter(function(r){return r.m===mo;}).reduce(function(s,r){return s+val(r);},0);});
-  var histMeta=MO.map(function(mo){return METAS.filter(function(x){return x.m===mo;}).reduce(function(s,x){return s+x.meta;},0);});
+  // ── Histórico Metas (mensual: real vs escenario elegido) ────────────────
+  var histAct=MO.map(function(mo){return actualMes.filter(function(r){return r.m===mo;}).reduce(function(s,r){return s+val(r);},0);});
+  var histMeta=MO.map(function(mo){return metasF.filter(function(x){return x.m===mo;}).reduce(function(s,x){return s+x.meta;},0);});
   var mesLabels=MO.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1,3);});
   dc('cMetaHist');CH.cMetaHist=new Chart(document.getElementById('cMetaHist'),{
     type:'line',
     data:{labels:mesLabels,datasets:[
-      {label:'Real',data:histAct,borderColor:'#4C9F5D',backgroundColor:'rgba(76,159,93,.35)',fill:true,tension:.4,pointRadius:0,borderWidth:2},
-      {label:'Meta',data:histMeta,borderColor:B.NAVY,backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:2}
+      {label:'Real',data:histAct,borderColor:B.FIN,backgroundColor:B.FIN_BG,fill:true,tension:.4,pointRadius:0,borderWidth:2},
+      {label:'Meta ('+META_ESC_LABEL[META_ESC]+')',data:histMeta,borderColor:B.NAVY,backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:2}
     ]},
-    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10}}})})
+    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
+      pctLabels:{enabled:false},
+      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10}}
+    })})
+  });
+}
+
+function renderHistorico(){
+  function val(r){return r.ir>0?r.ir:r.v;}
+  var allMes=getAllMes();
+  function porAnioMes(anio){
+    return MO.map(function(mo){
+      return allMes.filter(function(r){return r.anio===anio&&r.m===mo&&r.s==='FINALIZADO'&&r.t==='A';}).reduce(function(s,r){return s+val(r);},0);
+    });
+  }
+  var anios=[2022,2023,2024,2025,2026];
+  var datos={};
+  anios.forEach(function(a){datos[a]=porAnioMes(a);});
+  // Banda histórica 2022-2025: mínimo, máximo y promedio por mes (en vez de 4 líneas sueltas
+  // que se cruzan y confunden, se muestra como un rango sombreado con una línea de promedio).
+  var histYears=[2022,2023,2024,2025];
+  var bandMax=MO.map(function(_,i){return Math.max.apply(null,histYears.map(function(a){return datos[a][i];}));});
+  var bandMin=MO.map(function(_,i){return Math.min.apply(null,histYears.map(function(a){return datos[a][i];}));});
+  var bandAvg=MO.map(function(_,i){return histYears.reduce(function(s,a){return s+datos[a][i];},0)/histYears.length;});
+  var mesLabels=MO.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1);});
+
+  dc('cHistAnio');CH.cHistAnio=new Chart(document.getElementById('cHistAnio'),{
+    type:'line',
+    data:{labels:mesLabels,datasets:[
+      {label:'Máximo 2022-2025',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:.35},
+      {label:'Rango histórico 2022-2025',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:B.LIGHT,tension:.35},
+      {label:'Promedio 2022-2025',data:bandAvg,borderColor:B.DIM,borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false,tension:.35},
+      {label:'2026 (año en curso)',data:datos[2026],borderColor:B.GOLD_D,backgroundColor:'transparent',borderWidth:3,pointRadius:0,fill:false,tension:.35}
+    ]},
+    options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{
+      pctLabels:{enabled:false},
+      legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,
+        filter:function(item){return item.text!=='Máximo 2022-2025';}}},
+      tooltip:{callbacks:{
+        label:function(c){
+          if(c.dataset.label==='Máximo 2022-2025')return null;
+          if(c.dataset.label==='Rango histórico 2022-2025'){
+            var i=c.dataIndex;
+            return 'Rango 2022-2025: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
+          }
+          return c.dataset.label+': '+fmt(c.raw);
+        },
+        filter:function(c){return c.dataset.label!=='Máximo 2022-2025';}
+      }}
+    })})
   });
 }
 </script>
