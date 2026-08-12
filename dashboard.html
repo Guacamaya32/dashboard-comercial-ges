@@ -74,7 +74,7 @@ body{font-family:'Inter',sans-serif;background:var(--off-white);color:var(--ink)
 .badge-w{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.03em}
 .hdr-date{font-size:10px;color:rgba(255,255,255,.35);font-family:'Inter',sans-serif}
 .hdr-ver{font-size:10px;color:rgba(255,255,255,.5);font-family:'Inter',sans-serif;letter-spacing:.02em;margin-top:2px}
-.fbar{background:var(--white);border-bottom:3px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:62px;z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
+.fbar{background:var(--white);border-bottom:3px solid var(--gold);padding:8px 32px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:106px;z-index:190;box-shadow:0 2px 8px rgba(0,32,96,.06)}
 .fl{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);white-space:nowrap}
 .fsep{width:1px;height:18px;background:var(--light);flex-shrink:0}
 select{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;background:var(--white);border:1.5px solid var(--light);color:var(--ink);border-radius:var(--r);padding:5px 9px;outline:none;height:30px}
@@ -87,7 +87,13 @@ select:focus{border-color:var(--navy)}
 .refresh-btn.loading .ric{animation:spin .8s linear infinite}
 .clr-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--can);cursor:pointer;margin-left:auto;background:none;border:none}
 .clr-btn:hover{text-decoration:underline}
-.mnav{background:var(--white);border-bottom:1px solid var(--light);padding:0 32px;display:flex;gap:0;box-shadow:0 1px 4px rgba(0,32,96,.04);position:sticky;top:108px;z-index:180}
+.snav{background:var(--navy-d);padding:0 32px;display:flex;gap:4px;position:sticky;top:62px;z-index:195;box-shadow:0 2px 8px rgba(0,32,96,.15)}
+.sb{padding:12px 22px;border:none;background:transparent;color:rgba(255,255,255,.55);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .12s;border-bottom:3px solid transparent;display:flex;align-items:center;gap:7px}
+.sb:hover{color:rgba(255,255,255,.85)}
+.sb.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.06)}
+.sb .sb-tag{font-size:9px;font-weight:700;background:rgba(255,255,255,.15);padding:2px 6px;border-radius:3px;letter-spacing:.03em}
+.sb.active .sb-tag{background:var(--gold);color:var(--navy-d)}
+.mnav{background:var(--white);border-bottom:1px solid var(--light);padding:0 32px;display:flex;gap:0;box-shadow:0 1px 4px rgba(0,32,96,.04);position:sticky;top:152px;z-index:180}
 .mb{padding:11px 18px;border:none;background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-bottom:3px solid transparent;cursor:pointer;transition:all .12s;margin-bottom:-1px}
 .mb:hover{color:var(--navy)}
 .mb.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
@@ -232,9 +238,9 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 @media(max-width:800px){.g2,.g22{grid-template-columns:1fr}main{padding:14px}
-.hdr,.mnav,.fbar{padding-left:14px;padding-right:14px}
+.hdr,.mnav,.fbar,.snav{padding-left:14px;padding-right:14px}
 .sc-hdr{grid-template-columns:1fr}.sc-col.o{border-left:none;border-top:1px solid var(--light)}}
-@media print{.mnav,.fbar,.tt-bar{display:none}.view{display:block!important}}
+@media print{.mnav,.fbar,.snav,.tt-bar{display:none}.view{display:block!important}}
 </style>
 </head>
 <body>
@@ -294,12 +300,19 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="clr-btn" id="clr-btn" onclick="clearFilters()"></button>
 </div>
 
-<div class="mnav">
-  <button class="mb active" onclick="showView('mensual',event)">📊 Proyecciones</button>
-  <button class="mb" onclick="showView('representantes',event)">👤 Representantes</button>
-  <button class="mb" onclick="showView('clientes',event)">🏢 Clientes</button>
-  <button class="mb" onclick="showView('detalle',event)">📋 Detalle</button>
-  <button class="mb" onclick="showView('finalizados',event)">✅ Ejecutados</button>
+<div class="snav">
+  <button class="sb active" id="sec-proy" onclick="showSection('proy',event)">📊 Proyecciones<span class="sb-tag">4</span></button>
+  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">1</span></button>
+</div>
+
+<div class="mnav" id="mnav-proy">
+  <button class="mb active" data-view="mensual" onclick="showView('mensual',event)">📊 Proyecciones</button>
+  <button class="mb" data-view="representantes" onclick="showView('representantes',event)">👤 Representantes</button>
+  <button class="mb" data-view="clientes" onclick="showView('clientes',event)">🏢 Clientes</button>
+  <button class="mb" data-view="detalle" onclick="showView('detalle',event)">📋 Detalle</button>
+</div>
+<div class="mnav" id="mnav-ejec" style="display:none">
+  <button class="mb" data-view="finalizados" onclick="showView('finalizados',event)">✅ Evolución y Resultados</button>
 </div>
 
 <main>
@@ -2747,7 +2760,19 @@ function animateCounters(){
   });
 }
 function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();animateCounters();}
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');refreshActive();}
+const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec'};
+const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
+let LAST_TAB={proy:'mensual',ejec:'finalizados'};
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
+function showSection(sec,e){
+  document.querySelectorAll('.sb').forEach(b=>b.classList.remove('active'));
+  (e&&e.currentTarget?e.currentTarget:document.getElementById('sec-'+sec)).classList.add('active');
+  document.getElementById('mnav-proy').style.display=sec==='proy'?'flex':'none';
+  document.getElementById('mnav-ejec').style.display=sec==='ejec'?'flex':'none';
+  const tab=LAST_TAB[sec]||SECTION_DEFAULT[sec];
+  const btn=document.querySelector('#mnav-'+sec+' .mb[data-view="'+tab+'"]');
+  showView(tab,{currentTarget:btn});
+}
 
 const sopts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:true},y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%',stacked:true}}});
 const hopts=()=>({responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:v=>fmtM(v)},grid:{color:B.LIGHT},border:{display:false},grace:'15%'},y:{ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}}});
@@ -2911,7 +2936,7 @@ function renderMensual(){
       +summaryRow
       +'<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">'
       +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+cardsHtml+'</div>'
-      +'<div style="display:flex;flex-direction:column;gap:12px;position:sticky;top:180px">'
+      +'<div style="display:flex;flex-direction:column;gap:12px;position:sticky;top:224px">'
       // RECHAZADO chart panel
       +'<div style="background:#FDECEA;border:1px solid #F5B0B0;border-radius:var(--rl);padding:12px">'
       +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C0392B;margin-bottom:8px">&#128683; Motivo de Rechazo</div>'
