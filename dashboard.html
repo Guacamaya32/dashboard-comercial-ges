@@ -507,7 +507,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 
 <div class="fbar">
   <span class="fl">Año</span>
-  <select id="g-anio" onchange="applyFilters()" style="min-width:90px">
+  <select id="g-anio" onchange="applyFilters()" autocomplete="off" style="min-width:90px">
     <option value="">Todos</option>
     <option value="2026" selected>2026</option>
     <option value="2025">2025</option>
@@ -517,7 +517,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </select>
   <div class="fsep"></div>
   <span class="fl">Mes</span>
-  <select id="g-mes" onchange="applyFilters()" style="min-width:120px">
+  <select id="g-mes" onchange="applyFilters()" autocomplete="off" style="min-width:120px">
     <option value="">Todos</option>
     <option value="enero">Enero</option><option value="febrero">Febrero</option>
     <option value="marzo">Marzo</option><option value="abril">Abril</option>
@@ -528,7 +528,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </select>
   <div class="fsep"></div>
   <span class="fl">Rep.</span>
-  <select id="g-rep" onchange="applyFilters()">
+  <select id="g-rep" onchange="applyFilters()" autocomplete="off">
     <option value="">Todos</option>
     <option value="MICHELL">MICHELL SANABRIA</option><option value="JULIANA">JULIANA OTALORA</option><option value="JOHAN">JOHAN DUITAMA</option><option value="JUAN">JUAN VEJARANO</option>
   </select>
@@ -4455,7 +4455,17 @@ function exportCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_${G_ANIO||'Todos'}_${G_MES||'anual'}.csv`;a.click();
 }
 
-(function(){const selm=document.getElementById('g-mes');if(selm&&G_MES)selm.value=G_MES;const sely=document.getElementById('g-anio');if(sely&&G_ANIO)sely.value=G_ANIO;})();
+(function(){
+  // Los navegadores (sobre todo iOS/Safari) a veces restauran automáticamente la última
+  // selección que tenía un <select> en una visita anterior, incluso después de recargar la
+  // página — independientemente de lo que el propio código defina como valor por defecto. Si
+  // eso pasa con el filtro de Representante, el dashboard queda filtrado a una sola persona
+  // en silencio (todo se ve "con menos ingresos" y no es obvio por qué). Por eso los 3
+  // selectores de filtro se fuerzan explícitamente al valor que el código espera.
+  const selm=document.getElementById('g-mes');if(selm)selm.value=G_MES||'';
+  const sely=document.getElementById('g-anio');if(sely)sely.value=G_ANIO||'';
+  const selr=document.getElementById('g-rep');if(selr)selr.value=G_REP||'';
+})();
 document.getElementById('live-date').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
 var _av=document.getElementById('app-ver');if(_av)_av.textContent=APP_VERSION+' · '+APP_FECHA;
 updateClrBtn();
