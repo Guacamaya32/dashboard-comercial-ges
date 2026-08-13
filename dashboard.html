@@ -10,6 +10,7 @@
 const pctLabelPlugin = {
   id: 'pctLabels',
   afterDatasetsDraw(chart, args, opts) {
+    try{
     if(!opts || opts.enabled===false) return;
     try{ if(chart.config._config.type==='doughnut'||chart.config._config.type==='pie') return; }catch(e){}
     const {ctx, data, chartArea:{top,bottom,left,right}} = chart;
@@ -41,6 +42,7 @@ const pctLabelPlugin = {
       }
     });
     ctx.restore();
+    }catch(e){ console.warn('pctLabelPlugin error (ignorado):', e); }
   }
 };
 Chart.register(pctLabelPlugin);
@@ -52,10 +54,13 @@ Chart.register(pctLabelPlugin);
 const crosshairPlugin = {
   id: 'crosshair',
   afterDatasetsDraw(chart, args, opts) {
+    try{
     if(!opts || !opts.enabled) return;
     const active = chart.tooltip && chart.tooltip._active;
     if(!active || !active.length) return;
-    const x = active[0].element.x;
+    const el = active[0] && active[0].element;
+    if(!el || el.x==null) return;
+    const x = el.x;
     const {top, bottom} = chart.chartArea;
     const ctx = chart.ctx;
     ctx.save();
@@ -67,6 +72,7 @@ const crosshairPlugin = {
     ctx.lineTo(x, bottom);
     ctx.stroke();
     ctx.restore();
+    }catch(e){ console.warn('crosshairPlugin error (ignorado):', e); }
   }
 };
 Chart.register(crosshairPlugin);
@@ -76,6 +82,7 @@ Chart.register(crosshairPlugin);
 const valueLabelsPlugin = {
   id: 'valueLabels',
   afterDatasetsDraw(chart, args, opts) {
+    try{
     if(!opts || !opts.enabled) return;
     const configs = Array.isArray(opts.series) ? opts.series : [{datasetIndex:opts.datasetIndex||0,color:opts.color,format:opts.format,offset:opts.offset,position:opts.position}];
     const ctx = chart.ctx;
@@ -83,7 +90,9 @@ const valueLabelsPlugin = {
       const di = cfg.datasetIndex||0;
       const meta = chart.getDatasetMeta(di);
       if(!meta || meta.hidden) return;
-      const data = chart.data.datasets[di].data;
+      const ds = chart.data.datasets[di];
+      if(!ds) return;
+      const data = ds.data;
       const below = cfg.position==='below';
       ctx.save();
       ctx.font = '700 9px Inter, sans-serif';
@@ -98,6 +107,7 @@ const valueLabelsPlugin = {
       });
       ctx.restore();
     });
+    }catch(e){ console.warn('valueLabelsPlugin error (ignorado):', e); }
   }
 };
 Chart.register(valueLabelsPlugin);
@@ -107,11 +117,13 @@ Chart.register(valueLabelsPlugin);
 const glowPointPlugin = {
   id: 'glowPoint',
   afterDatasetsDraw(chart, args, opts) {
+    try{
     if(!opts || !opts.enabled) return;
     const di = opts.datasetIndex||0;
     const meta = chart.getDatasetMeta(di);
     if(!meta || meta.hidden) return;
     const ds = chart.data.datasets[di];
+    if(!ds) return;
     const radii = Array.isArray(ds.pointRadius) ? ds.pointRadius : [];
     const ctx = chart.ctx;
     ctx.save();
@@ -126,6 +138,7 @@ const glowPointPlugin = {
       ctx.fill();
     });
     ctx.restore();
+    }catch(e){ console.warn('glowPointPlugin error (ignorado):', e); }
   }
 };
 Chart.register(glowPointPlugin);
@@ -135,9 +148,10 @@ Chart.register(glowPointPlugin);
 const regionHighlightPlugin = {
   id: 'regionHighlight',
   beforeDatasetsDraw(chart, args, opts) {
+    try{
     if(!opts || !opts.enabled || opts.startIndex==null || opts.startIndex<0) return;
     const {ctx, chartArea, scales} = chart;
-    if(!chartArea) return;
+    if(!chartArea || !scales || !scales.x) return;
     const xScale = scales.x;
     const stepPx = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
     const xStart = xScale.getPixelForValue(opts.startIndex) - stepPx/2;
@@ -146,6 +160,7 @@ const regionHighlightPlugin = {
     ctx.fillStyle = opts.color || 'rgba(255,192,0,.07)';
     ctx.fillRect(left, chartArea.top, chartArea.right-left, chartArea.bottom-chartArea.top);
     ctx.restore();
+    }catch(e){ console.warn('regionHighlightPlugin error (ignorado):', e); }
   }
 };
 Chart.register(regionHighlightPlugin);
