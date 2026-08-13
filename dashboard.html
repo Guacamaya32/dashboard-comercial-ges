@@ -4567,10 +4567,26 @@ async function cargarDatos(esManual){
     // disparaba con un umbral fijo de 15, que el crecimiento normal supera cada mes).
     const fracNuevos=live.length?(nuevos.length/live.length):0;
     const LIMITE_FRAC=0.5; // >50% de la tabla en vivo sin calzar ⇒ probable desajuste de formato
+    // Segunda red de seguridad: si el lote en vivo trae MUCHOS MENOS registros de los que ya
+    // había confirmados (ej. por una conexión inestable —típico en celular— que corta la
+    // respuesta de SharePoint a medias, o un límite de filas del lado de Power Automate), la
+    // guarda de arriba no lo detecta (esos registros SÍ calzan con el histórico, solo que
+    // faltan muchos) — y "ALL=live" reemplazaría todo el histórico por ese lote incompleto,
+    // mostrando de golpe muchos menos ingresos sin que nadie haya cambiado nada. Se exige que
+    // el lote en vivo tenga al menos el 85% de los registros del histórico ya verificado.
+    const LIMITE_MIN_FRAC=0.85;
+    const fracTamano=ALL_SEED.length?(live.length/ALL_SEED.length):1;
     if(nuevos.length>15 && fracNuevos>LIMITE_FRAC){
       console.warn('Refresh SharePoint descartado: '+nuevos.length+' de '+live.length+' registros ('+Math.round(fracNuevos*100)+'%) no calzan con el histórico — probable desajuste de formato.');
+      document.getElementById('live-date').textContent='⚠️ Mostrando datos verificados (formato inesperado en SharePoint)';
       if(esManual){
         alert('La actualización desde SharePoint no se aplicó porque los datos no coinciden con el formato esperado ('+nuevos.length+' de '+live.length+' registros no calzan con el histórico, lo cual sugiere un cambio de formato y no datos nuevos reales).\n\nSe mantienen los datos verificados. Comparte el detalle con quien armó el flujo de Power Automate, o súbeme el Excel actualizado y regenero el histórico.');
+      }
+    }else if(fracTamano<LIMITE_MIN_FRAC){
+      console.warn('Refresh SharePoint descartado: la tabla en vivo trae solo '+live.length+' registros de los '+ALL_SEED.length+' ya confirmados ('+Math.round(fracTamano*100)+'%) — probable respuesta incompleta de SharePoint.');
+      document.getElementById('live-date').textContent='⚠️ Mostrando datos verificados (SharePoint trajo una respuesta incompleta)';
+      if(esManual){
+        alert('La actualización desde SharePoint no se aplicó porque trajo muchos menos registros de los esperados ('+live.length+' de '+ALL_SEED.length+'), lo que sugiere una respuesta incompleta (por ejemplo, por una conexión inestable) y no que los datos realmente hayan disminuido.\n\nSe mantienen los datos verificados. Intenta actualizar de nuevo con mejor conexión.');
       }
     }else{
       // La actualización pasó el guard, así que la tabla en vivo del Excel es la verdad completa
