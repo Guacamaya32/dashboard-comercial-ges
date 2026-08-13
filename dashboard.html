@@ -77,22 +77,27 @@ const valueLabelsPlugin = {
   id: 'valueLabels',
   afterDatasetsDraw(chart, args, opts) {
     if(!opts || !opts.enabled) return;
-    const di = opts.datasetIndex||0;
-    const meta = chart.getDatasetMeta(di);
-    if(!meta || meta.hidden) return;
-    const data = chart.data.datasets[di].data;
+    const configs = Array.isArray(opts.series) ? opts.series : [{datasetIndex:opts.datasetIndex||0,color:opts.color,format:opts.format,offset:opts.offset,position:opts.position}];
     const ctx = chart.ctx;
-    ctx.save();
-    ctx.font = '700 9px Inter, sans-serif';
-    ctx.fillStyle = opts.color || '#002060';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    meta.data.forEach((point, i) => {
-      const v = data[i];
-      if(v===null||v===undefined) return;
-      ctx.fillText(opts.format ? opts.format(v) : v, point.x, point.y - (opts.offset||8));
+    configs.forEach(cfg => {
+      const di = cfg.datasetIndex||0;
+      const meta = chart.getDatasetMeta(di);
+      if(!meta || meta.hidden) return;
+      const data = chart.data.datasets[di].data;
+      const below = cfg.position==='below';
+      ctx.save();
+      ctx.font = '700 9px Inter, sans-serif';
+      ctx.fillStyle = cfg.color || '#002060';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = below ? 'top' : 'bottom';
+      meta.data.forEach((point, i) => {
+        const v = data[i];
+        if(v===null||v===undefined) return;
+        const off = cfg.offset||8;
+        ctx.fillText(cfg.format ? cfg.format(v) : v, point.x, below ? point.y+off : point.y-off);
+      });
+      ctx.restore();
     });
-    ctx.restore();
   }
 };
 Chart.register(valueLabelsPlugin);
@@ -124,6 +129,26 @@ const glowPointPlugin = {
   }
 };
 Chart.register(glowPointPlugin);
+
+// Tinte de fondo desde cierto punto del eje X en adelante — se usa para resaltar visualmente
+// la región de "año en curso + forecast" frente al histórico más antiguo.
+const regionHighlightPlugin = {
+  id: 'regionHighlight',
+  beforeDatasetsDraw(chart, args, opts) {
+    if(!opts || !opts.enabled || opts.startIndex==null || opts.startIndex<0) return;
+    const {ctx, chartArea, scales} = chart;
+    if(!chartArea) return;
+    const xScale = scales.x;
+    const stepPx = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
+    const xStart = xScale.getPixelForValue(opts.startIndex) - stepPx/2;
+    const left = Math.max(xStart, chartArea.left);
+    ctx.save();
+    ctx.fillStyle = opts.color || 'rgba(255,192,0,.07)';
+    ctx.fillRect(left, chartArea.top, chartArea.right-left, chartArea.bottom-chartArea.top);
+    ctx.restore();
+  }
+};
+Chart.register(regionHighlightPlugin);
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -182,7 +207,7 @@ select:focus{border-color:var(--navy)}
 .esc-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
 main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 body.detalle-active main{max-width:none;padding:10px 12px 40px}
-body.metas-active main,body.historico-active main{max-width:none;padding:20px 24px 60px}
+body.metas-active main,body.historico-active main,body.forecast-active main{max-width:none;padding:20px 24px 60px}
 .view{display:none}.view.active{display:block}
 .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
 .kpi{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
@@ -363,7 +388,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   /* KPIs: 2 por fila en vez de intentar acomodar 5-6 en una sola línea angosta */
   .krow{grid-template-columns:repeat(2,1fr)}
 
-  body.metas-active main,body.historico-active main,body.detalle-active main{padding:10px 8px 40px}
+  body.metas-active main,body.historico-active main,body.forecast-active main,body.detalle-active main{padding:10px 8px 40px}
 }
 
 /* ── Responsive: celular angosto (≤480px) ─────────────────────────────── */
@@ -571,7 +596,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <div class="krow" id="forecast-kpi"></div>
   <div class="card">
     <div class="ct">Forecast 2026 — Modelo Holt-Winters (suavizado exponencial triple)</div>
-    <div style="height:380px"><canvas id="cForecast"></canvas></div>
+    <div style="height:440px"><canvas id="cForecast"></canvas></div>
     <div id="forecast-note" style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5"></div>
   </div>
 </div>
@@ -3696,7 +3721,7 @@ function refreshActive(){const id=document.querySelector('.view.active')?.id?.re
 const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
 function showSection(sec,e){
   document.querySelectorAll('.sb').forEach(b=>b.classList.remove('active'));
   (e&&e.currentTarget?e.currentTarget:document.getElementById('sec-'+sec)).classList.add('active');
@@ -4548,6 +4573,12 @@ var FIN_FILTER={rep:null,cli:null,lin:null,mes:null}; // interactive filter stat
 
 function resetFinFilter(){FIN_FILTER={rep:null,cli:null,lin:null,mes:null};renderFinalizados();}
 
+// Igual que en Metas: si el usuario ya cambió de pestaña antes de que corra el render
+// diferido del clic, evita dibujar en un contenedor oculto (display:none) que rompe Chart.js.
+function renderFinalizadosSiActiva(){
+  var v=document.getElementById('view-finalizados');
+  if(v&&v.classList.contains('active'))renderFinalizados();
+}
 function renderFinalizados(){
   const MES=MO;
   const DASH_PAL=['#002060','#1A5276','#006B3C','#CC9A00','#C0392B','#7D3C98','#CA6F1E','#566573'];
@@ -4745,7 +4776,7 @@ function renderFinalizados(){
     if(!pts.length)return;
     var m=MES[pts[0].index];
     FIN_FILTER.mes=FIN_FILTER.mes===m?null:m;
-    setTimeout(renderFinalizados,0);
+    setTimeout(renderFinalizadosSiActiva,0);
   };
 
   // ── CHART 2: Rep donut ─────────────────────────────────────────────────
@@ -4792,7 +4823,7 @@ function renderFinalizados(){
     if(!pts.length)return;
     var rp=repLabels[pts[0].index];
     FIN_FILTER.rep=FIN_FILTER.rep===rp?null:rp;
-    setTimeout(renderFinalizados,0);
+    setTimeout(renderFinalizadosSiActiva,0);
   };
 
   // ── CHART 3: Client donut ──────────────────────────────────────────────
@@ -4840,7 +4871,7 @@ function renderFinalizados(){
     if(!pts.length)return;
     var cli=topCli[pts[0].index][0];
     FIN_FILTER.cli=FIN_FILTER.cli===cli?null:cli;
-    setTimeout(renderFinalizados,0);
+    setTimeout(renderFinalizadosSiActiva,0);
   };
 
   // ── CHART 4: Ingresos por Gerencia ECP ─────────────────────────────────
@@ -4871,16 +4902,24 @@ let META_ESC='ESP';
 let META_FILTER={cli:null,rep:null,ger:null};
 const META_ESC_LABEL={ADV:'Adverso',ESP:'Esperado',OPT:'Optimista'};
 
-function setMetaEsc(esc){META_ESC=esc;setTimeout(renderMetas,0);}
+// Si el usuario ya cambió de pestaña antes de que corra el render diferido, la pestaña de
+// Metas queda oculta (display:none, tamaño cero) — dibujar ahí rompe las gráficas de Chart.js
+// y quedan en blanco incluso al volver después. Por eso cada renderizado diferido primero
+// confirma que la vista siga siendo la activa.
+function renderMetasSiActiva(){
+  var v=document.getElementById('view-metas');
+  if(v&&v.classList.contains('active'))renderMetas();
+}
+function setMetaEsc(esc){META_ESC=esc;setTimeout(renderMetasSiActiva,0);}
 function toggleMetaFilter(tipo,valor){
   META_FILTER[tipo]=META_FILTER[tipo]===valor?null:valor;
   // Diferido: si esto se dispara desde el clic sobre una barra, hay que esperar a que Chart.js
   // termine de procesar ese clic ANTES de destruir/recrear la gráfica. Hacerlo de forma
   // síncrona (dentro del propio manejador de clic del canvas) rompe Chart.js a mitad de camino
   // y deja el resto de las gráficas de la pestaña en blanco.
-  setTimeout(renderMetas,0);
+  setTimeout(renderMetasSiActiva,0);
 }
-function clearMetaFilter(){META_FILTER={cli:null,rep:null,ger:null};setTimeout(renderMetas,0);}
+function clearMetaFilter(){META_FILTER={cli:null,rep:null,ger:null};setTimeout(renderMetasSiActiva,0);}
 
 function renderMetas(){
   function val(r){return r.ir>0?r.ir:r.v;}
@@ -4962,11 +5001,16 @@ function renderMetas(){
   // "OTROS" en el presupuesto agrupa a los clientes que no tienen una meta individual propia.
   // Para que el real sume lo que le corresponde, cualquier cliente con ingreso real que NO
   // tenga su propia meta nombrada también se redirige al balde "OTROS" (antes se perdía: no
-  // aparecía en ningún lado del gráfico).
+  // aparecía en ningún lado del gráfico). otrosDetalle guarda el desglose por cliente real
+  // para poder mostrarlo en el tooltip de esa barra.
   var metaClientKeys=new Set(metasF.filter(function(x){return normC(x.c)!=='OTROS';}).map(function(x){return normC(x.c);}));
+  var otrosDetalle={};
   actual.forEach(function(r){
     var k=normC(r.c);
-    if(!metaClientKeys.has(k))k='OTROS';
+    if(!metaClientKeys.has(k)){
+      k='OTROS';
+      otrosDetalle[r.c]=(otrosDetalle[r.c]||0)+val(r);
+    }
     actPorCli[k]=(actPorCli[k]||0)+val(r);
   });
   metasF.forEach(function(x){var k=normC(x.c);metaPorCli[k]=(metaPorCli[k]||0)+x.meta;nombreCli[k]=nombreCli[k]||x.c;});
@@ -4988,10 +5032,21 @@ function renderMetas(){
         x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
         y:{ticks:{font:{size:10,family:'Inter',weight:'700'},color:B.NAVY},grid:{display:false},stacked:true}
       },
-      plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
-        var row=cliRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
-        return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
-      }}}}
+      plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{
+        label:function(c){
+          var row=cliRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
+          return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
+        },
+        // Para la barra "OTROS", además se lista cada cliente real que la compone.
+        afterBody:function(items){
+          if(!items.length)return;
+          var row=cliRows[items[0].dataIndex];
+          if(row.key!=='OTROS')return;
+          var entries=Object.entries(otrosDetalle).sort(function(a,b){return b[1]-a[1];});
+          if(!entries.length)return;
+          return ['','Clientes incluidos en Otros:'].concat(entries.map(function(e){return '  '+e[0]+': '+fmt(e[1]);}));
+        }
+      }}}
     },
     plugins:[{id:'pctLabelCli',afterDatasetsDraw:function(chart){
       var ctx=chart.ctx,meta0=chart.getDatasetMeta(0);
@@ -5182,11 +5237,12 @@ function renderHistorico(){
   var anios=[2022,2023,2024,2025,2026];
   var datos={};
   anios.forEach(function(a){datos[a]=porAnioMes(a);});
-  // Banda histórica 2022-2025: solo el rango (mínimo a máximo) de esos 4 años por mes, sombreado.
-  var histYears=[2022,2023,2024,2025];
+  // Banda histórica: solo 2022-2024 (2025 pasa a ser su propia línea, como en la referencia).
+  var histYears=[2022,2023,2024];
   var bandMax=MO.map(function(_,i){return Math.max.apply(null,histYears.map(function(a){return datos[a][i];}));});
   var bandMin=MO.map(function(_,i){return Math.min.apply(null,histYears.map(function(a){return datos[a][i];}));});
   var mesLabels=MO.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1);});
+  var data2025=datos[2025].slice();
   // La línea de 2026 solo debe llegar hasta el último mes con datos reales — los meses que
   // todavía no han pasado se dejan en null (no en 0) para que la línea simplemente termine ahí,
   // en vez de mostrar una caída a cero que dé a entender que no hay ingresos previstos.
@@ -5201,16 +5257,17 @@ function renderHistorico(){
   // ── KPIs de contexto ──────────────────────────────────────────────────
   var mesesConDato=data2026.filter(function(v){return v!==null;}).length;
   var ytd2026=data2026.reduce(function(s,v){return s+(v||0);},0);
-  var promHistMismoPeriodo=histYears.reduce(function(s,a){
+  var histYearsKpi=[2022,2023,2024,2025];
+  var promHistMismoPeriodo=histYearsKpi.reduce(function(s,a){
     return s+datos[a].slice(0,mesesConDato).reduce(function(s2,v){return s2+v;},0);
-  },0)/histYears.length;
+  },0)/histYearsKpi.length;
   var pctVsProm=promHistMismoPeriodo>0?(ytd2026/promHistMismoPeriodo*100):0;
   var mejorMes={v:-1,a:0,m:''};
-  histYears.forEach(function(a){
+  histYearsKpi.forEach(function(a){
     datos[a].forEach(function(v,i){if(v>mejorMes.v)mejorMes={v:v,a:a,m:mesLabels[i]};});
   });
   var mesActualVal=lastIdx>=0?data2026[lastIdx]:0;
-  var mesActualHist=histYears.map(function(a){return datos[a][lastIdx];});
+  var mesActualHist=histYearsKpi.map(function(a){return datos[a][lastIdx];});
   var mesActualProm=mesActualHist.reduce(function(a,b){return a+b;},0)/mesActualHist.length;
   var pctMesActual=mesActualProm>0?(mesActualVal/mesActualProm*100):0;
 
@@ -5221,58 +5278,62 @@ function renderHistorico(){
     {l:(lastIdx>=0?mesLabels[lastIdx]:'Mes actual')+' vs su histórico',v:pctMesActual.toFixed(0)+'%',s:'promedio '+(lastIdx>=0?mesLabels[lastIdx]:'')+' 2022-2025: '+fmt(mesActualProm),cls:pctMesActual>=100?'ka':'kr',i:'🎯'}
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
+  // Techo del eje Y ajustado al máximo real de los datos (con un margen chico), en vez de
+  // dejar que el "grace" por defecto infle el eje y la gráfica se vea chica dentro del card.
+  var techoDatos=Math.max.apply(null,bandMax.concat(data2025).concat(data2026.filter(function(v){return v!==null;})));
+  var yMax=Math.ceil(techoDatos*1.12/500000)*500000;
+
   dc('cHistAnio');CH.cHistAnio=new Chart(document.getElementById('cHistAnio'),{
     type:'line',
     data:{labels:mesLabels,datasets:[
-      {label:'Máximo 2022-2025',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:.25},
-      {label:'Rango histórico 2022-2025',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:function(c){
+      {label:'Máximo 2022-2024',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:.3},
+      {label:'Rango 2022-2024',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:function(c){
         var a=c.chart.chartArea;if(!a)return B.LIGHT;
         var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
-        g.addColorStop(0,'rgba(168,180,204,.38)');g.addColorStop(1,'rgba(168,180,204,.08)');
+        g.addColorStop(0,'rgba(168,180,204,.35)');g.addColorStop(1,'rgba(168,180,204,.10)');
         return g;
-      },tension:.25},
-      {label:'Ingresos 2026',data:data2026,borderColor:B.GOLD_D,backgroundColor:function(c){
+      },tension:.3},
+      {label:'2025',data:data2025,borderColor:B.NAVY_M,backgroundColor:'transparent',borderWidth:2.5,pointRadius:3,pointBackgroundColor:B.NAVY_M,pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:6,fill:false,tension:.3,borderCapStyle:'round'},
+      {label:'2026',data:data2026,borderColor:B.GOLD_D,backgroundColor:function(c){
         var a=c.chart.chartArea;if(!a)return 'transparent';
         var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
-        g.addColorStop(0,'rgba(204,154,0,.28)');g.addColorStop(1,'rgba(204,154,0,.02)');
+        g.addColorStop(0,'rgba(204,154,0,.30)');g.addColorStop(1,'rgba(204,154,0,.02)');
         return g;
-      },borderWidth:3,pointRadius:pr2026,pointHoverRadius:6,pointBackgroundColor:B.GOLD_D,pointBorderColor:'#fff',pointBorderWidth:2,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,fill:true,tension:.25,spanGaps:false,borderCapStyle:'round'}
+      },borderWidth:3,pointRadius:pr2026.map(function(r,i){return r||3;}),pointHoverRadius:6,pointBackgroundColor:B.GOLD_D,pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,fill:true,tension:.3,spanGaps:false,borderCapStyle:'round'}
     ]},
     options:Object.assign(sopts(),{
       interaction:{mode:'index',intersect:false},
       hover:{mode:'index',intersect:false},
-      layout:{padding:{top:10}},
+      layout:{padding:{top:26,bottom:10}},
       // Igual que en Histórico Metas: sopts() trae stacked:true (para la barra apilada de
-      // Evolución Mensual) que aquí sumaría "2026" encima del rango histórico. Se desactiva
-      // explícitamente. Sin cuadrícula vertical ni marco — solo la banda degradada y la línea
-      // del año en curso, para un look más limpio.
+      // Evolución Mensual) que aquí sumaría series encima de otras. Se desactiva
+      // explícitamente. Sin cuadrícula vertical ni marco. El eje Y se limita al techo real de
+      // los datos (yMax) en vez de un "grace" genérico, para que la gráfica llene la tarjeta.
       scales:{
         x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:false},
-        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:5},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'12%',stacked:false}
+        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:6},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,max:yMax,stacked:false}
       },
       plugins:Object.assign({},sopts().plugins,{
         pctLabels:{enabled:false},
         crosshair:{enabled:true},
-        glowPoint:{enabled:true,datasetIndex:2,color:B.GOLD_D},
+        glowPoint:{enabled:true,datasetIndex:3,color:B.GOLD_D},
+        valueLabels:{enabled:true,series:[
+          {datasetIndex:2,color:B.NAVY_M,position:'below',offset:9,format:function(v){return fmt(v);}},
+          {datasetIndex:3,color:B.GOLD_D,position:'above',offset:9,format:function(v){return fmt(v);}}
+        ]},
         legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',
-          filter:function(item){return item.text!=='Máximo 2022-2025';}}},
+          filter:function(item){return item.text!=='Máximo 2022-2024';}}},
         tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
           label:function(c){
-            if(c.dataset.label==='Máximo 2022-2025')return null;
-            if(c.dataset.label==='Rango histórico 2022-2025'){
+            if(c.dataset.label==='Máximo 2022-2024')return null;
+            if(c.dataset.label==='Rango 2022-2024'){
               var i=c.dataIndex;
-              return 'Rango 2022-2025: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
+              return 'Rango 2022-2024: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
             }
+            if(c.raw===null||c.raw===undefined)return null;
             return c.dataset.label+': '+fmt(c.raw);
           },
-          // Además del rango, se listan los 4 años individuales para ese mes — no solo el
-          // mínimo/máximo, sino cuánto fue exactamente cada año.
-          afterBody:function(items){
-            if(!items.length)return;
-            var i=items[0].dataIndex;
-            return [''].concat(histYears.map(function(a){return '  '+a+': '+fmt(datos[a][i]);}));
-          },
-          filter:function(c){return c.dataset.label!=='Máximo 2022-2025';}
+          filter:function(c){return c.dataset.label!=='Máximo 2022-2024'&&c.raw!==null&&c.raw!==undefined;}
         }}
       })
     })
@@ -5382,22 +5443,35 @@ function renderForecast(){
     {l:'vs. Meta Esperado',v:pctVsMeta.toFixed(1)+'%',s:fmt(metaEsp)+' de meta',cls:pctVsMeta>=95?'ka':'kr',i:'🎯'}
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
-  var allLabels=etiquetas.concat(forecastLabels);
-  var serieActual=serie.concat(forecastLabels.map(function(){return null;}));
-  var serieForecast=etiquetas.map(function(){return null;}).concat(forecastVals);
+  // El modelo se ajusta con TODO el histórico (más datos = mejor ajuste), pero en la gráfica
+  // solo se muestran los últimos ~16 meses reales antes del forecast — mostrar los 56 meses
+  // completos hacía que el año en curso + el forecast (lo realmente relevante hoy) se vieran
+  // como una franja diminuta al final. Con una ventana más corta, esa parte ocupa buena parte
+  // del ancho de la gráfica.
+  var VENTANA=16;
+  var offsetDisp=Math.max(0,nHist-VENTANA);
+  var etiquetasDisp=etiquetas.slice(offsetDisp);
+  var serieDisp=serie.slice(offsetDisp);
+
+  var allLabels=etiquetasDisp.concat(forecastLabels);
+  var serieActual=serieDisp.concat(forecastLabels.map(function(){return null;}));
+  var serieForecast=etiquetasDisp.map(function(){return null;}).concat(forecastVals);
   // Empalmar el último punto real con el primero del forecast para que la línea no se corte.
-  if(serie.length)serieForecast[etiquetas.length-1]=serie[serie.length-1];
+  if(serieDisp.length)serieForecast[etiquetasDisp.length-1]=serieDisp[serieDisp.length-1];
   var bandaAlta=allLabels.map(function(_,i){
-    if(i<etiquetas.length)return null;
-    var h=i-etiquetas.length+1;
+    if(i<etiquetasDisp.length)return null;
+    var h=i-etiquetasDisp.length+1;
     return forecastVals[h-1]+1.28*residStd*Math.sqrt(h);
   });
   var bandaBaja=allLabels.map(function(_,i){
-    if(i<etiquetas.length)return null;
-    var h=i-etiquetas.length+1;
+    if(i<etiquetasDisp.length)return null;
+    var h=i-etiquetasDisp.length+1;
     return Math.max(0,forecastVals[h-1]-1.28*residStd*Math.sqrt(h));
   });
-  if(bandaAlta.length){bandaAlta[etiquetas.length-1]=serie[serie.length-1];bandaBaja[etiquetas.length-1]=serie[serie.length-1];}
+  if(bandaAlta.length){bandaAlta[etiquetasDisp.length-1]=serieDisp[serieDisp.length-1];bandaBaja[etiquetasDisp.length-1]=serieDisp[serieDisp.length-1];}
+  // Índice donde arranca el año en curso dentro de lo que se está mostrando, para resaltar esa
+  // franja de fondo (año en curso + forecast) frente al histórico más antiguo que queda antes.
+  var idxInicioAnioActual=etiquetasDisp.length-mesesAnioActual;
 
   dc('cForecast');CH.cForecast=new Chart(document.getElementById('cForecast'),{
     type:'line',
@@ -5416,12 +5490,13 @@ function renderForecast(){
       interaction:{mode:'index',intersect:false},
       hover:{mode:'index',intersect:false},
       scales:{
-        x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter',weight:'700'},maxRotation:0,autoSkip:true,maxTicksLimit:14},grid:{display:false},border:{display:false},stacked:false},
+        x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'},maxRotation:0,autoSkip:true,maxTicksLimit:18},grid:{display:false},border:{display:false},stacked:false},
         y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:6},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'10%',stacked:false}
       },
       plugins:Object.assign({},sopts().plugins,{
         pctLabels:{enabled:false},
         crosshair:{enabled:true},
+        regionHighlight:{enabled:true,startIndex:idxInicioAnioActual,color:'rgba(255,192,0,.08)'},
         legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',
           filter:function(item){return item.text.indexOf('_')!==0&&item.text!=='Banda de confianza (≈80%)';}}},
         tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
@@ -5438,12 +5513,15 @@ function renderForecast(){
 
   document.getElementById('forecast-note').innerHTML=
     '<b>Metodología:</b> Holt-Winters aditivo (nivel + tendencia + estacionalidad de 12 meses), '
-    +'ajustado sobre '+nHist+' meses reales (enero 2022 - '+etiquetas[etiquetas.length-1]+'). '
+    +'ajustado sobre '+nHist+' meses reales (enero 2022 - '+etiquetas[etiquetas.length-1]+'; la gráfica muestra '
+    +'solo los últimos '+Math.min(VENTANA,nHist)+' meses reales para darle más espacio a '+anioActualMax+' y al forecast, '
+    +'pero el modelo se ajustó con el histórico completo). '
     +'Los parámetros del modelo (α='+ajuste.a.toFixed(2)+', β='+ajuste.b.toFixed(2)+', γ='+ajuste.g.toFixed(2)+') '
     +'se eligieron minimizando el error del modelo sobre el propio histórico. La banda sombreada del forecast '
     +'representa un intervalo de confianza aproximado del 80%, que se amplía mientras más adelante se proyecta '
-    +'(hay más incertidumbre en diciembre que en el próximo mes). Este pronóstico es una estimación estadística '
-    +'basada en el comportamiento histórico, no una meta ni un compromiso comercial.';
+    +'(hay más incertidumbre en diciembre que en el próximo mes). El área resaltada del fondo marca el año en '
+    +'curso y el forecast. Este pronóstico es una estimación estadística basada en el comportamiento histórico, '
+    +'no una meta ni un compromiso comercial.';
 }
 </script>
 </body>
