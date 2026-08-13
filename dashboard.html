@@ -164,6 +164,60 @@ const regionHighlightPlugin = {
   }
 };
 Chart.register(regionHighlightPlugin);
+
+// Etiquetas para DOS series de línea que se cruzan entre sí (ej. 2025 vs 2026): en vez de una
+// posición fija (una siempre arriba, otra siempre abajo), en cada punto se decide cuál serie
+// va más alta y esa se etiqueta hacia arriba, la más baja hacia abajo — así nunca quedan
+// montadas una sobre la otra cuando las líneas se cruzan o quedan muy cerca.
+const dualValueLabelsPlugin = {
+  id: 'dualValueLabels',
+  afterDatasetsDraw(chart, args, opts) {
+    try{
+    if(!opts || !opts.enabled) return;
+    const [cfgA, cfgB] = opts.series;
+    const metaA = chart.getDatasetMeta(cfgA.datasetIndex);
+    const metaB = chart.getDatasetMeta(cfgB.datasetIndex);
+    const dsA = chart.data.datasets[cfgA.datasetIndex];
+    const dsB = chart.data.datasets[cfgB.datasetIndex];
+    if(!metaA || !metaB || !dsA || !dsB) return;
+    const ctx = chart.ctx;
+    const n = chart.data.labels.length;
+    const minGap = opts.minGap||22;
+    for(let i=0;i<n;i++){
+      const vA = dsA.data[i], vB = dsB.data[i];
+      const ptA = metaA.data[i], ptB = metaB.data[i];
+      const haveA = vA!==null&&vA!==undefined&&ptA;
+      const haveB = vB!==null&&vB!==undefined&&ptB;
+      if(haveA&&haveB){
+        // ¿Cuál va más arriba en pantalla (menor y = más arriba)?
+        const aArriba = ptA.y<=ptB.y;
+        const arriba = aArriba?{cfg:cfgA,pt:ptA,v:vA}:{cfg:cfgB,pt:ptB,v:vB};
+        const abajo = aArriba?{cfg:cfgB,pt:ptB,v:vB}:{cfg:cfgA,pt:ptA,v:vA};
+        const dist = Math.abs(ptA.y-ptB.y);
+        const extra = dist<minGap ? (minGap-dist)/2 : 0;
+        drawOne(arriba.cfg,arriba.pt,arriba.v,'above',extra);
+        drawOne(abajo.cfg,abajo.pt,abajo.v,'below',extra);
+      }else if(haveA){
+        drawOne(cfgA,ptA,vA,cfgA.position||'above',0);
+      }else if(haveB){
+        drawOne(cfgB,ptB,vB,cfgB.position||'above',0);
+      }
+    }
+    function drawOne(cfg,pt,v,pos,extra){
+      ctx.save();
+      ctx.font='700 9px Inter, sans-serif';
+      ctx.fillStyle=cfg.color||'#002060';
+      ctx.textAlign='center';
+      const below=pos==='below';
+      ctx.textBaseline=below?'top':'bottom';
+      const off=(cfg.offset||9)+extra;
+      ctx.fillText(cfg.format?cfg.format(v):v, pt.x, below?pt.y+off:pt.y-off);
+      ctx.restore();
+    }
+    }catch(e){ console.warn('dualValueLabelsPlugin error (ignorado):', e); }
+  }
+};
+Chart.register(dualValueLabelsPlugin);
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -610,8 +664,8 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 <div class="view" id="view-forecast">
   <div class="krow" id="forecast-kpi"></div>
   <div class="card">
-    <div class="ct">Forecast 2026 — Modelo Holt-Winters (suavizado exponencial triple)</div>
-    <div style="height:440px"><canvas id="cForecast"></canvas></div>
+    <div class="ct">Real vs. Modelo — Holt-Winters (suavizado exponencial triple)</div>
+    <div style="height:420px"><canvas id="cForecast"></canvas></div>
     <div id="forecast-note" style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5"></div>
   </div>
 </div>
@@ -5332,7 +5386,7 @@ function renderHistorico(){
         pctLabels:{enabled:false},
         crosshair:{enabled:true},
         glowPoint:{enabled:true,datasetIndex:3,color:B.GOLD_D},
-        valueLabels:{enabled:true,series:[
+        dualValueLabels:{enabled:true,minGap:22,series:[
           {datasetIndex:2,color:B.NAVY_M,position:'below',offset:9,format:function(v){return fmt(v);}},
           {datasetIndex:3,color:B.GOLD_D,position:'above',offset:9,format:function(v){return fmt(v);}}
         ]},
@@ -5458,21 +5512,25 @@ function renderForecast(){
     {l:'vs. Meta Esperado',v:pctVsMeta.toFixed(1)+'%',s:fmt(metaEsp)+' de meta',cls:pctVsMeta>=95?'ka':'kr',i:'🎯'}
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
-  // El modelo se ajusta con TODO el histórico (más datos = mejor ajuste), pero en la gráfica
-  // solo se muestran los últimos ~16 meses reales antes del forecast — mostrar los 56 meses
-  // completos hacía que el año en curso + el forecast (lo realmente relevante hoy) se vieran
-  // como una franja diminuta al final. Con una ventana más corta, esa parte ocupa buena parte
-  // del ancho de la gráfica.
+  // El modelo se ajusta con TODO el histórico (más datos = mejor ajuste). Para no perder el
+  // contexto de 2022 en adelante, se muestran DOS gráficas: un panel de contexto arriba con
+  // el histórico completo comprimido (sin ocultar ningún año), y la gráfica principal abajo
+  // con detalle de los últimos meses + el forecast, mucho más grande y legible.
   var VENTANA=16;
   var offsetDisp=Math.max(0,nHist-VENTANA);
   var etiquetasDisp=etiquetas.slice(offsetDisp);
   var serieDisp=serie.slice(offsetDisp);
+  // Índice donde arranca el año en curso (enero) dentro de la ventana mostrada.
+  var idxInicioAnioActual=etiquetasDisp.length-mesesAnioActual;
+  // Línea de "Modelo": el ajuste del modelo (retrospectivo) para los meses ya pasados de este
+  // año, seguido del forecast propiamente dicho para los meses que faltan — solo existe desde
+  // enero del año en curso en adelante (antes de eso no se dibuja, para no confundir con un
+  // "forecast" de años ya cerrados que no tiene sentido mostrar).
+  var modeloDisp=ajuste.fitted.slice(offsetDisp).concat(forecastVals);
+  for(var mi2=0;mi2<idxInicioAnioActual;mi2++)modeloDisp[mi2]=null;
 
   var allLabels=etiquetasDisp.concat(forecastLabels);
   var serieActual=serieDisp.concat(forecastLabels.map(function(){return null;}));
-  var serieForecast=etiquetasDisp.map(function(){return null;}).concat(forecastVals);
-  // Empalmar el último punto real con el primero del forecast para que la línea no se corte.
-  if(serieDisp.length)serieForecast[etiquetasDisp.length-1]=serieDisp[serieDisp.length-1];
   var bandaAlta=allLabels.map(function(_,i){
     if(i<etiquetasDisp.length)return null;
     var h=i-etiquetasDisp.length+1;
@@ -5483,10 +5541,7 @@ function renderForecast(){
     var h=i-etiquetasDisp.length+1;
     return Math.max(0,forecastVals[h-1]-1.28*residStd*Math.sqrt(h));
   });
-  if(bandaAlta.length){bandaAlta[etiquetasDisp.length-1]=serieDisp[serieDisp.length-1];bandaBaja[etiquetasDisp.length-1]=serieDisp[serieDisp.length-1];}
-  // Índice donde arranca el año en curso dentro de lo que se está mostrando, para resaltar esa
-  // franja de fondo (año en curso + forecast) frente al histórico más antiguo que queda antes.
-  var idxInicioAnioActual=etiquetasDisp.length-mesesAnioActual;
+  if(bandaAlta.length){bandaAlta[etiquetasDisp.length-1]=modeloDisp[etiquetasDisp.length-1];bandaBaja[etiquetasDisp.length-1]=modeloDisp[etiquetasDisp.length-1];}
 
   dc('cForecast');CH.cForecast=new Chart(document.getElementById('cForecast'),{
     type:'line',
@@ -5499,7 +5554,7 @@ function renderForecast(){
         g.addColorStop(0,'rgba(0,32,96,.28)');g.addColorStop(1,'rgba(0,32,96,.02)');
         return g;
       },fill:true,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.NAVY,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false},
-      {label:'Forecast',data:serieForecast,borderColor:B.GOLD_D,backgroundColor:'transparent',borderDash:[6,4],fill:false,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false}
+      {label:'Modelo (ajuste + forecast)',data:modeloDisp,borderColor:B.GOLD_D,backgroundColor:'transparent',borderDash:[6,4],fill:false,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false}
     ]},
     options:Object.assign(sopts(),{
       interaction:{mode:'index',intersect:false},
@@ -5511,7 +5566,6 @@ function renderForecast(){
       plugins:Object.assign({},sopts().plugins,{
         pctLabels:{enabled:false},
         crosshair:{enabled:true},
-        regionHighlight:{enabled:true,startIndex:idxInicioAnioActual,color:'rgba(255,192,0,.08)'},
         legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',
           filter:function(item){return item.text.indexOf('_')!==0&&item.text!=='Banda de confianza (≈80%)';}}},
         tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
@@ -5523,19 +5577,40 @@ function renderForecast(){
           filter:function(c){return c.dataset.label.indexOf('_')!==0&&c.raw!==null&&c.raw!==undefined;}
         }}
       })
-    })
+    }),
+    plugins:[{id:'desviacionForecast',afterDatasetsDraw:function(chart){
+      var ctx=chart.ctx;
+      var metaReal=chart.getDatasetMeta(2); // dataset 2 = Real
+      ctx.save();
+      ctx.font='700 9px Inter, sans-serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='bottom';
+      for(var i=idxInicioAnioActual;i<etiquetasDisp.length;i++){
+        var real=serieActual[i];
+        var modelo=modeloDisp[i];
+        if(real===null||real===undefined||!modelo)continue;
+        var pct=(real-modelo)/modelo*100;
+        var bar=metaReal.data[i];
+        if(!bar)continue;
+        var positivo=pct>=0;
+        ctx.fillStyle=positivo?B.FIN:B.CAN;
+        ctx.fillText((positivo?'+':'')+pct.toFixed(0)+'%',bar.x,bar.y-22);
+      }
+      ctx.restore();
+    }}]
   });
 
   document.getElementById('forecast-note').innerHTML=
     '<b>Metodología:</b> Holt-Winters aditivo (nivel + tendencia + estacionalidad de 12 meses), '
     +'ajustado sobre '+nHist+' meses reales (enero 2022 - '+etiquetas[etiquetas.length-1]+'; la gráfica muestra '
-    +'solo los últimos '+Math.min(VENTANA,nHist)+' meses reales para darle más espacio a '+anioActualMax+' y al forecast, '
-    +'pero el modelo se ajustó con el histórico completo). '
+    +'desde '+etiquetasDisp[0]+' en adelante para dar más detalle al tramo reciente). '
     +'Los parámetros del modelo (α='+ajuste.a.toFixed(2)+', β='+ajuste.b.toFixed(2)+', γ='+ajuste.g.toFixed(2)+') '
-    +'se eligieron minimizando el error del modelo sobre el propio histórico. La banda sombreada del forecast '
-    +'representa un intervalo de confianza aproximado del 80%, que se amplía mientras más adelante se proyecta '
-    +'(hay más incertidumbre en diciembre que en el próximo mes). El área resaltada del fondo marca el año en '
-    +'curso y el forecast. Este pronóstico es una estimación estadística basada en el comportamiento histórico, '
+    +'se eligieron minimizando el error del modelo sobre el propio histórico. '
+    +'La línea "Modelo" combina dos tramos en una sola curva: para los meses ya pasados de '+anioActualMax+', es lo '
+    +'que el modelo habría dicho en ese momento (ajuste retrospectivo) — con el % en verde/rojo sobre cada mes '
+    +'mostrando cuánto estuvo el real por encima o por debajo de esa expectativa; para los meses que faltan, es '
+    +'el forecast propiamente dicho, con una banda de confianza aproximada del 80% que se amplía mientras más '
+    +'adelante se proyecta. Este pronóstico es una estimación estadística basada en el comportamiento histórico, '
     +'no una meta ni un compromiso comercial.';
 }
 </script>
