@@ -70,6 +70,60 @@ const crosshairPlugin = {
   }
 };
 Chart.register(crosshairPlugin);
+
+// Etiqueta de valor sobre cada punto de una serie de línea. Se activa por gráfica vía
+// options.plugins.valueLabels:{enabled:true, datasetIndex, color, format}.
+const valueLabelsPlugin = {
+  id: 'valueLabels',
+  afterDatasetsDraw(chart, args, opts) {
+    if(!opts || !opts.enabled) return;
+    const di = opts.datasetIndex||0;
+    const meta = chart.getDatasetMeta(di);
+    if(!meta || meta.hidden) return;
+    const data = chart.data.datasets[di].data;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = '700 9px Inter, sans-serif';
+    ctx.fillStyle = opts.color || '#002060';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    meta.data.forEach((point, i) => {
+      const v = data[i];
+      if(v===null||v===undefined) return;
+      ctx.fillText(opts.format ? opts.format(v) : v, point.x, point.y - (opts.offset||8));
+    });
+    ctx.restore();
+  }
+};
+Chart.register(valueLabelsPlugin);
+
+// Resplandor detrás del/los punto(s) marcados como "actual" en una serie de línea (radio >0),
+// para darle un acento visual de "esto es lo más reciente / en vivo" sin necesidad de texto.
+const glowPointPlugin = {
+  id: 'glowPoint',
+  afterDatasetsDraw(chart, args, opts) {
+    if(!opts || !opts.enabled) return;
+    const di = opts.datasetIndex||0;
+    const meta = chart.getDatasetMeta(di);
+    if(!meta || meta.hidden) return;
+    const ds = chart.data.datasets[di];
+    const radii = Array.isArray(ds.pointRadius) ? ds.pointRadius : [];
+    const ctx = chart.ctx;
+    ctx.save();
+    meta.data.forEach((point, i) => {
+      if(!radii[i]) return;
+      const g = ctx.createRadialGradient(point.x, point.y, 2, point.x, point.y, 16);
+      g.addColorStop(0, (opts.color||'#CC9A00')+'55');
+      g.addColorStop(1, (opts.color||'#CC9A00')+'00');
+      ctx.beginPath();
+      ctx.fillStyle = g;
+      ctx.arc(point.x, point.y, 16, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+};
+Chart.register(glowPointPlugin);
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -267,9 +321,57 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 #loading-overlay.hidden{display:none}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
-@media(max-width:800px){.g2,.g22{grid-template-columns:1fr}main{padding:14px}
-.hdr,.mnav,.fbar,.snav{padding-left:14px;padding-right:14px}
-.sc-hdr{grid-template-columns:1fr}.sc-col.o{border-left:none;border-top:1px solid var(--light)}}
+/* ── Responsive: tablet (≤1024px, p.ej. iPad) ─────────────────────────── */
+@media(max-width:1024px){
+  main{padding:16px}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+}
+
+/* ── Responsive: móvil/tablet (≤800px) ────────────────────────────────── */
+@media(max-width:800px){
+  .g2,.g22{grid-template-columns:1fr}
+  main{padding:12px}
+  .hdr,.mnav,.fbar,.snav{padding-left:12px;padding-right:12px}
+  .sc-hdr{grid-template-columns:1fr}.sc-col.o{border-left:none;border-top:1px solid var(--light)}
+
+  /* Cualquier grid de varias columnas armado con estilo inline (Metas, Histórico, KPIs,
+     trimestres, etc.) se colapsa a una sola columna en pantallas angostas — evita que las
+     tarjetas queden tan angostas que el texto se monte encima de las gráficas. */
+  main [style*="grid-template-columns"]{grid-template-columns:1fr!important}
+
+  /* Encabezado: apilar logo y datos de la derecha en vez de forzarlos en una sola fila */
+  .hdr{height:auto;min-height:56px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px;gap:8px}
+  .hdr-name{font-size:12px}
+  .hdr-sub{font-size:10px}
+
+  /* Barras de navegación: scroll horizontal táctil en vez de desbordar la página o partir
+     los botones en varias líneas ilegibles */
+  .snav,.mnav{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;scrollbar-width:thin}
+  .sb{padding:10px 14px;font-size:11px;white-space:nowrap;flex:0 0 auto}
+  .mb{padding:10px 12px;font-size:11px;white-space:nowrap;flex:0 0 auto}
+  .sb .sb-tag{display:none}
+
+  /* Filtros: que cada control tenga ancho suficiente para tocarlo bien y no quede apretado */
+  .fbar{gap:8px 10px;padding:10px 12px}
+  .fbar select{min-width:0!important;flex:1 1 auto;font-size:12px;padding:6px 8px}
+  .fl{font-size:10px}
+
+  /* Tarjetas: menos padding para aprovechar el ancho angosto de un celular */
+  .card{padding:12px 14px}
+  .ct{font-size:9px;margin-bottom:8px}
+
+  /* KPIs: 2 por fila en vez de intentar acomodar 5-6 en una sola línea angosta */
+  .krow{grid-template-columns:repeat(2,1fr)}
+
+  body.metas-active main,body.historico-active main,body.detalle-active main{padding:10px 8px 40px}
+}
+
+/* ── Responsive: celular angosto (≤480px) ─────────────────────────────── */
+@media(max-width:480px){
+  .krow{grid-template-columns:1fr 1fr}
+  .kpi-v{font-size:16px}
+}
+
 @media print{.mnav,.fbar,.snav,.tt-bar{display:none}.view{display:block!important}}
 </style>
 </head>
@@ -302,7 +404,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 
 <div class="snav">
   <button class="sb active" id="sec-proy" onclick="showSection('proy',event)">📊 Proyecciones<span class="sb-tag">4</span></button>
-  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">3</span></button>
+  <button class="sb" id="sec-ejec" onclick="showSection('ejec',event)">✅ Ejecutados<span class="sb-tag">4</span></button>
 </div>
 
 <div class="fbar">
@@ -345,6 +447,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="mb" data-view="finalizados" onclick="showView('finalizados',event)">💰 Ingresos Anuales</button>
   <button class="mb" data-view="metas" onclick="showView('metas',event)">🎯 Seguimiento de Metas</button>
   <button class="mb" data-view="historico" onclick="showView('historico',event)">📈 Histórico por Año</button>
+  <button class="mb" data-view="forecast" onclick="showView('forecast',event)">🔮 Forecast 2026</button>
 </div>
 
 <main>
@@ -426,40 +529,50 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="card"><div class="ct">Distribución por Representante</div><div style="height:240px"><canvas id="cFinRep"></canvas></div></div>
     <div class="card"><div class="ct">Distribución por Cliente</div><div style="height:240px"><canvas id="cFinCli"></canvas></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-    <div class="card"><div class="ct">Ingresos por Gerencia ECP</div><div style="height:240px"><canvas id="cFinGer"></canvas></div></div>
-    <div class="card"><div class="ct">Ingresos por Tipo de Trabajo</div><div style="height:240px"><canvas id="cFinTop"></canvas></div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Ingresos por Gerencia ECP</div><div style="height:240px"><canvas id="cFinGer"></canvas></div>
   </div>
 </div>
 
 <div class="view" id="view-metas">
-  <div class="card" style="margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:8px 14px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Escenario</span>
-      <div id="meta-esc-sel" style="display:flex;gap:4px"></div>
+  <div class="card" style="margin-bottom:16px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;padding:14px 18px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Escenario</span>
+      <div id="meta-esc-sel" style="display:flex;gap:6px"></div>
     </div>
     <div style="flex:1"></div>
-    <span id="meta-filter-label" style="font-size:10px;color:var(--gold-d);font-weight:700"></span>
+    <span id="meta-filter-label" style="font-size:11px;color:var(--gold-d);font-weight:700"></span>
   </div>
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
-    <div class="card" style="padding:10px 14px"><div class="ct" id="meta-cli-title" style="font-size:11px;margin-bottom:6px">Cumplimiento — Cliente</div><div style="height:230px"><canvas id="cMetaCli"></canvas></div></div>
-    <div class="card" style="padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="height:210px;width:100%;position:relative"><canvas id="cMetaDonut"></canvas><div id="meta-donut-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none"></div></div></div>
+  <div class="g2" style="margin-bottom:16px">
+    <div class="card"><div class="ct" id="meta-cli-title">Cumplimiento — Cliente</div><div style="height:270px"><canvas id="cMetaCli"></canvas></div></div>
+    <div class="card" style="display:flex;flex-direction:column"><div class="ct">Ingresos vs. Meta</div><div style="flex:1;min-height:220px;position:relative"><canvas id="cMetaDonut"></canvas><div id="meta-donut-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none"></div></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
-    <div class="card" style="padding:10px 14px"><div class="ct" style="font-size:11px;margin-bottom:6px">Metas — Rep. Cuenta</div><div style="height:200px"><canvas id="cMetaRep"></canvas></div></div>
-    <div class="card" style="padding:10px 14px"><div class="ct" style="font-size:11px;margin-bottom:6px">Cumplimiento — Gerencia ECP</div><div style="height:200px"><canvas id="cMetaGer"></canvas></div></div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:16px">
+    <div class="card"><div class="ct">Metas — Rep. Cuenta</div><div style="height:230px"><canvas id="cMetaRep"></canvas></div></div>
+    <div class="card"><div class="ct">Cumplimiento — Gerencia ECP</div><div style="height:230px"><canvas id="cMetaGer"></canvas></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px" id="meta-quarters"></div>
-  <div class="card" style="padding:10px 14px">
-    <div class="ct" id="meta-hist-title" style="font-size:11px;margin-bottom:6px">Histórico Metas</div>
-    <div style="height:210px"><canvas id="cMetaHist"></canvas></div>
+  <div class="ct" style="margin:0 2px 8px">Cumplimiento por Trimestre</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px" id="meta-quarters"></div>
+  <div class="card">
+    <div class="ct" id="meta-hist-title">Histórico Metas</div>
+    <div style="height:260px"><canvas id="cMetaHist"></canvas></div>
   </div>
 </div>
 
 <div class="view" id="view-historico">
+  <div class="krow" id="historico-kpi" style="margin-bottom:14px"></div>
   <div class="card">
     <div class="ct">Histórico Ingresos por Año — 2022-2025 (rango) vs 2026</div>
-    <div style="height:420px"><canvas id="cHistAnio"></canvas></div>
+    <div style="height:420px;position:relative"><canvas id="cHistAnio"></canvas></div>
+  </div>
+</div>
+
+<div class="view" id="view-forecast">
+  <div class="krow" id="forecast-kpi"></div>
+  <div class="card">
+    <div class="ct">Forecast 2026 — Modelo Holt-Winters (suavizado exponencial triple)</div>
+    <div style="height:380px"><canvas id="cForecast"></canvas></div>
+    <div id="forecast-note" style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5"></div>
   </div>
 </div>
 
@@ -3496,7 +3609,7 @@ function getAllMes(){
 let cliSortCol='total',cliSortDir=-1;
 let G_MES=(()=>{const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return m[new Date().getMonth()];})(), G_REP='', G_ANIO='2026', sCol='c', sDir=1;
 let CH={};
-const dc=id=>{if(CH[id]){CH[id].destroy();delete CH[id];}};
+const dc=id=>{if(CH[id]){try{CH[id].destroy();}catch(e){}delete CH[id];}};
 const fmt=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v).toLocaleString();
 const fmtM=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v;
 
@@ -3579,8 +3692,8 @@ function animateCounters(){
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='metas')renderMetas();else if(id==='historico')renderHistorico();animateCounters();}
-const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec'};
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='metas')renderMetas();else if(id==='historico')renderHistorico();else if(id==='forecast')renderForecast();animateCounters();}
+const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
 function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
@@ -4632,7 +4745,7 @@ function renderFinalizados(){
     if(!pts.length)return;
     var m=MES[pts[0].index];
     FIN_FILTER.mes=FIN_FILTER.mes===m?null:m;
-    renderFinalizados();
+    setTimeout(renderFinalizados,0);
   };
 
   // ── CHART 2: Rep donut ─────────────────────────────────────────────────
@@ -4679,7 +4792,7 @@ function renderFinalizados(){
     if(!pts.length)return;
     var rp=repLabels[pts[0].index];
     FIN_FILTER.rep=FIN_FILTER.rep===rp?null:rp;
-    renderFinalizados();
+    setTimeout(renderFinalizados,0);
   };
 
   // ── CHART 3: Client donut ──────────────────────────────────────────────
@@ -4727,7 +4840,7 @@ function renderFinalizados(){
     if(!pts.length)return;
     var cli=topCli[pts[0].index][0];
     FIN_FILTER.cli=FIN_FILTER.cli===cli?null:cli;
-    renderFinalizados();
+    setTimeout(renderFinalizados,0);
   };
 
   // ── CHART 4: Ingresos por Gerencia ECP ─────────────────────────────────
@@ -4749,25 +4862,6 @@ function renderFinalizados(){
       pctLabels:{enabled:true,color:'#3D4D63'},legend:{display:false}
     })})
   });
-
-  // ── CHART 5: Ingresos por Tipo de Trabajo ──────────────────────────────
-  // Usa TIPO OPERACIÓN (campo 'top'), tal como se pidió.
-  var topMap={};
-  fin.forEach(function(r){
-    if(r.top) topMap[r.top]=(topMap[r.top]||0)+val(r);
-  });
-  var topTop=Object.entries(topMap).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  dc('cFinTop');CH.cFinTop=new Chart(document.getElementById('cFinTop'),{
-    type:'bar',
-    data:{labels:topTop.map(function(x){return x[0];}),datasets:[{
-      data:topTop.map(function(x){return x[1];}),
-      backgroundColor:B.GOLD,
-      borderRadius:4
-    }]},
-    options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{
-      pctLabels:{enabled:true,color:'#3D4D63'},legend:{display:false}
-    })})
-  });
 }
 
 // Estado de la pestaña Seguimiento de Metas: escenario elegido (por defecto Esperado) y filtro
@@ -4777,12 +4871,16 @@ let META_ESC='ESP';
 let META_FILTER={cli:null,rep:null,ger:null};
 const META_ESC_LABEL={ADV:'Adverso',ESP:'Esperado',OPT:'Optimista'};
 
-function setMetaEsc(esc){META_ESC=esc;renderMetas();}
+function setMetaEsc(esc){META_ESC=esc;setTimeout(renderMetas,0);}
 function toggleMetaFilter(tipo,valor){
   META_FILTER[tipo]=META_FILTER[tipo]===valor?null:valor;
-  renderMetas();
+  // Diferido: si esto se dispara desde el clic sobre una barra, hay que esperar a que Chart.js
+  // termine de procesar ese clic ANTES de destruir/recrear la gráfica. Hacerlo de forma
+  // síncrona (dentro del propio manejador de clic del canvas) rompe Chart.js a mitad de camino
+  // y deja el resto de las gráficas de la pestaña en blanco.
+  setTimeout(renderMetas,0);
 }
-function clearMetaFilter(){META_FILTER={cli:null,rep:null,ger:null};renderMetas();}
+function clearMetaFilter(){META_FILTER={cli:null,rep:null,ger:null};setTimeout(renderMetas,0);}
 
 function renderMetas(){
   function val(r){return r.ir>0?r.ir:r.v;}
@@ -4861,7 +4959,16 @@ function renderMetas(){
 
   // ── Cliente ──────────────────────────────────────────────────────────────
   var actPorCli={},metaPorCli={},nombreCli={};
-  actual.forEach(function(r){var k=normC(r.c);actPorCli[k]=(actPorCli[k]||0)+val(r);});
+  // "OTROS" en el presupuesto agrupa a los clientes que no tienen una meta individual propia.
+  // Para que el real sume lo que le corresponde, cualquier cliente con ingreso real que NO
+  // tenga su propia meta nombrada también se redirige al balde "OTROS" (antes se perdía: no
+  // aparecía en ningún lado del gráfico).
+  var metaClientKeys=new Set(metasF.filter(function(x){return normC(x.c)!=='OTROS';}).map(function(x){return normC(x.c);}));
+  actual.forEach(function(r){
+    var k=normC(r.c);
+    if(!metaClientKeys.has(k))k='OTROS';
+    actPorCli[k]=(actPorCli[k]||0)+val(r);
+  });
   metasF.forEach(function(x){var k=normC(x.c);metaPorCli[k]=(metaPorCli[k]||0)+x.meta;nombreCli[k]=nombreCli[k]||x.c;});
   var cliKeys=Object.keys(metaPorCli).filter(function(k){return metaPorCli[k]>0;});
   var cliRows=cliKeys.map(function(k){
@@ -4873,8 +4980,8 @@ function renderMetas(){
   dc('cMetaCli');CH.cMetaCli=new Chart(document.getElementById('cMetaCli'),{
     type:'bar',
     data:{labels:cliLabels,datasets:[
-      {data:cliPct,backgroundColor:cliRows.map(function(x){return META_FILTER.cli&&META_FILTER.cli!==x.key?B.FIN+'55':B.FIN;}),borderRadius:3,stack:'s',barPercentage:.7},
-      {data:cliRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.7}
+      {data:cliPct,backgroundColor:cliRows.map(function(x){return META_FILTER.cli&&META_FILTER.cli!==x.key?B.FIN+'55':B.FIN;}),borderRadius:3,stack:'s',barPercentage:.9,categoryPercentage:.85},
+      {data:cliRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.9,categoryPercentage:.85}
     ]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       scales:{
@@ -4917,8 +5024,8 @@ function renderMetas(){
   dc('cMetaRep');CH.cMetaRep=new Chart(document.getElementById('cMetaRep'),{
     type:'bar',
     data:{labels:repLabels,datasets:[
-      {data:repPct,backgroundColor:repRows.map(function(x){return META_FILTER.rep&&META_FILTER.rep!==x.key?B.NAVY+'55':B.NAVY;}),borderRadius:3,stack:'s',barPercentage:.7},
-      {data:repRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.7}
+      {data:repPct,backgroundColor:repRows.map(function(x){return META_FILTER.rep&&META_FILTER.rep!==x.key?B.NAVY+'55':B.NAVY;}),borderRadius:3,stack:'s',barPercentage:.9,categoryPercentage:.85},
+      {data:repRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.9,categoryPercentage:.85}
     ]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
@@ -4959,8 +5066,8 @@ function renderMetas(){
   dc('cMetaGer');CH.cMetaGer=new Chart(document.getElementById('cMetaGer'),{
     type:'bar',
     data:{labels:gerLabels,datasets:[
-      {data:gerPct,backgroundColor:gerRows.map(function(x){return META_FILTER.ger&&META_FILTER.ger!==x.key?B.GOLD+'99':B.GOLD;}),borderRadius:3,stack:'s',barPercentage:.6},
-      {data:gerRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.6}
+      {data:gerPct,backgroundColor:gerRows.map(function(x){return META_FILTER.ger&&META_FILTER.ger!==x.key?B.GOLD+'99':B.GOLD;}),borderRadius:3,stack:'s',barPercentage:.85,categoryPercentage:.8},
+      {data:gerRem,backgroundColor:B.LIGHT,borderRadius:3,stack:'s',barPercentage:.85,categoryPercentage:.8}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       scales:{y:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
@@ -4993,12 +5100,12 @@ function renderMetas(){
   var TRIM=[{n:'Q1',meses:['enero','febrero','marzo']},{n:'Q2',meses:['abril','mayo','junio']},
     {n:'Q3',meses:['julio','agosto','septiembre']},{n:'Q4',meses:['octubre','noviembre','diciembre']}];
   var contQ=document.getElementById('meta-quarters');
-  contQ.innerHTML=TRIM.map(function(t){return '<div class="card" style="text-align:center;padding:10px 10px 12px">'
-    +'<div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:0">'+t.n+'</div>'
-    +'<div style="height:88px;position:relative"><canvas id="cQ-'+t.n+'"></canvas>'
-    +'<div id="cQ-'+t.n+'-val" style="position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:13px;font-weight:800;color:var(--navy)"></div>'
-    +'<div id="cQ-'+t.n+'-pct" style="position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:10px;font-weight:700"></div></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-weight:600;padding:0 6px;margin-top:2px">'
+  contQ.innerHTML=TRIM.map(function(t){return '<div class="card" style="text-align:center">'
+    +'<div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px">'+t.n+'</div>'
+    +'<div style="height:110px;position:relative"><canvas id="cQ-'+t.n+'"></canvas>'
+    +'<div id="cQ-'+t.n+'-val" style="position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:15px;font-weight:800;color:var(--navy)"></div>'
+    +'<div id="cQ-'+t.n+'-pct" style="position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:11px;font-weight:700"></div></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:600;padding:0 6px;margin-top:6px">'
     +'<span>$0</span><span id="cQ-'+t.n+'-max"></span></div>'
     +'</div>';}).join('');
   TRIM.forEach(function(t){
@@ -5031,17 +5138,33 @@ function renderMetas(){
   dc('cMetaHist');CH.cMetaHist=new Chart(document.getElementById('cMetaHist'),{
     type:'line',
     data:{labels:mesLabels,datasets:[
-      {label:'Real',data:histAct,borderColor:B.FIN,backgroundColor:B.FIN_BG,fill:true,tension:0,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:B.FIN,borderWidth:2},
-      {label:'Meta ('+META_ESC_LABEL[META_ESC]+')',data:histMeta,borderColor:B.NAVY,backgroundColor:'transparent',fill:false,tension:0,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:B.NAVY,borderWidth:2}
+      {label:'Real',data:histAct,borderColor:B.FIN,backgroundColor:function(c){
+        var a=c.chart.chartArea;if(!a)return B.FIN_BG;
+        var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
+        g.addColorStop(0,'rgba(0,107,60,.32)');g.addColorStop(1,'rgba(0,107,60,.02)');
+        return g;
+      },fill:true,tension:.25,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.FIN,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round'},
+      {label:'Meta ('+META_ESC_LABEL[META_ESC]+')',data:histMeta,borderColor:B.NAVY,backgroundColor:B.NAVY,fill:false,tension:.25,borderDash:[6,4],pointRadius:3,pointBackgroundColor:'#fff',pointBorderColor:B.NAVY,pointBorderWidth:2,pointHoverRadius:6,borderWidth:2,borderCapStyle:'round'}
     ]},
     options:Object.assign(sopts(),{
       interaction:{mode:'index',intersect:false},
       hover:{mode:'index',intersect:false},
+      layout:{padding:{top:20}},
+      // sopts() trae stacked:true (pensado para la barra apilada de Evolución Mensual) — en
+      // una gráfica de línea eso hace que Chart.js sume Real + Meta al dibujar la segunda
+      // línea. Aquí NINGÚN dataset debe apilarse: cada línea es un valor independiente.
+      // El diseño evita la cuadrícula pesada: sin líneas verticales, sin eje ni borde, solo
+      // el relleno degradado y las etiquetas de valor sobre la línea de meta.
+      scales:{
+        x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:false},
+        y:{display:false,min:0,grace:'25%',stacked:false}
+      },
       plugins:Object.assign({},sopts().plugins,{
         pctLabels:{enabled:false},
         crosshair:{enabled:true},
-        legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10}},
-        tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return c.dataset.label+': '+fmt(c.raw);}}}
+        valueLabels:{enabled:true,datasetIndex:1,color:B.NAVY,offset:10,format:function(v){return fmt(v);}},
+        legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{label:function(c){return c.dataset.label+': '+fmt(c.raw);}}}
       })
     })
   });
@@ -5050,39 +5173,90 @@ function renderMetas(){
 function renderHistorico(){
   function val(r){return r.ir>0?r.ir:r.v;}
   var allMes=getAllMes();
+  // Mismo criterio de "ejecutado" que la pestaña Ingresos Anuales: Finalizado + En Ejecución.
   function porAnioMes(anio){
     return MO.map(function(mo){
-      return allMes.filter(function(r){return r.anio===anio&&r.m===mo&&r.s==='FINALIZADO'&&r.t==='A';}).reduce(function(s,r){return s+val(r);},0);
+      return allMes.filter(function(r){return r.anio===anio&&r.m===mo&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION')&&r.t==='A';}).reduce(function(s,r){return s+val(r);},0);
     });
   }
   var anios=[2022,2023,2024,2025,2026];
   var datos={};
   anios.forEach(function(a){datos[a]=porAnioMes(a);});
-  // Banda histórica 2022-2025: mínimo, máximo y promedio por mes (en vez de 4 líneas sueltas
-  // que se cruzan y confunden, se muestra como un rango sombreado con una línea de promedio).
+  // Banda histórica 2022-2025: solo el rango (mínimo a máximo) de esos 4 años por mes, sombreado.
   var histYears=[2022,2023,2024,2025];
   var bandMax=MO.map(function(_,i){return Math.max.apply(null,histYears.map(function(a){return datos[a][i];}));});
   var bandMin=MO.map(function(_,i){return Math.min.apply(null,histYears.map(function(a){return datos[a][i];}));});
-  var bandAvg=MO.map(function(_,i){return histYears.reduce(function(s,a){return s+datos[a][i];},0)/histYears.length;});
   var mesLabels=MO.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1);});
+  // La línea de 2026 solo debe llegar hasta el último mes con datos reales — los meses que
+  // todavía no han pasado se dejan en null (no en 0) para que la línea simplemente termine ahí,
+  // en vez de mostrar una caída a cero que dé a entender que no hay ingresos previstos.
+  var data2026=datos[2026].slice();
+  var lastIdx=-1;
+  for(var i=data2026.length-1;i>=0;i--){
+    if(data2026[i]>0){lastIdx=i;break;}
+    data2026[i]=null;
+  }
+  var pr2026=data2026.map(function(_,i){return i===lastIdx?5:0;});
+
+  // ── KPIs de contexto ──────────────────────────────────────────────────
+  var mesesConDato=data2026.filter(function(v){return v!==null;}).length;
+  var ytd2026=data2026.reduce(function(s,v){return s+(v||0);},0);
+  var promHistMismoPeriodo=histYears.reduce(function(s,a){
+    return s+datos[a].slice(0,mesesConDato).reduce(function(s2,v){return s2+v;},0);
+  },0)/histYears.length;
+  var pctVsProm=promHistMismoPeriodo>0?(ytd2026/promHistMismoPeriodo*100):0;
+  var mejorMes={v:-1,a:0,m:''};
+  histYears.forEach(function(a){
+    datos[a].forEach(function(v,i){if(v>mejorMes.v)mejorMes={v:v,a:a,m:mesLabels[i]};});
+  });
+  var mesActualVal=lastIdx>=0?data2026[lastIdx]:0;
+  var mesActualHist=histYears.map(function(a){return datos[a][lastIdx];});
+  var mesActualProm=mesActualHist.reduce(function(a,b){return a+b;},0)/mesActualHist.length;
+  var pctMesActual=mesActualProm>0?(mesActualVal/mesActualProm*100):0;
+
+  document.getElementById('historico-kpi').innerHTML=[
+    {l:'Ingresos 2026 (YTD)',v:fmt(ytd2026),s:mesesConDato+' meses con datos',cls:'ks',i:'📅'},
+    {l:'vs. Promedio Histórico',v:pctVsProm.toFixed(0)+'%',s:'mismo periodo 2022-2025: '+fmt(promHistMismoPeriodo),cls:pctVsProm>=100?'ka':'kr',i:pctVsProm>=100?'📈':'📉'},
+    {l:'Mejor mes histórico',v:fmt(mejorMes.v),s:mejorMes.m+' '+mejorMes.a,cls:'kt',i:'🏆'},
+    {l:(lastIdx>=0?mesLabels[lastIdx]:'Mes actual')+' vs su histórico',v:pctMesActual.toFixed(0)+'%',s:'promedio '+(lastIdx>=0?mesLabels[lastIdx]:'')+' 2022-2025: '+fmt(mesActualProm),cls:pctMesActual>=100?'ka':'kr',i:'🎯'}
+  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
   dc('cHistAnio');CH.cHistAnio=new Chart(document.getElementById('cHistAnio'),{
     type:'line',
     data:{labels:mesLabels,datasets:[
-      {label:'Máximo 2022-2025',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:0},
-      {label:'Rango histórico 2022-2025',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:B.LIGHT,tension:0},
-      {label:'Promedio 2022-2025',data:bandAvg,borderColor:B.DIM,borderDash:[4,4],borderWidth:1.5,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:B.DIM,fill:false,tension:0},
-      {label:'2026 (año en curso)',data:datos[2026],borderColor:B.GOLD_D,backgroundColor:'transparent',borderWidth:3,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.GOLD_D,fill:false,tension:0}
+      {label:'Máximo 2022-2025',data:bandMax,borderColor:'transparent',pointRadius:0,fill:false,tension:.25},
+      {label:'Rango histórico 2022-2025',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:function(c){
+        var a=c.chart.chartArea;if(!a)return B.LIGHT;
+        var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
+        g.addColorStop(0,'rgba(168,180,204,.38)');g.addColorStop(1,'rgba(168,180,204,.08)');
+        return g;
+      },tension:.25},
+      {label:'Ingresos 2026',data:data2026,borderColor:B.GOLD_D,backgroundColor:function(c){
+        var a=c.chart.chartArea;if(!a)return 'transparent';
+        var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
+        g.addColorStop(0,'rgba(204,154,0,.28)');g.addColorStop(1,'rgba(204,154,0,.02)');
+        return g;
+      },borderWidth:3,pointRadius:pr2026,pointHoverRadius:6,pointBackgroundColor:B.GOLD_D,pointBorderColor:'#fff',pointBorderWidth:2,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,fill:true,tension:.25,spanGaps:false,borderCapStyle:'round'}
     ]},
     options:Object.assign(sopts(),{
       interaction:{mode:'index',intersect:false},
       hover:{mode:'index',intersect:false},
+      layout:{padding:{top:10}},
+      // Igual que en Histórico Metas: sopts() trae stacked:true (para la barra apilada de
+      // Evolución Mensual) que aquí sumaría "2026" encima del rango histórico. Se desactiva
+      // explícitamente. Sin cuadrícula vertical ni marco — solo la banda degradada y la línea
+      // del año en curso, para un look más limpio.
+      scales:{
+        x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:false},
+        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:5},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'12%',stacked:false}
+      },
       plugins:Object.assign({},sopts().plugins,{
         pctLabels:{enabled:false},
         crosshair:{enabled:true},
-        legend:{display:true,position:'top',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,
+        glowPoint:{enabled:true,datasetIndex:2,color:B.GOLD_D},
+        legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',
           filter:function(item){return item.text!=='Máximo 2022-2025';}}},
-        tooltip:{mode:'index',intersect:false,callbacks:{
+        tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
           label:function(c){
             if(c.dataset.label==='Máximo 2022-2025')return null;
             if(c.dataset.label==='Rango histórico 2022-2025'){
@@ -5091,11 +5265,185 @@ function renderHistorico(){
             }
             return c.dataset.label+': '+fmt(c.raw);
           },
+          // Además del rango, se listan los 4 años individuales para ese mes — no solo el
+          // mínimo/máximo, sino cuánto fue exactamente cada año.
+          afterBody:function(items){
+            if(!items.length)return;
+            var i=items[0].dataIndex;
+            return [''].concat(histYears.map(function(a){return '  '+a+': '+fmt(datos[a][i]);}));
+          },
           filter:function(c){return c.dataset.label!=='Máximo 2022-2025';}
         }}
       })
     })
   });
+}
+
+// ── Forecast 2026: modelo de suavizado exponencial triple (Holt-Winters aditivo) ──────────
+// Se eligió Holt-Winters porque la serie mensual de ingresos tiene, a la vez, tendencia
+// (crecimiento/caída de un año a otro) y estacionalidad marcada de 12 meses (ej. diciembre
+// consistentemente más alto) — es exactamente el escenario para el que este modelo está
+// diseñado, y es el estándar de la industria para pronósticos mensuales con esas dos
+// componentes (más robusto que una regresión lineal simple o un promedio móvil, que no
+// capturan la estacionalidad).
+function holtWinters(y,L,alpha,beta,gamma){
+  var season1=y.slice(0,L),season2=y.slice(L,2*L);
+  var avg1=season1.reduce(function(a,b){return a+b;},0)/L;
+  var avg2=season2.reduce(function(a,b){return a+b;},0)/L;
+  var level=avg1,trend=(avg2-avg1)/L;
+  var seasonal=season1.map(function(v){return v-avg1;});
+  var fitted=[];
+  for(var t=0;t<y.length;t++){
+    var s=seasonal[t%L];
+    fitted.push(level+trend+s);
+    var obs=y[t],prevLevel=level;
+    level=alpha*(obs-s)+(1-alpha)*(level+trend);
+    trend=beta*(level-prevLevel)+(1-beta)*trend;
+    seasonal[t%L]=gamma*(obs-level)+(1-gamma)*s;
+  }
+  return {level:level,trend:trend,seasonal:seasonal,fitted:fitted};
+}
+function hwSSE(y,fitted){var s=0;for(var i=0;i<y.length;i++){var d=y[i]-fitted[i];s+=d*d;}return s;}
+// Búsqueda de los parámetros (alpha/beta/gamma) que mejor ajustan el histórico real, en vez
+// de adivinar valores fijos — minimiza el error cuadrático dentro de la misma muestra.
+function ajustarHoltWinters(y,L){
+  var best=null;
+  for(var a=.1;a<=.9;a+=.1){
+    for(var b=.05;b<=.5;b+=.05){
+      for(var g=.1;g<=.9;g+=.1){
+        var r=holtWinters(y,L,a,b,g);
+        var s=hwSSE(y,r.fitted);
+        if(!best||s<best.sse)best={a:a,b:b,g:g,sse:s,fitted:r.fitted,level:r.level,trend:r.trend,seasonal:r.seasonal};
+      }
+    }
+  }
+  return best;
+}
+
+function renderForecast(){
+  function val(r){return r.ir>0?r.ir:r.v;}
+  var allMes=getAllMes();
+  function totalMes(anio,mo){
+    return allMes.filter(function(r){return r.anio===anio&&r.m===mo&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION')&&r.t==='A';}).reduce(function(s,r){return s+val(r);},0);
+  }
+  // Serie mensual continua desde enero 2022 hasta el último mes con datos reales de 2026.
+  var serie=[],etiquetas=[],mesesAnioActual=0;
+  var anioActualMax=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
+  for(var y0=2022;y0<=anioActualMax;y0++){
+    for(var mi=0;mi<12;mi++){
+      if(y0===anioActualMax){
+        var v=totalMes(y0,MO[mi]);
+        if(v<=0){
+          // ya no hay datos reales de este mes en adelante para el año en curso
+          y0=anioActualMax+1;break;
+        }
+        serie.push(v);etiquetas.push(MO[mi].slice(0,3)+' '+String(y0).slice(2));mesesAnioActual++;
+      }else{
+        serie.push(totalMes(y0,MO[mi]));etiquetas.push(MO[mi].slice(0,3)+' '+String(y0).slice(2));
+      }
+    }
+  }
+  var nHist=serie.length;
+  var mesesRestantes=12-(nHist%12===0?12:nHist%12);
+  if(mesesRestantes===0)mesesRestantes=0;
+
+  if(nHist<24||mesesRestantes===0){
+    document.getElementById('forecast-kpi').innerHTML='<div class="kpi ks"><div class="kpi-l">Forecast</div><div class="kpi-v" style="font-size:14px">No hay suficientes meses históricos o el año ya está completo</div></div>';
+    dc('cForecast');
+    return;
+  }
+
+  var ajuste=ajustarHoltWinters(serie,12);
+  var forecastVals=[];
+  for(var h=1;h<=mesesRestantes;h++){
+    var seasonIdx=(nHist+h-1)%12;
+    forecastVals.push(Math.max(0,ajuste.level+h*ajuste.trend+ajuste.seasonal[seasonIdx]));
+  }
+  // Intervalo de confianza aproximado (±1.28 desviaciones estándar del residuo ≈ 80%), que se
+  // amplía mes a mes (la incertidumbre crece mientras más adelante se proyecta).
+  var residuos=serie.map(function(v,i){return v-ajuste.fitted[i];});
+  var residStd=Math.sqrt(residuos.reduce(function(s,r){return s+r*r;},0)/residuos.length);
+  var forecastLabels=[];
+  for(var h2=1;h2<=mesesRestantes;h2++){
+    var mIdx=(nHist+h2-1)%12,yIdx=Math.floor((nHist+h2-1)/12)+2022;
+    forecastLabels.push(MO[mIdx].slice(0,3)+' '+String(yIdx).slice(2));
+  }
+
+  var actualYTD=serie.slice(-mesesAnioActual).reduce(function(s,v){return s+v;},0);
+  var forecastTotal=forecastVals.reduce(function(s,v){return s+v;},0);
+  var proyeccionCierre=actualYTD+forecastTotal;
+  var metaEsp=METAS.filter(function(x){return x.esc==='ESP';}).reduce(function(s,x){return s+x.meta;},0);
+  var pctVsMeta=metaEsp>0?(proyeccionCierre/metaEsp*100):0;
+
+  document.getElementById('forecast-kpi').innerHTML=[
+    {l:'Ingresos reales (a la fecha)',v:fmt(actualYTD),s:mesesAnioActual+' meses de '+anioActualMax+' con datos',cls:'ks',i:'✅'},
+    {l:'Forecast restante '+anioActualMax,v:fmt(forecastTotal),s:mesesRestantes+' meses proyectados',cls:'ko',i:'🔮'},
+    {l:'Proyección cierre '+anioActualMax,v:fmt(proyeccionCierre),s:'real + forecast',cls:'kt',i:'📊'},
+    {l:'vs. Meta Esperado',v:pctVsMeta.toFixed(1)+'%',s:fmt(metaEsp)+' de meta',cls:pctVsMeta>=95?'ka':'kr',i:'🎯'}
+  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
+
+  var allLabels=etiquetas.concat(forecastLabels);
+  var serieActual=serie.concat(forecastLabels.map(function(){return null;}));
+  var serieForecast=etiquetas.map(function(){return null;}).concat(forecastVals);
+  // Empalmar el último punto real con el primero del forecast para que la línea no se corte.
+  if(serie.length)serieForecast[etiquetas.length-1]=serie[serie.length-1];
+  var bandaAlta=allLabels.map(function(_,i){
+    if(i<etiquetas.length)return null;
+    var h=i-etiquetas.length+1;
+    return forecastVals[h-1]+1.28*residStd*Math.sqrt(h);
+  });
+  var bandaBaja=allLabels.map(function(_,i){
+    if(i<etiquetas.length)return null;
+    var h=i-etiquetas.length+1;
+    return Math.max(0,forecastVals[h-1]-1.28*residStd*Math.sqrt(h));
+  });
+  if(bandaAlta.length){bandaAlta[etiquetas.length-1]=serie[serie.length-1];bandaBaja[etiquetas.length-1]=serie[serie.length-1];}
+
+  dc('cForecast');CH.cForecast=new Chart(document.getElementById('cForecast'),{
+    type:'line',
+    data:{labels:allLabels,datasets:[
+      {label:'Banda de confianza (≈80%)',data:bandaAlta,borderColor:'transparent',pointRadius:0,fill:false,tension:.2},
+      {label:'_bajaBanda',data:bandaBaja,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:'rgba(255,192,0,.18)',tension:.2},
+      {label:'Real',data:serieActual,borderColor:B.NAVY,backgroundColor:function(c){
+        var a=c.chart.chartArea;if(!a)return B.LIGHT;
+        var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
+        g.addColorStop(0,'rgba(0,32,96,.28)');g.addColorStop(1,'rgba(0,32,96,.02)');
+        return g;
+      },fill:true,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.NAVY,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false},
+      {label:'Forecast',data:serieForecast,borderColor:B.GOLD_D,backgroundColor:'transparent',borderDash:[6,4],fill:false,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false}
+    ]},
+    options:Object.assign(sopts(),{
+      interaction:{mode:'index',intersect:false},
+      hover:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:B.MUTED,font:{size:9,family:'Inter',weight:'700'},maxRotation:0,autoSkip:true,maxTicksLimit:14},grid:{display:false},border:{display:false},stacked:false},
+        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:6},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'10%',stacked:false}
+      },
+      plugins:Object.assign({},sopts().plugins,{
+        pctLabels:{enabled:false},
+        crosshair:{enabled:true},
+        legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',
+          filter:function(item){return item.text.indexOf('_')!==0&&item.text!=='Banda de confianza (≈80%)';}}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
+          label:function(c){
+            if(c.dataset.label.indexOf('_')===0||c.dataset.label==='Banda de confianza (≈80%)')return null;
+            if(c.raw===null||c.raw===undefined)return null;
+            return c.dataset.label+': '+fmt(c.raw);
+          },
+          filter:function(c){return c.dataset.label.indexOf('_')!==0&&c.raw!==null&&c.raw!==undefined;}
+        }}
+      })
+    })
+  });
+
+  document.getElementById('forecast-note').innerHTML=
+    '<b>Metodología:</b> Holt-Winters aditivo (nivel + tendencia + estacionalidad de 12 meses), '
+    +'ajustado sobre '+nHist+' meses reales (enero 2022 - '+etiquetas[etiquetas.length-1]+'). '
+    +'Los parámetros del modelo (α='+ajuste.a.toFixed(2)+', β='+ajuste.b.toFixed(2)+', γ='+ajuste.g.toFixed(2)+') '
+    +'se eligieron minimizando el error del modelo sobre el propio histórico. La banda sombreada del forecast '
+    +'representa un intervalo de confianza aproximado del 80%, que se amplía mientras más adelante se proyecta '
+    +'(hay más incertidumbre en diciembre que en el próximo mes). Este pronóstico es una estimación estadística '
+    +'basada en el comportamiento histórico, no una meta ni un compromiso comercial.';
 }
 </script>
 </body>
