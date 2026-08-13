@@ -3679,14 +3679,27 @@ function fragmentosPorMes(r){
   var fi=new Date(r.fi+'T00:00:00'), ff=new Date(r.ff+'T00:00:00');
   if(isNaN(fi.getTime())||isNaN(ff.getTime())||ff<fi) return [r];
   if(fi.getFullYear()===ff.getFullYear()&&fi.getMonth()===ff.getMonth()) return [r];
-  var tramos=[], cursor=new Date(fi.getTime());
+  // Límites de seguridad: ningún servicio real dura más de 24 meses. Se ha visto que en
+  // algunas versiones de Safari la aritmética de fechas puede comportarse de forma inesperada
+  // (un registro que debería dar 2-3 tramos terminaba generando miles) — eso diluye el valor
+  // real entre fragmentos de sobra y hace que las gráficas muestren miles en vez de millones.
+  // Con este tope, si algo así vuelve a pasar, ESE registro puntual simplemente no se
+  // prorratea (se cuenta completo en su mes original) en vez de arrastrar el error a todo el
+  // dashboard.
+  var LIMITE_TRAMOS=24;
+  var tramos=[], cursor=new Date(fi.getTime()), guardas=0;
   while(cursor<=ff){
+    guardas++;
+    if(guardas>LIMITE_TRAMOS) return [r];
     var anio=cursor.getFullYear(), mesIdx=cursor.getMonth();
     var finMes=new Date(anio,mesIdx+1,0);
     var finTramo=finMes<ff?finMes:ff;
     var dias=Math.round((finTramo-cursor)/86400000)+1;
+    if(!(dias>0)) return [r];
     tramos.push({anio:anio,m:MO[mesIdx],dias:dias});
-    cursor=new Date(anio,mesIdx+1,1);
+    var siguiente=new Date(anio,mesIdx+1,1);
+    if(!(siguiente>cursor)) return [r]; // sin avance: evita bucle infinito/descontrolado
+    cursor=siguiente;
   }
   var totalDias=tramos.reduce(function(s,t){return s+t.dias;},0)||1;
   return tramos.map(function(t){
