@@ -3800,7 +3800,14 @@ function refreshActive(){const id=document.querySelector('.view.active')?.id?.re
 const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');LAST_TAB[SECTION_OF[id]]=id;refreshActive();}
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');LAST_TAB[SECTION_OF[id]]=id;
+  // iOS/Safari a veces mide el tamaño del canvas ANTES de que el navegador termine de acomodar
+  // el layout recién visible (al quitar display:none) — deja las gráficas con un tamaño
+  // interno equivocado para siempre, aunque los datos que reciben sean correctos (por eso los
+  // KPI de texto se ven bien y las gráficas no). Esperar a que el navegador termine de pintar
+  // (doble requestAnimationFrame) antes de crear las gráficas evita esa condición de carrera.
+  requestAnimationFrame(function(){requestAnimationFrame(refreshActive);});
+}
 function showSection(sec,e){
   document.querySelectorAll('.sb').forEach(b=>b.classList.remove('active'));
   (e&&e.currentTarget?e.currentTarget:document.getElementById('sec-'+sec)).classList.add('active');
@@ -4491,6 +4498,15 @@ function ajustarBarrasFijas(){
 }
 ajustarBarrasFijas();
 window.addEventListener('resize',ajustarBarrasFijas);
+// Red de seguridad adicional: si el usuario rota el iPad/celular o cambia el tamaño de la
+// ventana, se fuerza a que todas las gráficas activas se vuelvan a medir. No debería hacer
+// falta si el doble requestAnimationFrame de arriba ya midió bien desde el principio, pero
+// no cuesta nada tenerlo como respaldo ante cualquier caso límite del navegador.
+function reajustarGraficas(){
+  Object.values(CH).forEach(function(c){try{if(c&&c.resize)c.resize();}catch(e){}});
+}
+window.addEventListener('resize',reajustarGraficas);
+window.addEventListener('orientationchange',function(){setTimeout(reajustarGraficas,300);});
 // Un pequeño reintento tras el primer render por si las fuentes web tardan en cargar y
 // cambian la altura de las barras después de la medición inicial.
 setTimeout(ajustarBarrasFijas,300);
@@ -4642,7 +4658,10 @@ async function cargarDatos(esManual){
 populateAnioFilter();updateRegCount();
 MES_STATS=buildMesStats(getAllMes(),G_ANIO);
 updateClrBtn();
-refreshActive();
+// Mismo motivo que en showView(): esperar a que el navegador termine de pintar el layout
+// inicial antes de crear las primeras gráficas, para que Safari/iOS no las mida con un
+// tamaño equivocado desde el arranque.
+requestAnimationFrame(function(){requestAnimationFrame(refreshActive);});
 // Try to update from SharePoint silently
 cargarDatos(false);
 
