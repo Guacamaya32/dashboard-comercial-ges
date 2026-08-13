@@ -3757,9 +3757,38 @@ function updateBadgeAnio(){const el=document.getElementById('badge-anio');if(el)
 
 // Contador visible de registros totales cargados (arriba a la derecha) — sirve para comparar
 // rápido entre dispositivos si uno está viendo menos datos que otro (ej. celular vs PC).
+// Al tocarlo, muestra un diagnóstico más detallado (útil para depurar en un dispositivo donde
+// no se puede abrir la consola del navegador, como un iPad o iPhone).
 function updateRegCount(){
   var el=document.getElementById('reg-count');
-  if(el)el.textContent=ALL.length+' reg.';
+  if(!el)return;
+  el.textContent=ALL.length+' reg. (tocar para diagnóstico)';
+  el.style.cursor='pointer';
+  el.onclick=mostrarDiagnostico;
+}
+function mostrarDiagnostico(){
+  function val(r){return r.ir>0?r.ir:r.v;}
+  var base=ALL.filter(function(r){return r.anio===2026&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');});
+  var sumaBase=base.reduce(function(s,r){return s+val(r);},0);
+  var mesFragmentos=getAllMes();
+  var mesFiltrado=mesFragmentos.filter(function(r){return r.anio===2026&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');});
+  var sumaMes=mesFiltrado.reduce(function(s,r){return s+val(r);},0);
+  var eneroReg=mesFragmentos.filter(function(r){return r.anio===2026&&r.m==='enero'&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');});
+  var sumaEnero=eneroReg.reduce(function(s,r){return s+val(r);},0);
+  var msg='DIAGNÓSTICO DEL DASHBOARD\n\n'
+    +'Total registros (ALL): '+ALL.length+'\n'
+    +'Registros 2026 (sin prorratear): '+base.length+'\n'
+    +'Suma 2026 (sin prorratear): '+fmt(sumaBase)+' ('+Math.round(sumaBase)+')\n\n'
+    +'Fragmentos totales (getAllMes): '+mesFragmentos.length+'\n'
+    +'Fragmentos 2026 filtrados: '+mesFiltrado.length+'\n'
+    +'Suma 2026 (prorrateada): '+fmt(sumaMes)+' ('+Math.round(sumaMes)+')\n\n'
+    +'Registros de enero 2026: '+eneroReg.length+'\n'
+    +'Suma enero 2026: '+fmt(sumaEnero)+' ('+Math.round(sumaEnero)+')\n\n'
+    +'devicePixelRatio: '+(window.devicePixelRatio||'?')+'\n'
+    +'Ancho ventana: '+(window.innerWidth||'?')+'x'+(window.innerHeight||'?')+'\n'
+    +'User Agent: '+navigator.userAgent;
+  alert(msg);
+  console.log(msg);
 }
 function populateAnioFilter(){
   const sel=document.getElementById('g-anio');
