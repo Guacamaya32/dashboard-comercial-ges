@@ -496,6 +496,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     </button>
     <div class="hdr-date" id="live-date"></div>
     <div class="hdr-ver" id="app-ver" title="Versión del dashboard publicada"></div>
+    <div class="hdr-ver" id="reg-count" title="Total de registros cargados actualmente"></div>
   </div>
 </div>
 
@@ -3754,6 +3755,12 @@ function getCancelled(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_
 
 function updateBadgeAnio(){const el=document.getElementById('badge-anio');if(el)el.textContent=G_ANIO||'Todos';}
 
+// Contador visible de registros totales cargados (arriba a la derecha) — sirve para comparar
+// rápido entre dispositivos si uno está viendo menos datos que otro (ej. celular vs PC).
+function updateRegCount(){
+  var el=document.getElementById('reg-count');
+  if(el)el.textContent=ALL.length+' reg.';
+}
 function populateAnioFilter(){
   const sel=document.getElementById('g-anio');
   if(!sel)return;
@@ -4600,7 +4607,7 @@ async function cargarDatos(esManual){
       // queda solo como respaldo: se muestra si el guard rechaza un refresh sospechoso.
       ALL=live;
     }
-    populateAnioFilter();
+    populateAnioFilter();updateRegCount();
     MES_STATS=buildMesStats(getAllMes(),G_ANIO);
     updateClrBtn();
     refreshActive();
@@ -4613,7 +4620,7 @@ async function cargarDatos(esManual){
       alert('No se pudo actualizar desde SharePoint.\nMostrando datos embebidos.\n\nDetalle: '+String(err.message||err));
     }
     // Always render with whatever data is available (embedded ALL)
-    populateAnioFilter();
+    populateAnioFilter();updateRegCount();
     MES_STATS=buildMesStats(getAllMes(),G_ANIO);
     updateClrBtn();
     refreshActive();
@@ -4622,7 +4629,7 @@ async function cargarDatos(esManual){
   }
 }
 // Render embedded data immediately, then try SharePoint refresh in background
-populateAnioFilter();
+populateAnioFilter();updateRegCount();
 MES_STATS=buildMesStats(getAllMes(),G_ANIO);
 updateClrBtn();
 refreshActive();
@@ -5122,17 +5129,23 @@ function renderMetas(){
       },
       plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{
         label:function(c){
-          var row=cliRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
-          return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
+          try{
+            var row=cliRows[c.dataIndex];
+            if(!row)return '';
+            var realPct=row.meta>0?(row.actual/row.meta*100):0;
+            return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
+          }catch(e){ console.warn('tooltip label error (ignorado):',e); return ''; }
         },
         // Para la barra "OTROS", además se lista cada cliente real que la compone.
         afterBody:function(items){
-          if(!items.length)return;
-          var row=cliRows[items[0].dataIndex];
-          if(row.key!=='OTROS')return;
-          var entries=Object.entries(otrosDetalle).sort(function(a,b){return b[1]-a[1];});
-          if(!entries.length)return;
-          return ['','Clientes incluidos en Otros:'].concat(entries.map(function(e){return '  '+e[0]+': '+fmt(e[1]);}));
+          try{
+            if(!items||!items.length)return;
+            var row=cliRows[items[0].dataIndex];
+            if(!row||row.key!=='OTROS')return;
+            var entries=Object.entries(otrosDetalle).sort(function(a,b){return b[1]-a[1];});
+            if(!entries.length)return;
+            return ['','Clientes incluidos en Otros:'].concat(entries.map(function(e){return '  '+e[0]+': '+fmt(e[1]);}));
+          }catch(e){ console.warn('tooltip afterBody error (ignorado):',e); return; }
         }
       }}}
     },
@@ -5151,7 +5164,7 @@ function renderMetas(){
   document.getElementById('cMetaCli').onclick=function(e){
     var pts=CH.cMetaCli.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
     if(!pts.length)return;
-    toggleMetaFilter('cli',cliRows[pts[0].index].key);
+    if(cliRows[pts[0].index])toggleMetaFilter('cli',cliRows[pts[0].index].key);
   };
 
   // ── Representante ────────────────────────────────────────────────────────
@@ -5174,8 +5187,12 @@ function renderMetas(){
       scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
         y:{ticks:{font:{size:10,family:'Inter',weight:'700'},color:B.NAVY},grid:{display:false},stacked:true}},
       plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
-        var row=repRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
-        return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
+        try{
+          var row=repRows[c.dataIndex];
+          if(!row)return '';
+          var realPct=row.meta>0?(row.actual/row.meta*100):0;
+          return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
+        }catch(e){ console.warn('tooltip label error (ignorado):',e); return ''; }
       }}}}
     },
     plugins:[{id:'pctLabelRep',afterDatasetsDraw:function(chart){
@@ -5193,7 +5210,7 @@ function renderMetas(){
   document.getElementById('cMetaRep').onclick=function(e){
     var pts=CH.cMetaRep.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
     if(!pts.length)return;
-    toggleMetaFilter('rep',repRows[pts[0].index].key);
+    if(repRows[pts[0].index])toggleMetaFilter('rep',repRows[pts[0].index].key);
   };
 
   // ── Gerencia ECP (barras verticales) ────────────────────────────────────
@@ -5216,9 +5233,18 @@ function renderMetas(){
       scales:{y:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT},stacked:true},
         x:{ticks:{font:{size:8,family:'Inter',weight:'600'},color:B.MUTED,maxRotation:0,autoSkip:false,callback:function(v,i){var l=gerLabels[i]||'';return l.length>10?l.slice(0,9)+'…':l;}},grid:{display:false},stacked:true}},
       plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{filter:function(c){return c.datasetIndex===0;},callbacks:{label:function(c){
-        var row=gerRows[c.dataIndex];var realPct=row.meta>0?(row.actual/row.meta*100):0;
-        return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
-      },title:function(items){return gerRows[items[0].dataIndex].label;}}}}
+        try{
+          var row=gerRows[c.dataIndex];
+          if(!row)return '';
+          var realPct=row.meta>0?(row.actual/row.meta*100):0;
+          return 'Real: '+fmt(row.actual)+' · Meta: '+fmt(row.meta)+' ('+realPct.toFixed(1)+'%)';
+        }catch(e){ console.warn('tooltip label error (ignorado):',e); return ''; }
+      },title:function(items){
+        try{
+          var row=items&&items[0]&&gerRows[items[0].dataIndex];
+          return row?row.label:'';
+        }catch(e){ console.warn('tooltip title error (ignorado):',e); return ''; }
+      }}}}
     },
     plugins:[{id:'pctLabelGer',afterDatasetsDraw:function(chart){
       var ctx=chart.ctx,meta0=chart.getDatasetMeta(0);
@@ -5236,7 +5262,7 @@ function renderMetas(){
   document.getElementById('cMetaGer').onclick=function(e){
     var pts=CH.cMetaGer.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
     if(!pts.length)return;
-    toggleMetaFilter('ger',gerRows[pts[0].index].key);
+    if(gerRows[pts[0].index])toggleMetaFilter('ger',gerRows[pts[0].index].key);
   };
 
   // ── Trimestres (gauges Q1-Q4) ───────────────────────────────────────────
