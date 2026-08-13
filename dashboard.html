@@ -5433,7 +5433,7 @@ function renderHistorico(){
       {label:'Rango 2022-2024',data:bandMin,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:function(c){
         var a=c.chart.chartArea;if(!a)return B.LIGHT;
         var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
-        g.addColorStop(0,'rgba(168,180,204,.35)');g.addColorStop(1,'rgba(168,180,204,.10)');
+        g.addColorStop(0,'rgba(120,135,166,.55)');g.addColorStop(1,'rgba(120,135,166,.22)');
         return g;
       },tension:.3},
       {label:'2025',data:data2025,borderColor:B.NAVY_M,backgroundColor:'transparent',borderWidth:2.5,pointRadius:3,pointBackgroundColor:B.NAVY_M,pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:6,fill:false,tension:.3,borderCapStyle:'round'},
@@ -5468,13 +5468,24 @@ function renderHistorico(){
           filter:function(item){return item.text!=='Máximo 2022-2024';}}},
         tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
           label:function(c){
-            if(c.dataset.label==='Máximo 2022-2024')return null;
-            if(c.dataset.label==='Rango 2022-2024'){
-              var i=c.dataIndex;
-              return 'Rango 2022-2024: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
-            }
-            if(c.raw===null||c.raw===undefined)return null;
-            return c.dataset.label+': '+fmt(c.raw);
+            try{
+              if(c.dataset.label==='Máximo 2022-2024')return null;
+              if(c.dataset.label==='Rango 2022-2024'){
+                var i=c.dataIndex;
+                return 'Rango 2022-2024: '+fmt(bandMin[i])+' — '+fmt(bandMax[i]);
+              }
+              if(c.raw===null||c.raw===undefined)return null;
+              return c.dataset.label+': '+fmt(c.raw);
+            }catch(e){ console.warn('tooltip label error (ignorado):',e); return null; }
+          },
+          // Además del rango, se listan los 3 años individuales (2022-2024) para ese mes —
+          // no solo el mínimo/máximo, sino cuánto fue exactamente cada año.
+          afterBody:function(items){
+            try{
+              if(!items||!items.length)return;
+              var i=items[0].dataIndex;
+              return [''].concat(histYears.map(function(a){return '  '+a+': '+fmt(datos[a][i]);}));
+            }catch(e){ console.warn('tooltip afterBody error (ignorado):',e); return; }
           },
           filter:function(c){return c.dataset.label!=='Máximo 2022-2024'&&c.raw!==null&&c.raw!==undefined;}
         }}
@@ -5605,17 +5616,23 @@ function renderForecast(){
 
   var allLabels=etiquetasDisp.concat(forecastLabels);
   var serieActual=serieDisp.concat(forecastLabels.map(function(){return null;}));
+  // La banda de confianza ahora se ve desde enero del año en curso (no solo desde el inicio
+  // del forecast puro), para poder comparar "Real" contra el rango probabilístico del modelo
+  // en TODO el año: para los meses ya pasados usa un ancho fijo (el error típico del modelo,
+  // un paso a la vez); para los meses que faltan, el ancho crece con el horizonte (más
+  // incertidumbre mientras más adelante se proyecta), igual que antes.
   var bandaAlta=allLabels.map(function(_,i){
-    if(i<etiquetasDisp.length)return null;
+    if(i<idxInicioAnioActual)return null;
+    if(i<etiquetasDisp.length)return modeloDisp[i]+1.28*residStd;
     var h=i-etiquetasDisp.length+1;
     return forecastVals[h-1]+1.28*residStd*Math.sqrt(h);
   });
   var bandaBaja=allLabels.map(function(_,i){
-    if(i<etiquetasDisp.length)return null;
+    if(i<idxInicioAnioActual)return null;
+    if(i<etiquetasDisp.length)return Math.max(0,modeloDisp[i]-1.28*residStd);
     var h=i-etiquetasDisp.length+1;
     return Math.max(0,forecastVals[h-1]-1.28*residStd*Math.sqrt(h));
   });
-  if(bandaAlta.length){bandaAlta[etiquetasDisp.length-1]=modeloDisp[etiquetasDisp.length-1];bandaBaja[etiquetasDisp.length-1]=modeloDisp[etiquetasDisp.length-1];}
 
   dc('cForecast');CH.cForecast=new Chart(document.getElementById('cForecast'),{
     type:'line',
@@ -5683,8 +5700,11 @@ function renderForecast(){
     +'La línea "Modelo" combina dos tramos en una sola curva: para los meses ya pasados de '+anioActualMax+', es lo '
     +'que el modelo habría dicho en ese momento (ajuste retrospectivo) — con el % en verde/rojo sobre cada mes '
     +'mostrando cuánto estuvo el real por encima o por debajo de esa expectativa; para los meses que faltan, es '
-    +'el forecast propiamente dicho, con una banda de confianza aproximada del 80% que se amplía mientras más '
-    +'adelante se proyecta. Este pronóstico es una estimación estadística basada en el comportamiento histórico, '
+    +'el forecast propiamente dicho. La banda sombreada de confianza (≈80%) ahora se ve desde enero de '+anioActualMax+': '
+    +'en los meses ya pasados tiene un ancho fijo (el error típico del modelo, un mes a la vez); en los meses que '
+    +'faltan se amplía mientras más adelante se proyecta (más incertidumbre en diciembre que en el próximo mes) — '
+    +'así se puede ver qué tanto se ha movido "Real" dentro del rango probabilístico del modelo durante todo el año. '
+    +'Este pronóstico es una estimación estadística basada en el comportamiento histórico, '
     +'no una meta ni un compromiso comercial.';
 }
 </script>
