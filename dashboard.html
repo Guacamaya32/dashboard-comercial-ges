@@ -5091,6 +5091,31 @@ function renderMetas(){
   function val(r){return r.ir>0?r.ir:r.v;}
   function normC(c){return String(c||'').toUpperCase().replace(/[_\s]/g,'');}
 
+  // Corresponsabilidad temporal: Michell salió a licencia de maternidad (hasta fin de año
+  // aprox.) y sus cuentas quedaron en manos de otros representantes, PERO su historial y su
+  // meta no desaparecen — ambos quedan como responsables del mismo cliente. La meta de esa
+  // cuenta se le sigue mostrando completa a Michell (así se acordó al principio del año) Y
+  // TAMBIÉN, completa, a quien la tiene ahora — no se divide, y no se duplica en el real: el
+  // ingreso real solo cuenta para quien efectivamente lo reportó (r.r de cada registro), así
+  // que la suma de lo real entre los dos SIEMPRE coincide con el total real de esa cuenta,
+  // solo que repartido según quién ejecutó cada parte.
+  var CORRESPONSABLES=[
+    {c:'FRONTERA',ger:null,repAnterior:'MICHELL',repNuevo:'JUAN'},
+    {c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',repAnterior:'MICHELL',repNuevo:'JULIANA'},
+    {c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',repAnterior:'MICHELL',repNuevo:'JULIANA'}
+  ];
+  // Todos los representantes "responsables" de un cliente/gerencia — normalmente solo uno; en
+  // las 3 cuentas de arriba, dos (el anterior y el nuevo), mientras dure la transición.
+  function repsResponsables(c,ger,repOriginal){
+    for(var i=0;i<CORRESPONSABLES.length;i++){
+      var x=CORRESPONSABLES[i];
+      if(normC(c)===normC(x.c)&&(!x.ger||ger===x.ger)&&repOriginal===x.repAnterior){
+        return [x.repAnterior,x.repNuevo];
+      }
+    }
+    return [repOriginal];
+  }
+
   // Selector de escenario
   document.getElementById('meta-esc-sel').innerHTML=['ADV','ESP','OPT'].map(function(e){
     return '<button class="esc-btn'+(META_ESC===e?' active':'')+'" onclick="setMetaEsc(\''+e+'\')">'+META_ESC_LABEL[e]+'</button>';
@@ -5119,16 +5144,19 @@ function renderMetas(){
     return r.anio===2026&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');
   });
 
-  // Aplicar el filtro cruzado interactivo a ambas fuentes y a las metas
+  // Aplicar el filtro cruzado interactivo a ambas fuentes y a las metas. El filtro por
+  // representante usa TODOS los responsables de la cuenta (repsResponsables), así que al
+  // filtrar por Juan también aparece el contexto completo de Frontera (incluida la meta y lo
+  // que Michell ya había ejecutado), no solo lo que Juan ha reportado desde que la tomó.
   function pasaFiltro(r){
     if(META_FILTER.cli&&normC(r.c)!==META_FILTER.cli)return false;
-    if(META_FILTER.rep&&r.r!==META_FILTER.rep)return false;
+    if(META_FILTER.rep&&repsResponsables(r.c,r.ger,r.r).indexOf(META_FILTER.rep)===-1)return false;
     if(META_FILTER.ger&&r.ger!==META_FILTER.ger)return false;
     return true;
   }
   function pasaFiltroMeta(x){
     if(META_FILTER.cli&&normC(x.c)!==META_FILTER.cli)return false;
-    if(META_FILTER.rep&&x.rep!==META_FILTER.rep)return false;
+    if(META_FILTER.rep&&repsResponsables(x.c,x.ger,x.rep).indexOf(META_FILTER.rep)===-1)return false;
     if(META_FILTER.ger&&x.ger!==META_FILTER.ger)return false;
     return true;
   }
@@ -5240,8 +5268,18 @@ function renderMetas(){
 
   // ── Representante ────────────────────────────────────────────────────────
   var actPorRep={},metaPorRep={};
+  // El real NUNCA se duplica: cada registro cuenta solo para quien lo reportó (r.r tal cual),
+  // así que sumando Michell + Juan para Frontera siempre da exactamente el total real de
+  // Frontera, sin importar cómo haya quedado repartido entre los dos.
   actual.forEach(function(r){actPorRep[r.r]=(actPorRep[r.r]||0)+val(r);});
-  metasF.forEach(function(x){if(x.rep)metaPorRep[x.rep]=(metaPorRep[x.rep]||0)+x.meta;});
+  // La meta SÍ se muestra completa para cada corresponsable (no se divide ni se duplica el
+  // real, solo la referencia de "cuánto había que lograr" se ve igual para ambos mientras dura
+  // la transición) — por eso Michell mantiene su meta original y Juan/Juliana también la ven.
+  metasF.forEach(function(x){
+    if(!x.rep)return;
+    var reps=repsResponsables(x.c,x.ger,x.rep);
+    reps.forEach(function(rp){metaPorRep[rp]=(metaPorRep[rp]||0)+x.meta;});
+  });
   var repRows=REPS.filter(function(rp){return metaPorRep[rp]>0;}).map(function(rp){
     return {key:rp,label:repLabel(rp),actual:actPorRep[rp]||0,meta:metaPorRep[rp]};
   }).sort(function(a,b){return (b.actual/b.meta)-(a.actual/a.meta);});
