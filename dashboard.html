@@ -5091,29 +5091,29 @@ function renderMetas(){
   function val(r){return r.ir>0?r.ir:r.v;}
   function normC(c){return String(c||'').toUpperCase().replace(/[_\s]/g,'');}
 
-  // Corresponsabilidad temporal: Michell salió a licencia de maternidad (hasta fin de año
-  // aprox.) y sus cuentas quedaron en manos de otros representantes, PERO su historial y su
-  // meta no desaparecen — ambos quedan como responsables del mismo cliente. La meta de esa
-  // cuenta se le sigue mostrando completa a Michell (así se acordó al principio del año) Y
-  // TAMBIÉN, completa, a quien la tiene ahora — no se divide, y no se duplica en el real: el
-  // ingreso real solo cuenta para quien efectivamente lo reportó (r.r de cada registro), así
-  // que la suma de lo real entre los dos SIEMPRE coincide con el total real de esa cuenta,
-  // solo que repartido según quién ejecutó cada parte.
-  var CORRESPONSABLES=[
+  // Transición por licencia de maternidad de Michell: sus cuentas quedaron en manos de otros
+  // representantes a mitad de año. En vez de mostrarle la meta completa del año a los dos (lo
+  // que infla artificialmente la meta de quien la recibe), se divide por periodo: enero-junio
+  // sigue siendo meta de Michell (así se presupuestó), julio-diciembre pasa a ser meta de quien
+  // tiene la cuenta ahora. Cada mes de meta pertenece a una sola persona — no se duplica ni se
+  // divide el monto, solo se redirige según de qué mes se trate. El real, aparte, siempre
+  // cuenta para quien efectivamente lo reportó (r.r de cada registro).
+  var MESES_1RA_MITAD=['enero','febrero','marzo','abril','mayo','junio'];
+  var TRANSICION=[
     {c:'FRONTERA',ger:null,repAnterior:'MICHELL',repNuevo:'JUAN'},
     {c:'ECOPETROL',ger:'GOR (RUBIALES - CAÑO SUR)',repAnterior:'MICHELL',repNuevo:'JULIANA'},
     {c:'ECOPETROL',ger:'PPH (HUILA-TOLIMA)',repAnterior:'MICHELL',repNuevo:'JULIANA'}
   ];
-  // Todos los representantes "responsables" de un cliente/gerencia — normalmente solo uno; en
-  // las 3 cuentas de arriba, dos (el anterior y el nuevo), mientras dure la transición.
-  function repsResponsables(c,ger,repOriginal){
-    for(var i=0;i<CORRESPONSABLES.length;i++){
-      var x=CORRESPONSABLES[i];
+  // Representante "dueño" de la meta de un cliente/gerencia/mes puntual (para las 3 cuentas de
+  // arriba, depende del mes; para el resto, el de siempre).
+  function repMetaMes(c,ger,mes,repOriginal){
+    for(var i=0;i<TRANSICION.length;i++){
+      var x=TRANSICION[i];
       if(normC(c)===normC(x.c)&&(!x.ger||ger===x.ger)&&repOriginal===x.repAnterior){
-        return [x.repAnterior,x.repNuevo];
+        return MESES_1RA_MITAD.indexOf(mes)>=0?x.repAnterior:x.repNuevo;
       }
     }
-    return [repOriginal];
+    return repOriginal;
   }
 
   // Selector de escenario
@@ -5144,19 +5144,19 @@ function renderMetas(){
     return r.anio===2026&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');
   });
 
-  // Aplicar el filtro cruzado interactivo a ambas fuentes y a las metas. El filtro por
-  // representante usa TODOS los responsables de la cuenta (repsResponsables), así que al
-  // filtrar por Juan también aparece el contexto completo de Frontera (incluida la meta y lo
-  // que Michell ya había ejecutado), no solo lo que Juan ha reportado desde que la tomó.
+  // El real (actual) siempre cuenta para quien efectivamente lo reportó — sin redirigir nada.
+  // La meta sí se redirige según el mes (repMetaMes), para que al filtrar por Juan aparezca la
+  // meta de julio-diciembre de Frontera, y al filtrar por Michell aparezca solo la de
+  // enero-junio.
   function pasaFiltro(r){
     if(META_FILTER.cli&&normC(r.c)!==META_FILTER.cli)return false;
-    if(META_FILTER.rep&&repsResponsables(r.c,r.ger,r.r).indexOf(META_FILTER.rep)===-1)return false;
+    if(META_FILTER.rep&&r.r!==META_FILTER.rep)return false;
     if(META_FILTER.ger&&r.ger!==META_FILTER.ger)return false;
     return true;
   }
   function pasaFiltroMeta(x){
     if(META_FILTER.cli&&normC(x.c)!==META_FILTER.cli)return false;
-    if(META_FILTER.rep&&repsResponsables(x.c,x.ger,x.rep).indexOf(META_FILTER.rep)===-1)return false;
+    if(META_FILTER.rep&&repMetaMes(x.c,x.ger,x.m,x.rep)!==META_FILTER.rep)return false;
     if(META_FILTER.ger&&x.ger!==META_FILTER.ger)return false;
     return true;
   }
@@ -5268,17 +5268,15 @@ function renderMetas(){
 
   // ── Representante ────────────────────────────────────────────────────────
   var actPorRep={},metaPorRep={};
-  // El real NUNCA se duplica: cada registro cuenta solo para quien lo reportó (r.r tal cual),
-  // así que sumando Michell + Juan para Frontera siempre da exactamente el total real de
-  // Frontera, sin importar cómo haya quedado repartido entre los dos.
+  // El real cuenta para quien lo reportó (r.r tal cual) — nada se redirige aquí.
   actual.forEach(function(r){actPorRep[r.r]=(actPorRep[r.r]||0)+val(r);});
-  // La meta SÍ se muestra completa para cada corresponsable (no se divide ni se duplica el
-  // real, solo la referencia de "cuánto había que lograr" se ve igual para ambos mientras dura
-  // la transición) — por eso Michell mantiene su meta original y Juan/Juliana también la ven.
+  // La meta se asigna mes a mes según repMetaMes: enero-junio de las 3 cuentas de transición
+  // sigue siendo de Michell, julio-diciembre pasa al nuevo responsable — cada mes cuenta una
+  // sola vez, para ninguno de los dos queda con la meta del año completo inflada.
   metasF.forEach(function(x){
     if(!x.rep)return;
-    var reps=repsResponsables(x.c,x.ger,x.rep);
-    reps.forEach(function(rp){metaPorRep[rp]=(metaPorRep[rp]||0)+x.meta;});
+    var rp=repMetaMes(x.c,x.ger,x.m,x.rep);
+    metaPorRep[rp]=(metaPorRep[rp]||0)+x.meta;
   });
   var repRows=REPS.filter(function(rp){return metaPorRep[rp]>0;}).map(function(rp){
     return {key:rp,label:repLabel(rp),actual:actPorRep[rp]||0,meta:metaPorRep[rp]};
