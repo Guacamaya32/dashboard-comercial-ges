@@ -4878,7 +4878,7 @@ function renderFinalizados(){
   var mesAsig=MES.map(function(m){
     return allMes.filter(function(r){return r.m===m&&r.t==='A'
       &&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))
-      &&r.s!=='CANCELADO'&&r.s!=='RECHAZADO';}).reduce(function(s,r){return s+r.v;},0);
+      &&r.s!=='CANCELADO'&&r.s!=='RECHAZADO';}).reduce(function(s,r){return s+valAsignado(r);},0);
   });
   var mesRem=mesAsig.map(function(a,i){return Math.max(0,a-mesFin[i]);});
   var mesPct=mesAsig.map(function(a,i){return a>0?Math.round(mesFin[i]/a*100):0;});
