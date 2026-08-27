@@ -655,6 +655,11 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="ct" id="meta-hist-title">Histórico Metas</div>
     <div style="height:260px"><canvas id="cMetaHist"></canvas></div>
   </div>
+  <div class="ct" style="margin:16px 2px 8px">Distribución de Ingresos — Esperada vs. Actual</div>
+  <div class="g2">
+    <div class="card"><div class="ct">Por Cliente</div><div style="height:280px"><canvas id="cMixCli"></canvas></div></div>
+    <div class="card"><div class="ct">Por Gerencia ECP</div><div style="height:280px"><canvas id="cMixGer"></canvas></div></div>
+  </div>
 </div>
 
 <div class="view" id="view-historico">
@@ -3759,7 +3764,15 @@ function buildMesStats(all,anio){
 // diligenciado, y si no, el estimado como respaldo. Se devuelve una copia (no se modifica el
 // registro original) para no afectar Detalle, Ejecutados ni el CSV, que siguen usando su
 // propio criterio de valor.
-function valAsignado(r){return r.s==='FINALIZADO'?(r.ir>0?r.ir:r.ie):r.ie;}
+// "Asignado": mientras no esté FINALIZADO, se cuenta el ingreso estimado — PERO si el ingreso
+// real ya superó a ese estimado (algo que sí puede pasar antes de finalizar del todo, ej. una
+// renta mensual recurrente que ya acumuló más de lo presupuestado), el real pasa a ser el
+// nuevo techo: nunca tiene sentido mostrar un valor "asignado" por debajo de lo que ya consta
+// como ingreso real. Si ya está FINALIZADO, se toma el real si existe, si no el estimado.
+function valAsignado(r){
+  if(r.s==='FINALIZADO')return r.ir>0?r.ir:r.ie;
+  return Math.max(r.ie||0,r.ir||0);
+}
 function getBase(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
 function getAsig(){return getBase().filter(r=>r.t==='A').map(function(r){return Object.assign({},r,{v:valAsignado(r)});});}
 function getOpor(){return getBase().filter(r=>r.t==='O');}
@@ -5371,6 +5384,48 @@ function renderMetas(){
     if(!pts.length)return;
     if(gerRows[pts[0].index])toggleMetaFilter('ger',gerRows[pts[0].index].key);
   };
+
+  // ── Distribución de Ingresos: Esperada (meta) vs Actual — Cliente y Gerencia ────────────
+  // No es lo mismo que "Cumplimiento" (arriba): esas gráficas comparan cada cliente contra SU
+  // PROPIA meta. Esta compara la COMPOSICIÓN del total: de todo lo presupuestado para 2026,
+  // ¿qué % le corresponde a cada cliente/gerencia?, y de todo lo que se ha ejecutado hasta
+  // ahora, ¿cómo se está repartiendo realmente? — útil para ver si la mezcla de negocio se
+  // está moviendo distinto a lo planeado (ej. un cliente que pesaba poco en el presupuesto y
+  // hoy pesa mucho más en lo real, o viceversa).
+  function buildMixChart(canvasId,rows,colorEsp,colorAct){
+    var totalMetaMix=rows.reduce(function(s,r){return s+r.meta;},0)||1;
+    var totalActualMix=rows.reduce(function(s,r){return s+r.actual;},0)||1;
+    var ordenados=rows.slice().sort(function(a,b){return b.meta-a.meta;});
+    var labels=ordenados.map(function(r){return r.label;});
+    var pctEsp=ordenados.map(function(r){return r.meta/totalMetaMix*100;});
+    var pctAct=ordenados.map(function(r){return r.actual/totalActualMix*100;});
+    dc(canvasId);CH[canvasId]=new Chart(document.getElementById(canvasId),{
+      type:'bar',
+      data:{labels:labels,datasets:[
+        {label:'% Esperado (meta '+META_ESC_LABEL[META_ESC]+')',data:pctEsp,backgroundColor:colorEsp,borderRadius:3,barPercentage:.75,categoryPercentage:.75},
+        {label:'% Actual (real)',data:pctAct,backgroundColor:colorAct,borderRadius:3,barPercentage:.75,categoryPercentage:.75}
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        scales:{
+          x:{ticks:{callback:function(v){return v+'%';},font:{size:9},color:B.MUTED},grid:{color:B.LIGHT}},
+          y:{ticks:{font:{size:9,family:'Inter',weight:'700'},color:B.NAVY},grid:{display:false}}
+        },
+        plugins:{pctLabels:{enabled:false},
+          legend:{display:true,position:'top',labels:{font:{size:9,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle'}},
+          tooltip:{callbacks:{label:function(c){
+            try{
+              var r=ordenados[c.dataIndex];
+              if(!r)return '';
+              if(c.datasetIndex===0)return '% Esperado: '+c.raw.toFixed(1)+'% ('+fmt(r.meta)+')';
+              return '% Actual: '+c.raw.toFixed(1)+'% ('+fmt(r.actual)+')';
+            }catch(e){ console.warn('tooltip mix error (ignorado):',e); return ''; }
+          }}}
+        }
+      }
+    });
+  }
+  buildMixChart('cMixCli',cliRows,B.NAVY,B.GOLD);
+  buildMixChart('cMixGer',gerRows,B.NAVY,B.GOLD);
 
   // ── Trimestres (gauges Q1-Q4) ───────────────────────────────────────────
   var TRIM=[{n:'Q1',meses:['enero','febrero','marzo']},{n:'Q2',meses:['abril','mayo','junio']},
