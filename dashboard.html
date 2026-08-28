@@ -4150,13 +4150,27 @@ function renderExecSummary(A, O, D, CAN, mes){
   function buildLinMapA(rows){const m={};rows.filter(r=>r.t==='A').forEach(r=>{if(!r.l)return;r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(p=>{if(p&&p.length<6)m[p]=(m[p]||0)+r.v;});});return m;}
 
   const curCliA=buildMapA(A,'c'), curRepA=buildMapA(A,'r'), curLinA=buildLinMapA(A);
-  const prevA=prevMes?ALL.filter(r=>r.m===prevMes&&r.t==='A'&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO'):[];
+  // Mes anterior — SOLO Asignación (se excluye Oportunidad porque no es un valor fijo hasta
+  // que se convierte). Se calcula con el mismo criterio que el mes actual (A arriba): fragmentos
+  // prorateados por día (getAllMes) + valAsignado(), y filtrando por el mismo año seleccionado
+  // (G_ANIO) — antes esto tomaba ALL sin filtrar año, mezclando julios de distintos años (ej.
+  // 2022-2025) con el julio del año en curso, lo que inflaba artificialmente el "mes anterior".
+  const prevA=prevMes?getAllMes().filter(r=>r.m===prevMes&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.t==='A'&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO').map(r=>Object.assign({},r,{v:valAsignado(r)})):[];
   const prvCliA=buildMapA(prevA,'c'), prvRepA=buildMapA(prevA,'r'), prvLinA=buildLinMapA(prevA);
 
   const allCli=new Set([...Object.keys(curCliA),...Object.keys(prvCliA)]);
   const cliRows=[];
   allCli.forEach(c=>{const cv=curCliA[c]||0,pv=prvCliA[c]||0;if(cv>0)cliRows.push({c,cv,pv,p:pct(cv,pv)});});
   cliRows.sort((a,b)=>b.cv-a.cv);
+
+  // Desglose por gerencia dentro de Ecopetrol (solo Asignación, mismo criterio que arriba) —
+  // se muestra como subfilas debajo de la fila de ECOPETROL en la tabla de Clientes.
+  function buildMapAGer(rows){const m={};rows.filter(r=>r.t==='A'&&r.c==='ECOPETROL'&&r.ger&&r.ger!=='NA').forEach(r=>{m[r.ger]=(m[r.ger]||0)+r.v;});return m;}
+  const curGerA=buildMapAGer(A), prvGerA=buildMapAGer(prevA);
+  const allGer=new Set([...Object.keys(curGerA),...Object.keys(prvGerA)]);
+  const gerRows=[];
+  allGer.forEach(g=>{const cv=curGerA[g]||0,pv=prvGerA[g]||0;if(cv>0)gerRows.push({g,cv,pv,p:pct(cv,pv)});});
+  gerRows.sort((a,b)=>b.cv-a.cv);
 
   const repRows=REPS.map(r=>({r,cv:curRepA[r]||0,pv:prvRepA[r]||0})).map(x=>({...x,p:pct(x.cv,x.pv)})).sort((a,b)=>b.cv-a.cv);
 
@@ -4172,15 +4186,14 @@ function renderExecSummary(A, O, D, CAN, mes){
       </div>
       <div style="font-size:10px;color:rgba(255,255,255,.45);font-style:italic">Pipeline activo = Asignado + Oportunidades (excl. cancelados)</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--light)">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--light)">
       ${[
         {lbl:'Pipeline Total',cur:cur.total,p:totP,prev:prev?.total},
         {lbl:'Asignado',cur:cur.asig,p:asigP,prev:prev?.asig},
-        {lbl:'Oportunidad',cur:cur.opor,p:oporP,prev:prev?.opor},
         {lbl:'Finalizado',cur:cur.real,p:realP,prev:prev?.real},
         {lbl:'Registros activos',cur:cur.n,p:nP,prev:prev?.n,isCnt:true},
       ].map((k,i)=>`
-        <div style="padding:12px 16px;${i<4?'border-right:1px solid var(--light)':''}">
+        <div style="padding:12px 16px;${i<3?'border-right:1px solid var(--light)':''}">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px">${k.lbl}</div>
           <div style="font-family:JetBrains Mono,monospace;font-size:17px;font-weight:700;color:var(--navy)">${k.isCnt?k.cur:fmtS(k.cur)}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
@@ -4204,9 +4217,10 @@ function renderExecSummary(A, O, D, CAN, mes){
             <tbody>
               ${(()=>{
                 const cliTotal=cliRows.reduce((s,r)=>s+r.cv,0)||1;
+                const gerTotal=gerRows.reduce((s,r)=>s+r.cv,0)||1;
                 return cliRows.map((r,i)=>{
                   const sharePct=Math.round(r.cv/cliTotal*100);
-                  return `<tr style="border-bottom:1px solid var(--light);${i%2===1?'background:var(--pale)':''}">
+                  const filaCliente=`<tr style="border-bottom:1px solid var(--light);${i%2===1?'background:var(--pale)':''}">
                     <td style="padding:4px 8px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px">${r.c}</td>
                     <td style="padding:4px 8px;text-align:right;white-space:nowrap">
                       <span style="font-family:JetBrains Mono,monospace;font-weight:700;color:var(--navy)">${fmtS(r.cv)}</span>
@@ -4217,6 +4231,23 @@ function renderExecSummary(A, O, D, CAN, mes){
                       <span style="margin-left:4px">${r.pv===0?'<span style="color:var(--fin);font-size:9px;font-weight:700">NUEVO</span>':arrow(r.p)}</span>
                     </td>
                   </tr>`;
+                  // Subfilas de gerencia — solo debajo de ECOPETROL, indentadas y en tono más
+                  // claro para distinguirlas visualmente de las filas de cliente.
+                  const filasGerencia=(r.c==='ECOPETROL'&&gerRows.length)?gerRows.map(g=>{
+                    const gSharePct=Math.round(g.cv/gerTotal*100);
+                    return `<tr style="border-bottom:1px solid var(--light);background:var(--pale)">
+                      <td style="padding:3px 8px 3px 20px;font-weight:500;font-style:italic;color:var(--dim);font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px">↳ ${g.g}</td>
+                      <td style="padding:3px 8px;text-align:right;white-space:nowrap">
+                        <span style="font-family:JetBrains Mono,monospace;font-size:9.5px;font-weight:600;color:var(--dim)">${fmtS(g.cv)}</span>
+                        <span style="font-size:8px;color:var(--muted);margin-left:3px">${gSharePct}%</span>
+                      </td>
+                      <td style="padding:3px 8px;text-align:right;white-space:nowrap">
+                        <span style="font-family:JetBrains Mono,monospace;font-size:9px;color:var(--dim)">${g.pv>0?fmtS(g.pv):'—'}</span>
+                        <span style="margin-left:4px">${g.pv===0?'<span style="color:var(--fin);font-size:8px;font-weight:700">NUEVO</span>':arrow(g.p)}</span>
+                      </td>
+                    </tr>`;
+                  }).join(''):'';
+                  return filaCliente+filasGerencia;
                 }).join('');
               })()}
             </tbody>
