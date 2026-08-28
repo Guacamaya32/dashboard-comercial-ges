@@ -279,7 +279,7 @@ select:focus{border-color:var(--navy)}
 .esc-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
 main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 body.detalle-active main{max-width:none;padding:10px 12px 40px}
-body.metas-active main,body.historico-active main,body.forecast-active main{max-width:none;padding:20px 24px 60px}
+body.metas-active main,body.historico-active main,body.forecast-active main,body.mensual-active main,body.representantes-active main,body.clientes-active main{max-width:none;padding:20px 24px 60px}
 .view{display:none}.view.active{display:block}
 .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
 .kpi{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
@@ -460,7 +460,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   /* KPIs: 2 por fila en vez de intentar acomodar 5-6 en una sola línea angosta */
   .krow{grid-template-columns:repeat(2,1fr)}
 
-  body.metas-active main,body.historico-active main,body.forecast-active main,body.detalle-active main{padding:10px 8px 40px}
+  body.metas-active main,body.historico-active main,body.forecast-active main,body.detalle-active main,body.mensual-active main,body.representantes-active main,body.clientes-active main{padding:10px 8px 40px}
 }
 
 /* ── Responsive: celular angosto (≤480px) ─────────────────────────────── */
@@ -472,7 +472,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 @media print{.mnav,.fbar,.snav,.tt-bar{display:none}.view{display:block!important}}
 </style>
 </head>
-<body>
+<body class="mensual-active">
 
 <div id="loading-overlay">
   <div class="spin"></div>
@@ -3855,7 +3855,7 @@ function refreshActive(){const id=document.querySelector('.view.active')?.id?.re
 const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');LAST_TAB[SECTION_OF[id]]=id;
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');document.body.classList.toggle('mensual-active',id==='mensual');document.body.classList.toggle('representantes-active',id==='representantes');document.body.classList.toggle('clientes-active',id==='clientes');LAST_TAB[SECTION_OF[id]]=id;
   // iOS/Safari a veces mide el tamaño del canvas ANTES de que el navegador termine de acomodar
   // el layout recién visible (al quitar display:none) — deja las gráficas con un tamaño
   // interno equivocado para siempre, aunque los datos que reciben sean correctos (por eso los
