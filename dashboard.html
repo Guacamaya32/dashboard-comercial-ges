@@ -657,8 +657,8 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   </div>
   <div class="ct" style="margin:16px 2px 8px">Distribución de Ingresos — Esperada vs. Actual</div>
   <div class="g2">
-    <div class="card"><div class="ct">Por Cliente</div><div style="height:280px"><canvas id="cMixCli"></canvas></div></div>
-    <div class="card"><div class="ct">Por Gerencia ECP</div><div style="height:280px"><canvas id="cMixGer"></canvas></div></div>
+    <div class="card"><div class="ct" id="mix-cli-title">Por Cliente</div><div style="height:380px"><canvas id="cMixCli"></canvas></div></div>
+    <div class="card"><div class="ct" id="mix-ger-title">Por Gerencia ECP</div><div style="height:380px"><canvas id="cMixGer"></canvas></div></div>
   </div>
 </div>
 
@@ -5402,8 +5402,8 @@ function renderMetas(){
     dc(canvasId);CH[canvasId]=new Chart(document.getElementById(canvasId),{
       type:'bar',
       data:{labels:labels,datasets:[
-        {label:'% Esperado (meta '+META_ESC_LABEL[META_ESC]+')',data:pctEsp,backgroundColor:colorEsp,borderRadius:3,barPercentage:.75,categoryPercentage:.75},
-        {label:'% Actual (real)',data:pctAct,backgroundColor:colorAct,borderRadius:3,barPercentage:.75,categoryPercentage:.75}
+        {label:'% Esperado (meta '+META_ESC_LABEL[META_ESC]+')',data:pctEsp,backgroundColor:colorEsp,borderRadius:3,barPercentage:.95,categoryPercentage:.9},
+        {label:'% Actual (real)',data:pctAct,backgroundColor:colorAct,borderRadius:3,barPercentage:.95,categoryPercentage:.9}
       ]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
         scales:{
@@ -5421,9 +5421,30 @@ function renderMetas(){
             }catch(e){ console.warn('tooltip mix error (ignorado):',e); return ''; }
           }}}
         }
-      }
+      },
+      plugins:[{id:'mixPctLabel_'+canvasId,afterDatasetsDraw:function(chart){
+        try{
+          var ctx=chart.ctx;
+          ctx.save();ctx.font='700 10px Inter,sans-serif';ctx.textBaseline='middle';
+          [0,1].forEach(function(di){
+            var meta=chart.getDatasetMeta(di);
+            var datos=di===0?pctEsp:pctAct;
+            meta.data.forEach(function(bar,i){
+              var v=datos[i];
+              if(!(v>0))return;
+              var dentro=v>10;
+              ctx.fillStyle=dentro?'#fff':(di===0?colorEsp:colorAct);
+              ctx.textAlign=dentro?'right':'left';
+              ctx.fillText(v.toFixed(1)+'%',dentro?bar.x-5:bar.x+5,bar.y);
+            });
+          });
+          ctx.restore();
+        }catch(e){ console.warn('mixPctLabel error (ignorado):',e); }
+      }}]
     });
   }
+  document.getElementById('mix-cli-title').textContent='Por Cliente — Escenario '+META_ESC_LABEL[META_ESC];
+  document.getElementById('mix-ger-title').textContent='Por Gerencia ECP — Escenario '+META_ESC_LABEL[META_ESC];
   buildMixChart('cMixCli',cliRows,B.NAVY,B.GOLD);
   buildMixChart('cMixGer',gerRows,B.NAVY,B.GOLD);
 
