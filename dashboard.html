@@ -668,6 +668,11 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="ct">Histórico Ingresos por Año — 2022-2025 (rango) vs 2026</div>
     <div style="height:420px;position:relative"><canvas id="cHistAnio"></canvas></div>
   </div>
+  <div class="card" style="margin-top:14px">
+    <div class="ct">Facturación Total por Año</div>
+    <div style="height:340px;position:relative"><canvas id="cHistAnioTotal"></canvas></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic">La barra del año en curso corresponde a la proyección de cierre (real a la fecha + forecast Holt-Winters, ver pestaña Forecast), no solo lo facturado hasta hoy.</div>
+  </div>
 </div>
 
 <div class="view" id="view-forecast">
@@ -5553,6 +5558,48 @@ function renderMetas(){
   });
 }
 
+// Proyección de cierre de año para el año en curso, usando el mismo criterio y la misma
+// metodología (Holt-Winters) que la pestaña Forecast — así la barra de "año en curso" en el
+// gráfico de Facturación Total por Año coincide con el KPI "Proyección cierre" de esa pestaña.
+// Se deja como función aparte (no se toca renderForecast) para no arriesgar ese cálculo ya
+// validado; si no hay histórico suficiente para ajustar el modelo, se devuelve solo lo real
+// acumulado (tieneForecast:false) en vez de intentar proyectar.
+function getProyeccionCierreAnioActual(){
+  function val(r){return r.ir>0?r.ir:r.v;}
+  var allMes=getAllMes();
+  function totalMes(anio,mo){
+    return allMes.filter(function(r){return r.anio===anio&&r.m===mo&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION')&&r.t==='A';}).reduce(function(s,r){return s+val(r);},0);
+  }
+  var serie=[],mesesAnioActual=0;
+  var anioActualMax=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
+  for(var y0=2022;y0<=anioActualMax;y0++){
+    for(var mi=0;mi<12;mi++){
+      if(y0===anioActualMax){
+        var v=totalMes(y0,MO[mi]);
+        if(v<=0){y0=anioActualMax+1;break;}
+        serie.push(v);mesesAnioActual++;
+      }else{
+        serie.push(totalMes(y0,MO[mi]));
+      }
+    }
+  }
+  var nHist=serie.length;
+  var mesesRestantes=12-(nHist%12===0?12:nHist%12);
+  if(mesesRestantes===0)mesesRestantes=0;
+  var actualYTD=serie.slice(-mesesAnioActual).reduce(function(s,v){return s+v;},0);
+  if(nHist<24||mesesRestantes===0){
+    return {anio:anioActualMax,actualYTD:actualYTD,forecastTotal:0,proyeccionCierre:actualYTD,tieneForecast:false};
+  }
+  var ajuste=ajustarHoltWinters(serie,12);
+  var forecastVals=[];
+  for(var h=1;h<=mesesRestantes;h++){
+    var seasonIdx=(nHist+h-1)%12;
+    forecastVals.push(Math.max(0,ajuste.level+h*ajuste.trend+ajuste.seasonal[seasonIdx]));
+  }
+  var forecastTotal=forecastVals.reduce(function(s,v){return s+v;},0);
+  return {anio:anioActualMax,actualYTD:actualYTD,forecastTotal:forecastTotal,proyeccionCierre:actualYTD+forecastTotal,tieneForecast:true};
+}
+
 function renderHistorico(){
   function val(r){return r.ir>0?r.ir:r.v;}
   var allMes=getAllMes();
@@ -5676,6 +5723,53 @@ function renderHistorico(){
         }}
       })
     })
+  });
+
+  // ── Facturación Total por Año (barra por año, con la proyección de cierre para el año en
+  // curso en vez de solo lo facturado a la fecha) ──────────────────────────────────────────
+  var proy=getProyeccionCierreAnioActual();
+  var totalPorAnio=anios.map(function(a){
+    if(a===proy.anio)return proy.proyeccionCierre;
+    return datos[a].reduce(function(s,v){return s+v;},0);
+  });
+  var esProy=anios.map(function(a){return a===proy.anio&&proy.tieneForecast;});
+  var labelsAnioTotal=anios.map(function(a,i){return esProy[i]?String(a)+' (proyección)':String(a);});
+  dc('cHistAnioTotal');CH.cHistAnioTotal=new Chart(document.getElementById('cHistAnioTotal'),{
+    type:'bar',
+    data:{labels:labelsAnioTotal,datasets:[{
+      label:'Facturación Total',
+      data:totalPorAnio,
+      backgroundColor:anios.map(function(a,i){return esProy[i]?B.GOLD_D:B.NAVY;}),
+      borderRadius:6
+    }]},
+    options:Object.assign(sopts(),{
+      plugins:Object.assign({},sopts().plugins,{
+        legend:{display:false},
+        pctLabels:{enabled:false},
+        tooltip:{callbacks:{label:function(c){
+          var i=c.dataIndex;
+          return (esProy[i]?'Proyección de cierre: ':'Facturación: ')+fmt(c.raw);
+        }}}
+      }),
+      scales:{
+        x:{ticks:{color:B.MUTED,font:{size:11,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false},stacked:false},
+        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);}},grid:{color:'rgba(232,237,246,.6)'},border:{display:false},grace:'15%',stacked:false}
+      }
+    }),
+    plugins:[{id:'histAnioTotalLabels',afterDatasetsDraw:function(chart){
+      try{
+        var ctx=chart.ctx,meta=chart.getDatasetMeta(0);
+        ctx.save();
+        ctx.font='bold 11px Inter, sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        meta.data.forEach(function(bar,i){
+          ctx.fillStyle=esProy[i]?B.GOLD_D:B.NAVY;
+          ctx.fillText(fmt(totalPorAnio[i]),bar.x,bar.y-6);
+        });
+        ctx.restore();
+      }catch(e){ console.warn('histAnioTotalLabels error (ignorado):', e); }
+    }}]
   });
 }
 
