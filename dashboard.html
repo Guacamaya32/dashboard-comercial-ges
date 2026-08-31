@@ -4616,12 +4616,14 @@ function setLoading(on){
 async function cargarDatos(esManual,reintento){
   const main=document.querySelector('main');
   setLoading(true);
-  // Tiempo máximo de espera por la respuesta de SharePoint. En una red móvil inestable, el
-  // fetch puede quedarse "colgado" muchos segundos antes de fallar (o nunca fallar) — sin este
-  // límite, el usuario ve el dashboard con el histórico embebido (desactualizado) sin ningún
-  // aviso mientras la petición sigue intentando en segundo plano indefinidamente.
+  // Tiempo máximo de espera por la respuesta de SharePoint. El flujo de Power Automate (child
+  // flow invocado por HTTP) normalmente tarda bastante en responder — 20-40+ segundos no es
+  // raro, sobre todo en el primer llamado — así que este límite es solo una red de seguridad
+  // ante un cuelgue de verdad, NO un plazo esperado. Un límite corto (probado antes en 15s)
+  // corta respuestas lentas pero válidas antes de que lleguen, mostrando el histórico embebido
+  // (desactualizado) aunque SharePoint sí iba a responder — eso fue justo lo que pasó.
   const controlador=new AbortController();
-  const timeoutId=setTimeout(function(){controlador.abort();},15000);
+  const timeoutId=setTimeout(function(){controlador.abort();},60000);
   try{
     const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store',signal:controlador.signal});
     clearTimeout(timeoutId);
