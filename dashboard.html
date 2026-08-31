@@ -4613,11 +4613,18 @@ function setLoading(on){
   if(lbl)lbl.textContent=on?'Actualizando...':'Actualizar';
 }
 
-async function cargarDatos(esManual){
+async function cargarDatos(esManual,reintento){
   const main=document.querySelector('main');
   setLoading(true);
+  // Tiempo máximo de espera por la respuesta de SharePoint. En una red móvil inestable, el
+  // fetch puede quedarse "colgado" muchos segundos antes de fallar (o nunca fallar) — sin este
+  // límite, el usuario ve el dashboard con el histórico embebido (desactualizado) sin ningún
+  // aviso mientras la petición sigue intentando en segundo plano indefinidamente.
+  const controlador=new AbortController();
+  const timeoutId=setTimeout(function(){controlador.abort();},15000);
   try{
-    const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store'});
+    const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store',signal:controlador.signal});
+    clearTimeout(timeoutId);
     if(!resp.ok)throw new Error('Error HTTP '+resp.status);
     const raw=await resp.json();
     // Normalizar cada registro en vivo: si AÑO viene vacío o no numérico (típico en una fila
@@ -4731,8 +4738,25 @@ async function cargarDatos(esManual){
     const now=new Date();
     document.getElementById('live-date').textContent='Actualizado '+now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
   }catch(err){
+    clearTimeout(timeoutId);
     console.error('Error cargando datos desde SharePoint:',err);
-    // On error: keep embedded data, show small banner only on manual refresh
+    // Reintento automático (solo en la carga silenciosa inicial, no en la manual, y solo una
+    // vez): en datos móviles es común que la PRIMERA petición falle por una red aún
+    // inestabilizándose (cambio de torre, VPN corporativa despertando, etc.) y que el segundo
+    // intento sí funcione. Antes, cualquier falla —transitoria o no— dejaba el dashboard
+    // mostrando el histórico embebido (desactualizado) para el resto de la sesión sin ningún
+    // aviso, salvo que el usuario presionara "Actualizar" manualmente.
+    if(!esManual&&!reintento){
+      setTimeout(function(){cargarDatos(false,true);},2500);
+      return;
+    }
+    // Si el reintento también falla (o fue una actualización manual), sí se deja constancia
+    // visible en el encabezado — igual que en los dos guards de arriba — para que quede claro
+    // que lo que se está viendo es el histórico embebido y no el Excel más reciente. Antes esto
+    // solo se avisaba con un alert() en refresh manual, y la carga silenciosa inicial (la que
+    // corre sola al abrir el dashboard en el celular) no dejaba ningún rastro visible del
+    // problema — de ahí que pareciera que el celular "trae menos registros" sin explicación.
+    document.getElementById('live-date').textContent='⚠️ Mostrando datos verificados (sin conexión a SharePoint)';
     if(esManual){
       alert('No se pudo actualizar desde SharePoint.\nMostrando datos embebidos.\n\nDetalle: '+String(err.message||err));
     }
