@@ -3684,10 +3684,30 @@ const MS={enero:'ENE',febrero:'FEB',marzo:'MAR',abril:'ABR',mayo:'MAY',junio:'JU
 // en meses distintos. Si falta la fecha de finalización (o es inválida), o el rango cae en un
 // solo mes, el registro NO se divide: se cuenta completo en su mes original (r.m), igual que
 // siempre — así los meses que aún no tienen esa fecha diligenciada no quedan en $0.
+// Parseo estricto de fechas ISO (YYYY-MM-DD) por regex + constructor numérico, en vez del
+// parser de texto nativo (`new Date(string)`). El parser de texto NO está estandarizado entre
+// motores de JavaScript: para cadenas que no son 100% ISO-8601 estricto, Chrome/V8 (PC) y
+// Safari/WebKit (todo navegador en iPhone, incluido Chrome/CriOS) pueden interpretar la misma
+// cadena de forma distinta. Esto es justo lo que causaba que un registro de Juliana en agosto
+// se fragmentara distinto en el celular vs. el PC (7 fragmentos y $505K vs. 8 fragmentos y
+// $656K con los mismos 8 registros crudos de origen). Construir la fecha a partir de sus
+// componentes numéricos (año/mes/día) con `new Date(y,m,d)` es 100% determinístico en
+// cualquier motor — ya no depende de cómo cada navegador interprete el texto.
+function parseFechaISO(s){
+  if(!s)return null;
+  var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));
+  if(!m)return null;
+  var anio=Number(m[1]),mes=Number(m[2]),dia=Number(m[3]);
+  var d=new Date(anio,mes-1,dia);
+  // Verificación de redondeo: si el mes o día no eran válidos (ej. día 32), Date "rueda" al mes
+  // siguiente en vez de fallar — esta comprobación detecta eso y lo trata como fecha inválida.
+  if(d.getFullYear()!==anio||d.getMonth()!==mes-1||d.getDate()!==dia)return null;
+  return d;
+}
 function fragmentosPorMes(r){
   if(!r.fi||!r.ff) return [r];
-  var fi=new Date(r.fi+'T00:00:00'), ff=new Date(r.ff+'T00:00:00');
-  if(isNaN(fi.getTime())||isNaN(ff.getTime())||ff<fi) return [r];
+  var fi=parseFechaISO(r.fi), ff=parseFechaISO(r.ff);
+  if(!fi||!ff||ff<fi) return [r];
   if(fi.getFullYear()===ff.getFullYear()&&fi.getMonth()===ff.getMonth()) return [r];
   // Límites de seguridad: ningún servicio real dura más de 24 meses. Se ha visto que en
   // algunas versiones de Safari la aritmética de fechas puede comportarse de forma inesperada
