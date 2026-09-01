@@ -3806,6 +3806,12 @@ function mostrarDiagnostico(){
   var sumaMes=mesFiltrado.reduce(function(s,r){return s+val(r);},0);
   var eneroReg=mesFragmentos.filter(function(r){return r.anio===2026&&r.m==='enero'&&r.t==='A'&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION');});
   var sumaEnero=eneroReg.reduce(function(s,r){return s+val(r);},0);
+  // Diagnóstico puntual agosto/Juliana — temporal, para comparar PC vs celular mientras se
+  // investiga la discrepancia reportada en esta cuenta/mes específicos.
+  var agoJuliana=mesFragmentos.filter(function(r){return r.anio===2026&&r.m==='agosto'&&r.r==='JULIANA'&&r.t==='A';});
+  var sumaAgoJuliana=agoJuliana.reduce(function(s,r){return s+val(r);},0);
+  var agoJulianaSinFrag=ALL.filter(function(r){return r.anio===2026&&r.m==='agosto'&&r.r==='JULIANA'&&r.t==='A';});
+  var sumaAgoJulianaSinFrag=agoJulianaSinFrag.reduce(function(s,r){return s+val(r);},0);
   var msg='DIAGNÓSTICO DEL DASHBOARD\n\n'
     +'Total registros (ALL): '+ALL.length+'\n'
     +'Registros 2026 (sin prorratear): '+base.length+'\n'
@@ -3815,6 +3821,11 @@ function mostrarDiagnostico(){
     +'Suma 2026 (prorrateada): '+fmt(sumaMes)+' ('+Math.round(sumaMes)+')\n\n'
     +'Registros de enero 2026: '+eneroReg.length+'\n'
     +'Suma enero 2026: '+fmt(sumaEnero)+' ('+Math.round(sumaEnero)+')\n\n'
+    +'--- AGOSTO / JULIANA (temporal) ---\n'
+    +'Registros agosto Juliana (sin prorratear): '+agoJulianaSinFrag.length+'\n'
+    +'Suma agosto Juliana (sin prorratear): '+fmt(sumaAgoJulianaSinFrag)+' ('+Math.round(sumaAgoJulianaSinFrag)+')\n'
+    +'Fragmentos agosto Juliana (prorrateado): '+agoJuliana.length+'\n'
+    +'Suma agosto Juliana (prorrateada): '+fmt(sumaAgoJuliana)+' ('+Math.round(sumaAgoJuliana)+')\n\n'
     +'devicePixelRatio: '+(window.devicePixelRatio||'?')+'\n'
     +'Ancho ventana: '+(window.innerWidth||'?')+'x'+(window.innerHeight||'?')+'\n'
     +'User Agent: '+navigator.userAgent;
