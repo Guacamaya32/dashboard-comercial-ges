@@ -4654,7 +4654,7 @@ async function cargarDatos(esManual,reintento){
   // corta respuestas lentas pero válidas antes de que lleguen, mostrando el histórico embebido
   // (desactualizado) aunque SharePoint sí iba a responder — eso fue justo lo que pasó.
   const controlador=new AbortController();
-  const timeoutId=setTimeout(function(){controlador.abort();},60000);
+  const timeoutId=setTimeout(function(){controlador.abort();},90000);
   try{
     const resp=await fetch(FLOW_URL+'&_t='+Date.now(),{cache:'no-store',signal:controlador.signal});
     clearTimeout(timeoutId);
@@ -4773,25 +4773,24 @@ async function cargarDatos(esManual,reintento){
   }catch(err){
     clearTimeout(timeoutId);
     console.error('Error cargando datos desde SharePoint:',err);
-    // Reintento automático (solo en la carga silenciosa inicial, no en la manual, y solo una
-    // vez): en datos móviles es común que la PRIMERA petición falle por una red aún
-    // inestabilizándose (cambio de torre, VPN corporativa despertando, etc.) y que el segundo
-    // intento sí funcione. Antes, cualquier falla —transitoria o no— dejaba el dashboard
-    // mostrando el histórico embebido (desactualizado) para el resto de la sesión sin ningún
-    // aviso, salvo que el usuario presionara "Actualizar" manualmente.
-    if(!esManual&&!reintento){
-      setTimeout(function(){cargarDatos(false,true);},2500);
+    // Reintento automático (una sola vez, tanto en la carga silenciosa inicial como en un click
+    // manual en "Actualizar"): la PRIMERA petición del día suele fallar por el "cold start" del
+    // flujo de Power Automate/SharePoint tras estar inactivo toda la noche — tarda más en
+    // despertar de lo que alcanza a esperar incluso un timeout generoso — y el segundo intento
+    // normalmente ya sale rápido porque el flujo quedó "caliente". Antes, en un refresh manual,
+    // una sola falla (aunque fuera transitoria) mostraba el error de inmediato sin reintentar.
+    if(!reintento){
+      setTimeout(function(){cargarDatos(esManual,true);},2500);
       return;
     }
-    // Si el reintento también falla (o fue una actualización manual), sí se deja constancia
-    // visible en el encabezado — igual que en los dos guards de arriba — para que quede claro
-    // que lo que se está viendo es el histórico embebido y no el Excel más reciente. Antes esto
-    // solo se avisaba con un alert() en refresh manual, y la carga silenciosa inicial (la que
-    // corre sola al abrir el dashboard en el celular) no dejaba ningún rastro visible del
-    // problema — de ahí que pareciera que el celular "trae menos registros" sin explicación.
+    // Si el reintento también falla, sí se deja constancia visible en el encabezado — igual que
+    // en los dos guards de arriba — para que quede claro que lo que se está viendo es el
+    // histórico embebido y no el Excel más reciente. Antes esto solo se avisaba con un alert()
+    // en refresh manual, y la carga silenciosa inicial (la que corre sola al abrir el dashboard
+    // en el celular) no dejaba ningún rastro visible del problema.
     document.getElementById('live-date').textContent='⚠️ Mostrando datos verificados (sin conexión a SharePoint)';
     if(esManual){
-      alert('No se pudo actualizar desde SharePoint.\nMostrando datos embebidos.\n\nDetalle: '+String(err.message||err));
+      alert('No se pudo actualizar desde SharePoint (incluso tras reintentar).\nMostrando datos embebidos.\n\nDetalle: '+String(err.message||err));
     }
     // Always render with whatever data is available (embedded ALL)
     populateAnioFilter();updateRegCount();
