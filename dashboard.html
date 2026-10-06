@@ -609,13 +609,27 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <span><span style="display:inline-block;width:12px;height:12px;background:#002060;border-radius:3px;vertical-align:middle;margin-right:5px"></span>Asignado</span>
     <span><span style="display:inline-block;width:12px;height:12px;background:#FFC000;border-radius:3px;vertical-align:middle;margin-right:5px"></span>Oportunidad</span>
   </div>
+  <div class="card" style="margin-bottom:14px"><div class="ct">Ingresos por Mes del Quarter</div><div style="height:190px;position:relative"><canvas id="cQMes"></canvas></div></div>
   <div class="g22">
-    <div class="card"><div class="ct">Ingresos por Cliente · gerencias de Ecopetrol</div><div id="q-cli-wrap" style="height:320px;position:relative"><canvas id="cQCli"></canvas></div></div>
+    <div class="card"><div class="ct">Ingresos por Cliente · con gerencias de Ecopetrol como subgrupo</div><div id="q-cli-wrap" style="height:320px;position:relative"><canvas id="cQCli"></canvas></div></div>
     <div class="card"><div class="ct">Ingresos por Línea de Servicio</div><div style="height:320px;position:relative"><canvas id="cQLin"></canvas></div></div>
   </div>
   <div class="g22">
     <div class="card"><div class="ct">Detalle por Cliente</div><div style="overflow-x:auto" id="q-cli-tbl"></div></div>
     <div class="card"><div class="ct">Detalle por Línea de Servicio</div><div style="overflow-x:auto" id="q-lin-tbl"></div><div id="q-lin-cov" style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic"></div></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="ct">Operaciones del Quarter · participación del ingreso por línea</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Una fila por servicio. Pulsa <b>Editar</b> para definir qué % del ingreso corresponde a cada línea (debe sumar 100%); las gráficas y tablas de arriba se recalculan al guardar. Lo editado se guarda en este navegador; usa Exportar/Importar para llevarlo a otro equipo.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+      <input type="text" placeholder="Buscar cliente, pozo, servicio, rep…" oninput="qBuscaOps(this.value)" style="flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--light);border-radius:6px;font-size:12px">
+      <span id="q-ops-info" style="font-size:11px;color:var(--muted)"></span>
+      <button class="clr-btn" style="margin:0;color:var(--navy)" onclick="qExportarPart()">⬇ Exportar</button>
+      <button class="clr-btn" style="margin:0;color:var(--navy)" onclick="document.getElementById('q-imp').click()">⬆ Importar</button>
+      <input type="file" id="q-imp" accept="application/json,.json" style="display:none" onchange="qImportarPart(this)">
+      <button class="clr-btn" style="margin:0" onclick="qBorrarPart()">🗑 Borrar ediciones</button>
+    </div>
+    <div style="overflow:auto;max-height:560px" id="q-ops"></div>
   </div>
 </div>
 
@@ -3832,7 +3846,7 @@ function valAsignado(r){
   if(r.s==='FINALIZADO')return r.ir>0?r.ir:r.ie;
   return Math.max(r.ie||0,r.ir||0);
 }
-function getBase(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO');}
+function getBase(){return getAllMes().filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO');}
 function getAsig(){return getBase().filter(r=>r.t==='A').map(function(r){return Object.assign({},r,{v:valAsignado(r)});});}
 function getOpor(){return getBase().filter(r=>r.t==='O');}
 function getAll(){return getBase();}
@@ -4476,13 +4490,13 @@ function renderReps(){
 // Selector propio de Q y año (ignora el filtro Mes/Año de la barra superior; sí respeta el
 // filtro de Representante). Incluye ASIGNACIONES (valor efectivo = valAsignado) y OPORTUNIDADES
 // (valor estimado r.v), diferenciadas en todas las gráficas/tablas. Mismo criterio de estados
-// que la pestaña Mensual (solo se excluye CANCELADO), así los totales cuadran con ella.
+// que la pestaña Mensual (se excluyen CANCELADO y RECHAZADO), así los totales cuadran con ella.
 // Usa getAllMes() (servicios que cruzan meses prorrateados por día).
 // Interactividad cruzada: clic en un cliente/gerencia filtra líneas (gráfica, tabla, KPIs) y
 // clic en una línea filtra clientes; cada gráfica muestra su propia selección resaltada.
 const Q_MESES={1:['enero','febrero','marzo'],2:['abril','mayo','junio'],3:['julio','agosto','septiembre'],4:['octubre','noviembre','diciembre']};
-const LIN_NOMBRE={CT:'Coiled Tubing',TT:'Thru Tubing',ES:'Estimulación',WL:'Wireline',AI:'Abandono Integrado',AZ:'Aislamiento Zonal',WT:'Well Testing',WS:'Well Services',CW:'CW',CAN:'Cañoneo'};
-let Q_FILT={cli:null,ger:null,lin:null};
+const LIN_NOMBRE={CT:'Coiled Tubing',TT:'Thru Tubing',ES:'Estimulación',WL:'Wireline',AI:'Abandono Integrado',AZ:'Aislamiento Zonal',WT:'Well Testing',WS:'Well Services',CW:'Completion',CAN:'Cañoneo'};
+let Q_FILT={cli:null,ger:null,lin:null,mes:null};
 // Reglas de inferencia (solo cuando la columna de línea viene vacía en el Excel). Se calibraron
 // contra las filas que SÍ traen código (ej. CAÑONEO / PBU / REGISTRO CEMENTO → WL; ABANDONO → AI).
 function qInferirLineas(sv){
@@ -4521,15 +4535,18 @@ function qInitSelectores(){
   selA.dataset.init='1';
   // Un solo listener delegado para todas las filas de tabla clicables de la vista.
   document.getElementById('view-quarter').addEventListener('click',function(ev){
+    const bt=ev.target.closest&&ev.target.closest('[data-qa]');
+    if(bt){qAccion(bt);return;}
     const el=ev.target.closest&&ev.target.closest('[data-qt]');
     if(!el)return;
     qPick(el.dataset.qt,decodeURIComponent(el.dataset.qk),el.dataset.qg?decodeURIComponent(el.dataset.qg):null);
   });
 }
-function qCambio(){Q_FILT={cli:null,ger:null,lin:null};renderQuarter();}
-function qLimpiar(){Q_FILT={cli:null,ger:null,lin:null};renderQuarter();}
+function qCambio(){Q_FILT={cli:null,ger:null,lin:null,mes:null};renderQuarter();}
+function qLimpiar(){Q_FILT={cli:null,ger:null,lin:null,mes:null};renderQuarter();}
 function qPick(tipo,key,ger){
   if(tipo==='lin'){Q_FILT.lin=(Q_FILT.lin===key)?null:key;}
+  else if(tipo==='mes'){Q_FILT.mes=(Q_FILT.mes===key)?null:key;}
   else{
     const mismo=Q_FILT.cli===key&&(Q_FILT.ger||null)===(ger||null);
     if(mismo){Q_FILT.cli=null;Q_FILT.ger=null;}else{Q_FILT.cli=key;Q_FILT.ger=ger||null;}
@@ -4542,7 +4559,7 @@ const Q_COL={
   Ax:{n:'#6B7A99',d:'rgba(107,122,153,.16)'},Ox:{n:'#A8B4CC',d:'rgba(168,180,204,.25)'}
 };
 // Barras apiladas Asignado + Oportunidad (horizontales). rows: {lab,a,o,sel,sub,neutro}
-function qGrafica(id,rows,onPick,baseTotal,hayFiltro){
+function qGrafica(id,rows,onPick,baseTotal,hayFiltro,arbol){
   dc(id);
   const cv=document.getElementById(id);
   if(!rows.length)return;
@@ -4555,7 +4572,7 @@ function qGrafica(id,rows,onPick,baseTotal,hayFiltro){
       {label:'Oportunidad',data:rows.map(function(r){return r.o;}),backgroundColor:rows.map(function(r){return colorDe(r,'O');}),borderRadius:3,stack:'s'}
     ]},
     options:{
-      responsive:true,maintainAspectRatio:false,indexAxis:'y',layout:{padding:{right:92}},
+      responsive:true,maintainAspectRatio:false,indexAxis:'y',layout:{padding:{right:92,left:arbol?176:0}},
       onClick:function(e,els,chart){
         try{
           const pts=chart.getElementsAtEventForMode(e,'nearest',{intersect:false,axis:'y'},true);
@@ -4572,10 +4589,51 @@ function qGrafica(id,rows,onPick,baseTotal,hayFiltro){
       },
       scales:{
         x:{stacked:true,ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);}},grid:{color:B.LIGHT},border:{display:false}},
-        y:{stacked:true,ticks:{color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}
+        y:{stacked:true,ticks:{display:!arbol,color:B.NAVY,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}}
       }
     },
-    plugins:[{id:'qTotales',afterDatasetsDraw:function(chart){
+    plugins:[{id:'qArbol',
+      // Subgrupo visual: una banda de fondo agrupa el cliente padre con sus hijos (gerencias), y las
+      // etiquetas se dibujan a mano (alineadas a la izquierda, hijos con sangría y conectores de árbol).
+      beforeDatasetsDraw:function(chart){
+        if(!arbol)return;
+        try{
+          const m0=chart.getDatasetMeta(0),ctx=chart.ctx;if(!m0.data.length)return;
+          const paso=m0.data.length>1?Math.abs(m0.data[1].y-m0.data[0].y):26;
+          ctx.save();
+          for(let p=0;p<rows.length;p++){
+            if(!(rows[p+1]&&rows[p+1].sub&&!rows[p].sub))continue;
+            let u=p+1;while(rows[u+1]&&rows[u+1].sub)u++;
+            const top=m0.data[p].y-paso/2+1,alto=(m0.data[u].y+paso/2-1)-top;
+            ctx.fillStyle='rgba(26,82,118,0.07)';ctx.fillRect(2,top,chart.width-4,alto);
+            ctx.fillStyle='#1A5276';ctx.fillRect(2,top,3,alto);
+          }
+          ctx.restore();
+        }catch(err){console.warn('qArbol fondo error (ignorado):',err);}
+      },
+      afterDatasetsDraw:function(chart){
+        if(!arbol)return;
+        try{
+          const m0=chart.getDatasetMeta(0),ctx=chart.ctx;
+          ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';
+          const recorta=function(t,ancho){let x=t;while(x.length>3&&ctx.measureText(x).width>ancho)x=x.slice(0,-2);return x===t?t:x.trimEnd()+'…';};
+          rows.forEach(function(r,i){
+            if(!m0.data[i])return;const y=m0.data[i].y,dim=hayFiltro&&!r.sel;
+            if(r.sub){ctx.font='italic 600 10px Inter, sans-serif';ctx.fillStyle=dim?'rgba(61,77,99,.4)':'#3D4D63';ctx.fillText(recorta(r.lab,138),34,y);}
+            else{ctx.font='bold 11px Inter, sans-serif';ctx.fillStyle=dim?'rgba(0,32,96,.4)':'#002060';ctx.fillText(recorta(r.lab,160),10,y);}
+          });
+          // conectores: tronco vertical desde el padre hasta el último hijo + rama horizontal a cada hijo
+          ctx.strokeStyle='#8FA3C4';ctx.lineWidth=1.5;
+          for(let p=0;p<rows.length;p++){
+            if(!(rows[p+1]&&rows[p+1].sub&&!rows[p].sub))continue;
+            let u=p+1;while(rows[u+1]&&rows[u+1].sub)u++;
+            ctx.beginPath();ctx.moveTo(18,m0.data[p].y+8);ctx.lineTo(18,m0.data[u].y);ctx.stroke();
+            for(let k=p+1;k<=u;k++){ctx.beginPath();ctx.moveTo(18,m0.data[k].y);ctx.lineTo(28,m0.data[k].y);ctx.stroke();}
+          }
+          ctx.restore();
+        }catch(err){console.warn('qArbol etiquetas error (ignorado):',err);}
+      }},
+    {id:'qTotales',afterDatasetsDraw:function(chart){
       try{
         const ctx=chart.ctx,m0=chart.getDatasetMeta(0),m1=chart.getDatasetMeta(1);
         ctx.save();ctx.font='bold 10px Inter, sans-serif';ctx.textBaseline='middle';ctx.fillStyle='#3D4D63';
@@ -4589,32 +4647,127 @@ function qGrafica(id,rows,onPick,baseTotal,hayFiltro){
     }}]
   });
 }
+
+// ── Participación por línea editable (por operación) ──────────────────────────────────
+// Clave estable de la operación (el mismo servicio prorrateado en varios meses comparte clave).
+// Los porcentajes editados se guardan en este navegador (localStorage) y se pueden exportar/importar
+// como JSON para llevarlos a otro equipo o celular.
+const Q_LS='ges_q_participacion_v1';
+let Q_PART=(function(){try{const j=JSON.parse(localStorage.getItem(Q_LS)||'{}');return (j&&typeof j==='object')?j:{};}catch(e){return {};}})();
+let Q_CTX={ops:[]},Q_EDIT=null,Q_BUSCA='';
+function qKey(r){return [r.c,r.ger,r.t,r.pz,r.sv,r.anio,r.fi].join('|');}
+function qGuardar(){try{localStorage.setItem(Q_LS,JSON.stringify(Q_PART));}catch(e){}}
+const Q_CODS=['CT','TT','ES','WL','AI','AZ','WT','WS','CW','CAN'];
+function qRenderOps(){
+  const box=document.getElementById('q-ops');if(!box)return;
+  const ops=Q_CTX.ops||[],b=Q_BUSCA.trim().toUpperCase();
+  const vis=ops.map(function(o,i){return {o:o,i:i};}).filter(function(e){
+    return !b||[e.o.cli,e.o.g,e.o.pz,e.o.sv,e.o.rep].join(' ').toUpperCase().indexOf(b)>=0;});
+  const nMan=ops.filter(function(o){return o.org==='manual';}).length;
+  const tot=vis.reduce(function(s,e){return s+e.o.v;},0);
+  const nom=Q_CTX.linNom||function(c){return c;};
+  const th='padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--light);text-align:left;position:sticky;top:0;background:#fff';
+  const td='padding:6px 8px;border-bottom:1px solid var(--light);vertical-align:top';
+  document.getElementById('q-ops-info').textContent=vis.length+' operaciones · '+fmt(tot)+(nMan?' · '+nMan+' con participación editada ✎':'');
+  if(!vis.length){box.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">Sin operaciones para este Q / selección.</div>';return;}
+  let h='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>'+['Cliente / Gerencia','Pozo','Servicio','Rep.','Tipo','Valor Q','Participación por línea',''].map(function(t,i){return '<th style="'+th+(i===5?';text-align:right':'')+'">'+t+'</th>';}).join('')+'</tr></thead><tbody>';
+  vis.forEach(function(e){
+    const o=e.o,man=o.org==='manual',ed=Q_EDIT===e.i;
+    const chips=Object.keys(o.pes).sort(function(a,b){return o.pes[b]-o.pes[a];}).map(function(c){
+      return '<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:600;background:'+(man?'#FFF3C4':'var(--pale)')+';color:var(--navy);white-space:nowrap">'+(c==='SIN'?'Sin clasificar':qEsc(c))+' '+Math.round(o.pes[c]*1000)/10+'%</span>';}).join('');
+    h+='<tr style="'+(ed?'background:#FFF8DC':'')+'"><td style="'+td+';font-weight:600;color:var(--navy)">'+qEsc(o.k)+(o.g?'<div style="font-size:9px;font-weight:500;color:var(--muted);font-style:italic">'+qEsc(o.g)+'</div>':'')+'</td>'+
+      '<td style="'+td+'">'+qEsc(o.pz)+'</td><td style="'+td+';max-width:230px;white-space:normal">'+qEsc(o.sv)+'</td><td style="'+td+';color:var(--muted)">'+qEsc(o.rep)+'</td>'+
+      '<td style="'+td+'"><span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:9px;'+(o.t==='A'?'background:#E3E9F5;color:#002060':'background:#FFF3C4;color:#8B6800')+'">'+(o.t==='A'?'ASIG':'OPOR')+'</span></td>'+
+      '<td style="'+td+';text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:var(--navy)">'+fmt(o.v)+'</td>'+
+      '<td style="'+td+'">'+(man?'<span title="Editado manualmente" style="color:#CC9A00;font-weight:700;margin-right:3px">✎</span>':'')+chips+'</td>'+
+      '<td style="'+td+';text-align:right"><button class="clr-btn" style="margin:0;color:var(--navy)" data-qa="edit" data-qi="'+e.i+'">'+(ed?'Cerrar':'Editar')+'</button></td></tr>';
+    if(ed){
+      const cur=o.pes;
+      h+='<tr><td colspan="8" style="padding:10px 14px;background:#FFFBEA;border-bottom:2px solid #FFC000">'+
+        '<div style="font-size:10px;font-weight:700;color:var(--navy);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Participación del ingreso por línea · '+qEsc(o.pz)+' · '+fmt(o.v)+'</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:8px">'+Q_CODS.map(function(c){
+          const v=cur[c]?Math.round(cur[c]*1000)/10:'';
+          return '<label style="display:flex;flex-direction:column;font-size:9px;color:var(--muted);font-weight:600;min-width:92px">'+qEsc(LIN_NOMBRE[c])+' ('+c+')'+
+            '<span style="display:flex;align-items:center;gap:3px"><input type="number" min="0" max="100" step="0.1" id="qe-'+c+'" value="'+v+'" oninput="qEditSuma()" style="width:68px;padding:4px 6px;border:1px solid var(--light);border-radius:5px;font-size:12px;font-family:JetBrains Mono,monospace"> %</span></label>';}).join('')+'</div>'+
+        '<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="qe-suma" style="font-size:11px;font-weight:700"></span>'+
+        '<button class="clr-btn" id="qe-save" style="margin:0;background:var(--navy);color:#fff;padding:5px 12px;border-radius:6px" data-qa="save" data-qi="'+e.i+'">Guardar</button>'+
+        '<button class="clr-btn" style="margin:0;color:var(--muted)" data-qa="cancel">Cancelar</button>'+
+        (man?'<button class="clr-btn" style="margin:0" data-qa="reset" data-qi="'+e.i+'">↺ Volver a automático</button>':'')+'</div></td></tr>';
+    }
+  });
+  box.innerHTML=h+'</tbody></table>';
+  if(Q_EDIT!==null)qEditSuma();
+}
+function qEditSuma(){
+  let t=0;Q_CODS.forEach(function(c){const el=document.getElementById('qe-'+c);if(el)t+=Number(el.value)||0;});
+  t=Math.round(t*10)/10;const ok=Math.abs(t-100)<=0.5;
+  const el=document.getElementById('qe-suma'),bt=document.getElementById('qe-save');
+  if(el){el.textContent='Suma: '+t+'%'+(ok?' ✓':' (debe sumar 100%)');el.style.color=ok?'#1E7B4B':'#C0392B';}
+  if(bt){bt.disabled=!ok;bt.style.opacity=ok?1:.4;}
+}
+function qAccion(btn){
+  const a=btn.dataset.qa,i=Number(btn.dataset.qi),o=(Q_CTX.ops||[])[i];
+  if(a==='edit'){Q_EDIT=(Q_EDIT===i)?null:i;qRenderOps();return;}
+  if(a==='cancel'){Q_EDIT=null;qRenderOps();return;}
+  if(!o)return;
+  if(a==='reset'){delete Q_PART[o.key];qGuardar();renderQuarter();return;}
+  if(a==='save'){
+    const ov={};Q_CODS.forEach(function(c){const v=Number(document.getElementById('qe-'+c).value)||0;if(v>0)ov[c]=v;});
+    const t=Object.values(ov).reduce(function(s,v){return s+v;},0);
+    if(Math.abs(t-100)>0.5)return;
+    Q_PART[o.key]=ov;qGuardar();renderQuarter();
+  }
+}
+function qBuscaOps(v){Q_BUSCA=v||'';Q_EDIT=null;qRenderOps();}
+function qExportarPart(){
+  const blob=new Blob([JSON.stringify(Q_PART,null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='participacion_lineas.json';
+  document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+function qImportarPart(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=function(){try{const j=JSON.parse(rd.result);if(j&&typeof j==='object'){Object.assign(Q_PART,j);qGuardar();renderQuarter();}}catch(e){}inp.value='';};
+  rd.readAsText(f);
+}
+function qBorrarPart(){
+  if(!Object.keys(Q_PART).length)return;
+  if(!confirm('¿Borrar TODAS las participaciones editadas manualmente?'))return;
+  Q_PART={};qGuardar();renderQuarter();
+}
 function renderQuarter(){
   qInitSelectores();
   const q=Number(document.getElementById('q-sel').value),anio=Number(document.getElementById('q-anio').value);
   const inferir=document.getElementById('q-inferir').checked;
   const meses=Q_MESES[q],F=Q_FILT;
 
-  const filas=getAllMes().filter(function(r){return (r.t==='A'||r.t==='O')&&r.s!=='CANCELADO'&&Number(r.anio)===anio&&meses.indexOf(r.m)>=0&&(!G_REP||r.r===G_REP);})
+  const filas=getAllMes().filter(function(r){return (r.t==='A'||r.t==='O')&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO'&&Number(r.anio)===anio&&meses.indexOf(r.m)>=0&&(!G_REP||r.r===G_REP);})
     .map(function(r){
       // 'ECOPETROL VRC GMA' y 'ECP VRC GMA' son la misma gerencia: se unifican con el prefijo ECP.
-      const esE=/^ECOPETROL/i.test(r.c),x=qLineasDe(r,inferir);
-      return {t:r.t,s:r.s,v:r.t==='A'?valAsignado(r):(Number(r.v)||0),k:esE?'ECOPETROL':r.c,
-              g:esE?((r.ger&&r.ger!=='NA')?r.ger.replace(/^ECOPETROL\s+/i,'ECP '):'Sin gerencia'):null,lc:x.codes,org:x.origen};
+      const esE=/^ECOPETROL/i.test(r.c),x=qLineasDe(r,inferir),key=qKey(r);
+      let lc=x.codes,org=x.origen;const pes={};
+      const ov=Q_PART[key];
+      if(ov){const cs=Object.keys(ov).filter(function(c){return ov[c]>0;});const tot=cs.reduce(function(a,c){return a+ov[c];},0);
+        if(cs.length&&tot>0){lc=cs;org='manual';cs.forEach(function(c){pes[c]=ov[c]/tot;});}}
+      if(org!=='manual')lc.forEach(function(c){pes[c]=1/lc.length;});
+      return {t:r.t,m:r.m,s:r.s,v:r.t==='A'?valAsignado(r):(Number(r.v)||0),k:esE?'ECOPETROL':r.c,
+              g:esE?((r.ger&&r.ger!=='NA')?r.ger.replace(/^ECOPETROL\s+/i,'ECP '):'Sin gerencia'):null,lc:lc,org:org,pes:pes,
+              key:key,pz:r.pz,sv:r.sv,rep:r.r,cli:r.c};
     });
   // Filtros cruzados. wCli: ¿la fila pertenece al cliente/gerencia elegido? wLin: peso de la línea
   // elegida (el valor de un servicio con varias líneas se reparte en partes iguales).
   const wCli=function(r){return !F.cli||(r.k===F.cli&&(!F.ger||r.g===F.ger));};
-  const wLin=function(r){return !F.lin?1:(r.lc.indexOf(F.lin)>=0?1/r.lc.length:0);};
+  const wMes=function(r){return !F.mes||r.m===F.mes;};
+  const wLin=function(r){return !F.lin?1:(r.pes[F.lin]||0);};
   const linNom=function(c){return c==='SIN'?'Sin clasificar':(LIN_NOMBRE[c]||c);};
   const sum=function(o){return o.a+o.o;};
-  const add=function(o,r,val){if(r.t==='A')o.a+=val;else o.o+=val;o.n++;};
+  const add=function(o,r,val){if(r.t==='A')o.a+=val;else o.o+=val;o.n++;o.mm=o.mm||{};o.mm[r.m]=(o.mm[r.m]||0)+val;};
 
   // ── KPIs (ambos filtros) ──
-  const K={a:0,o:0,fin:0,na:0,no:0,cli:new Set()};
+  const K={a:0,o:0,na:0,no:0,cli:new Set()};
   filas.forEach(function(r){
-    if(!wCli(r))return;const w=wLin(r);if(!w)return;const val=r.v*w;
-    if(r.t==='A'){K.a+=val;K.na++;if(r.s==='FINALIZADO')K.fin+=val;}else{K.o+=val;K.no++;}
+    if(!wCli(r)||!wMes(r))return;const w=wLin(r);if(!w)return;const val=r.v*w;
+    if(r.t==='A'){K.a+=val;K.na++;}else{K.o+=val;K.no++;}
     K.cli.add(r.k);
   });
   const pipe=K.a+K.o;
@@ -4622,7 +4775,7 @@ function renderQuarter(){
   // ── Clientes (filtrados por la línea elegida) con gerencias de Ecopetrol como subgrupo ──
   const cli={};
   filas.forEach(function(r){
-    const w=wLin(r);if(!w)return;const val=r.v*w;
+    if(!wMes(r))return;const w=wLin(r);if(!w)return;const val=r.v*w;
     const o=cli[r.k]||(cli[r.k]={a:0,o:0,n:0,ger:{}});add(o,r,val);
     if(r.g){const og=o.ger[r.g]||(o.ger[r.g]={a:0,o:0,n:0});add(og,r,val);}
   });
@@ -4632,39 +4785,48 @@ function renderQuarter(){
   const cliRows=[];
   cliArr.forEach(function(e,i){
     const k=e[0],o=e[1];
-    cliRows.push({lab:k,key:k,ger:null,a:o.a,o:o.o,n:o.n,sel:cliSel(k,null),sub:false,top:i<12});
+    cliRows.push({lab:k,key:k,ger:null,a:o.a,o:o.o,n:o.n,mm:o.mm,sel:cliSel(k,null),sub:false,top:i<12});
     if(o.ger&&Object.keys(o.ger).length){
       Object.entries(o.ger).sort(function(a,b){return sum(b[1])-sum(a[1]);}).forEach(function(g){
-        cliRows.push({lab:'↳ '+g[0],key:k,ger:g[0],a:g[1].a,o:g[1].o,n:g[1].n,sel:cliSel(k,g[0]),sub:true,top:i<12});
+        cliRows.push({lab:g[0],key:k,ger:g[0],a:g[1].a,o:g[1].o,n:g[1].n,mm:g[1].mm,sel:cliSel(k,g[0]),sub:true,top:i<12});
       });
     }
   });
 
   // ── Líneas de servicio (filtradas por cliente/gerencia elegidos) ──
-  const lin={},cob={codigo:0,inferido:0,sin:0};
+  const lin={},cob={codigo:0,inferido:0,sin:0,manual:0};
   filas.forEach(function(r){
-    if(!wCli(r))return;
-    const parte=r.v/r.lc.length;cob[r.org]+=r.v;
-    r.lc.forEach(function(c){add(lin[c]||(lin[c]={a:0,o:0,n:0}),r,parte);});
+    if(!wCli(r)||!wMes(r))return;
+    cob[r.org]+=r.v;
+    r.lc.forEach(function(c){add(lin[c]||(lin[c]={a:0,o:0,n:0}),r,r.v*(r.pes[c]||0));});
   });
   const linArr=Object.entries(lin).sort(function(a,b){if(a[0]==='SIN')return 1;if(b[0]==='SIN')return -1;return sum(b[1])-sum(a[1]);});
   const linTot=linArr.reduce(function(s,e){return s+sum(e[1]);},0);
-  const linRows=linArr.map(function(e){return {lab:linNom(e[0]),key:e[0],a:e[1].a,o:e[1].o,n:e[1].n,sel:F.lin===e[0],neutro:e[0]==='SIN'};});
+  const linRows=linArr.map(function(e){return {lab:linNom(e[0]),key:e[0],a:e[1].a,o:e[1].o,n:e[1].n,mm:e[1].mm,sel:F.lin===e[0],neutro:e[0]==='SIN'};});
+
+  // ── Meses del Q (filtrados por cliente/gerencia y línea elegidos, no por mes) ──
+  const mes={};meses.forEach(function(m){mes[m]={a:0,o:0,n:0};});
+  filas.forEach(function(r){
+    if(!wCli(r))return;const w=wLin(r);if(!w||!mes[r.m])return;add(mes[r.m],r,r.v*w);
+  });
+  const mesNom=function(m){return m[0].toUpperCase()+m.slice(1);};
+  const mesRows=meses.map(function(m){return {lab:mesNom(m),key:m,a:mes[m].a,o:mes[m].o,n:mes[m].n,sel:F.mes===m};});
+  const mesTot=mesRows.reduce(function(s,r){return s+r.a+r.o;},0);
 
   // ── Encabezado: nota + chip de selección ──
   document.getElementById('q-nota').textContent='Q'+q+' '+anio+' ('+meses[0]+' – '+meses[2]+'). Incluye asignaciones y oportunidades (la oportunidad es un valor estimado, aún no fijo). Usa su propio selector de Q y año; el filtro Mes/Año de la barra superior no aplica'+(G_REP?'. Filtro de representante activo: '+G_REP:'')+'.';
   const partes=[];
   if(F.cli)partes.push('Cliente: <b>'+qEsc(F.cli)+'</b>'+(F.ger?' › <b>'+qEsc(F.ger)+'</b>':''));
   if(F.lin)partes.push('Línea: <b>'+qEsc(linNom(F.lin))+'</b>');
+  if(F.mes)partes.push('Mes: <b>'+qEsc(mesNom(F.mes))+'</b>');
   document.getElementById('q-chip').innerHTML=partes.length
     ?'<span style="background:#FFF8DC;border:1px solid #FFC000;border-radius:12px;padding:3px 10px;font-size:11px;color:var(--navy)">🔎 Filtrando por '+partes.join(' · ')+'</span> <button class="clr-btn" style="display:inline-block" onclick="qLimpiar()">✕ Quitar selección</button>'
-    :'<span style="font-size:10px;color:var(--muted)">💡 Haz clic en una barra o fila (cliente, gerencia o línea) para cruzar el análisis; clic de nuevo para quitarla.</span>';
+    :'<span style="font-size:10px;color:var(--muted)">💡 Haz clic en una barra o fila (mes, cliente, gerencia o línea) para cruzar el análisis; clic de nuevo para quitarla.</span>';
 
   document.getElementById('q-kpi').innerHTML=[
     {l:'Pipeline Q'+q+' '+anio,v:fmt(pipe),s:pipe>0?Math.round(K.a/pipe*100)+'% asignado · '+Math.round(K.o/pipe*100)+'% oportunidad':'—',cls:'kt',i:'📊'},
     {l:'Asignado',v:fmt(K.a),s:K.na+' servicios confirmados',cls:'ka',i:'📋'},
     {l:'Oportunidad',v:fmt(K.o),s:K.no+' en prospección',cls:'ko',i:'🎯'},
-    {l:'Finalizado',v:fmt(K.fin),s:K.a>0?Math.round(K.fin/K.a*100)+'% del asignado':'—',cls:'ks',i:'✅'},
     {l:'Clientes',v:String(K.cli.size),s:K.cli.size===1?[...K.cli][0]:'con pipeline en el Q',cls:'kt',i:'🏢'}
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
@@ -4673,12 +4835,14 @@ function renderQuarter(){
   const td='padding:5px 8px;border-bottom:1px solid var(--light)';
   const mono='font-family:JetBrains Mono,monospace;font-weight:700;color:var(--navy)';
   const vacio='<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">Sin registros para este Q / selección.</div>';
-  const cab=function(p){return '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="'+th+';text-align:left">'+p+'</th><th style="'+th+';text-align:right">Asignado</th><th style="'+th+';text-align:right">Oport.</th><th style="'+th+';text-align:right">Total</th><th style="'+th+';text-align:right">%</th><th style="'+th+';text-align:right">Serv.</th></tr></thead><tbody>';};
+  const fS=function(v){return v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+Math.round(v);};
+  const cab=function(p){return '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="'+th+';text-align:left">'+p+'</th>'+meses.map(function(m){return '<th style="'+th+';text-align:right">'+m.slice(0,3)+'</th>';}).join('')+'<th style="'+th+';text-align:right">Asignado</th><th style="'+th+';text-align:right">Oport.</th><th style="'+th+';text-align:right">Total</th><th style="'+th+';text-align:right">%</th><th style="'+th+';text-align:right">Serv.</th></tr></thead><tbody>';};
   const fila=function(r,tipo,base){
     const t=r.a+r.o,bg=r.sel?'background:#FFF8DC;':(r.sub?'background:var(--pale);':'');
     const fs=r.sub?'font-size:10px;':'',col=r.sub?'var(--muted)':(r.neutro?'var(--muted)':'var(--navy)');
     return '<tr data-qt="'+tipo+'" data-qk="'+encodeURIComponent(r.key)+'"'+(r.ger?' data-qg="'+encodeURIComponent(r.ger)+'"':'')+' style="'+bg+'">'+
-      '<td style="'+td+';'+fs+(r.sub?'padding-left:22px;font-style:italic;':'font-weight:600;')+'color:'+col+'">'+qEsc(r.lab)+'</td>'+
+      '<td style="'+td+';'+fs+(r.sub?'padding-left:22px;font-style:italic;':'font-weight:600;')+'color:'+col+'">'+(r.sub?'↳ ':'')+qEsc(r.lab)+'</td>'+
+      meses.map(function(m){const v=(r.mm&&r.mm[m])||0;return '<td style="'+td+';text-align:right;'+fs+'font-family:JetBrains Mono,monospace;color:var(--muted)">'+(v>0?fS(v):'—')+'</td>';}).join('')+
       '<td style="'+td+';text-align:right;'+fs+'"><span style="'+mono+(r.sub?';font-weight:600;color:var(--muted)':'')+'">'+(r.a>0?fmt(r.a):'—')+'</span></td>'+
       '<td style="'+td+';text-align:right;'+fs+'"><span style="font-family:JetBrains Mono,monospace;color:#8B6800;font-weight:600">'+(r.o>0?fmt(r.o):'—')+'</span></td>'+
       '<td style="'+td+';text-align:right;'+fs+'"><span style="'+mono+(r.sub?';font-weight:600;color:var(--muted)':'')+'">'+fmt(t)+'</span></td>'+
@@ -4688,13 +4852,26 @@ function renderQuarter(){
   document.getElementById('q-cli-tbl').innerHTML=!cliRows.length?vacio:cab('Cliente / Gerencia')+cliRows.map(function(r){return fila(r,'cli',cliTot);}).join('')+'</tbody></table>';
   document.getElementById('q-lin-tbl').innerHTML=!linRows.length?vacio:cab('Línea')+linRows.map(function(r){return fila(r,'lin',linTot);}).join('')+'</tbody></table>';
   document.getElementById('q-lin-cov').textContent=linTot>0?
-    'Los servicios con varias líneas se reparten en partes iguales. Origen de la línea (por valor): código del Excel '+Math.round(cob.codigo/linTot*100)+'% · inferido por descripción '+Math.round(cob.inferido/linTot*100)+'% · sin clasificar '+Math.round(cob.sin/linTot*100)+'%.':'';
+    'Los servicios con varias líneas se reparten en partes iguales, salvo los que editaste en la tabla de operaciones. Origen de la línea (por valor): código del Excel '+Math.round(cob.codigo/linTot*100)+'% · inferido por descripción '+Math.round(cob.inferido/linTot*100)+'% · editado manualmente '+Math.round(cob.manual/linTot*100)+'% · sin clasificar '+Math.round(cob.sin/linTot*100)+'%.':'';
 
   // ── Gráficas (el alto de la de clientes crece con sus filas; los clientes fuera del top 12 solo van en la tabla) ──
   const grafCli=cliRows.filter(function(r){return r.top;});
   document.getElementById('q-cli-wrap').style.height=Math.max(320,grafCli.length*27+50)+'px';
-  qGrafica('cQCli',grafCli,function(r){qPick('cli',r.key,r.ger);},cliTot,!!(F.cli||F.lin));
-  qGrafica('cQLin',linRows,function(r){qPick('lin',r.key);},linTot,!!(F.cli||F.lin));
+  const hayF=!!(F.cli||F.lin||F.mes);
+  qGrafica('cQMes',mesRows,function(r){qPick('mes',r.key);},mesTot,hayF,false);
+  qGrafica('cQCli',grafCli,function(r){qPick('cli',r.key,r.ger);},cliTot,hayF,true);
+  qGrafica('cQLin',linRows,function(r){qPick('lin',r.key);},linTot,hayF,false);
+
+  // ── Operaciones del Q (una fila por servicio, con valor del Q sumando sus tramos mensuales) ──
+  const opm={};
+  filas.forEach(function(r){
+    if(!wCli(r)||!wMes(r)||!wLin(r))return;
+    const o=opm[r.key]||(opm[r.key]={key:r.key,k:r.k,g:r.g,cli:r.cli,pz:r.pz,sv:r.sv,rep:r.rep,t:r.t,s:r.s,v:0,lc:r.lc,pes:r.pes,org:r.org,n:0});
+    o.v+=r.v;o.n++;
+  });
+  Q_CTX={ops:Object.values(opm).sort(function(a,b){return b.v-a.v;}),q:q,anio:anio,linNom:linNom};
+  Q_EDIT=null;
+  qRenderOps();
 }
 
 function renderClientes(){
