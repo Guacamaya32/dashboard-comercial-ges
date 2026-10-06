@@ -279,7 +279,7 @@ select:focus{border-color:var(--navy)}
 .esc-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
 main{max-width:1300px;margin:0 auto;padding:20px 32px 60px}
 body.detalle-active main{max-width:none;padding:10px 12px 40px}
-body.metas-active main,body.historico-active main,body.forecast-active main,body.mensual-active main,body.representantes-active main,body.clientes-active main{max-width:none;padding:20px 24px 60px}
+body.metas-active main,body.historico-active main,body.forecast-active main,body.mensual-active main,body.representantes-active main,body.clientes-active main,body.quarter-active main{max-width:none;padding:20px 24px 60px}
 .view{display:none}.view.active{display:block}
 .krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
 .kpi{background:var(--white);border:1px solid var(--light);border-radius:var(--rl);padding:15px 17px 14px 21px;box-shadow:var(--sh);position:relative;overflow:hidden}
@@ -460,7 +460,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   /* KPIs: 2 por fila en vez de intentar acomodar 5-6 en una sola línea angosta */
   .krow{grid-template-columns:repeat(2,1fr)}
 
-  body.metas-active main,body.historico-active main,body.forecast-active main,body.detalle-active main,body.mensual-active main,body.representantes-active main,body.clientes-active main{padding:10px 8px 40px}
+  body.metas-active main,body.historico-active main,body.forecast-active main,body.detalle-active main,body.mensual-active main,body.representantes-active main,body.clientes-active main,body.quarter-active main{padding:10px 8px 40px}
 }
 
 /* ── Responsive: celular angosto (≤480px) ─────────────────────────────── */
@@ -539,6 +539,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <button class="mb active" data-view="mensual" onclick="showView('mensual',event)">🗓️ Mensual</button>
   <button class="mb" data-view="representantes" onclick="showView('representantes',event)">👤 Representantes</button>
   <button class="mb" data-view="clientes" onclick="showView('clientes',event)">🏢 Clientes</button>
+  <button class="mb" data-view="quarter" onclick="showView('quarter',event)">📅 Análisis por Quarter</button>
   <button class="mb" data-view="detalle" onclick="showView('detalle',event)">📋 Detalle</button>
 </div>
 <div class="mnav" id="mnav-ejec" style="display:none">
@@ -583,6 +584,33 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="card"><div class="ct">Clientes — Oportunidad</div><div style="height:280px"><canvas id="cCliO"></canvas></div></div>
   </div>
   <div class="card"><div class="ct">Consolidado por Cliente</div><div style="overflow-x:auto" id="cli-tbl"></div></div>
+</div>
+
+<div class="view" id="view-quarter">
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="fl">Quarter</span>
+      <select id="q-sel" onchange="renderQuarter()" autocomplete="off" style="min-width:120px">
+        <option value="1">Q1 (Ene – Mar)</option><option value="2">Q2 (Abr – Jun)</option>
+        <option value="3">Q3 (Jul – Sep)</option><option value="4">Q4 (Oct – Dic)</option>
+      </select>
+      <span class="fl">Año</span>
+      <select id="q-anio" onchange="renderQuarter()" autocomplete="off" style="min-width:90px"></select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:600;cursor:pointer;margin-left:8px">
+        <input type="checkbox" id="q-inferir" checked onchange="renderQuarter()"> Inferir línea por descripción del servicio cuando el Excel no la trae
+      </label>
+    </div>
+    <div id="q-nota" style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic"></div>
+  </div>
+  <div class="krow" id="q-kpi" style="margin-bottom:14px"></div>
+  <div class="g22">
+    <div class="card"><div class="ct">Ingresos Asignados por Cliente</div><div style="height:320px;position:relative"><canvas id="cQCli"></canvas></div></div>
+    <div class="card"><div class="ct">Ingresos Asignados por Línea de Servicio</div><div style="height:320px;position:relative"><canvas id="cQLin"></canvas></div></div>
+  </div>
+  <div class="g22">
+    <div class="card"><div class="ct">Detalle por Cliente</div><div style="overflow-x:auto" id="q-cli-tbl"></div></div>
+    <div class="card"><div class="ct">Detalle por Línea de Servicio</div><div style="overflow-x:auto" id="q-lin-tbl"></div><div id="q-lin-cov" style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic"></div></div>
+  </div>
 </div>
 
 <div class="view" id="view-detalle">
@@ -3887,11 +3915,11 @@ function animateCounters(){
     requestAnimationFrame(tick);
   });
 }
-function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='metas')renderMetas();else if(id==='historico')renderHistorico();else if(id==='forecast')renderForecast();animateCounters();}
-const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec'};
+function refreshActive(){const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='mensual')renderMensual();else if(id==='representantes')renderReps();else if(id==='clientes')renderClientes();else if(id==='quarter')renderQuarter();else if(id==='detalle')renderTable();else if(id==='finalizados')renderFinalizados();else if(id==='metas')renderMetas();else if(id==='historico')renderHistorico();else if(id==='forecast')renderForecast();animateCounters();}
+const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',quarter:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');document.body.classList.toggle('mensual-active',id==='mensual');document.body.classList.toggle('representantes-active',id==='representantes');document.body.classList.toggle('clientes-active',id==='clientes');LAST_TAB[SECTION_OF[id]]=id;
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');document.body.classList.toggle('mensual-active',id==='mensual');document.body.classList.toggle('representantes-active',id==='representantes');document.body.classList.toggle('clientes-active',id==='clientes');document.body.classList.toggle('quarter-active',id==='quarter');LAST_TAB[SECTION_OF[id]]=id;
   // iOS/Safari a veces mide el tamaño del canvas ANTES de que el navegador termine de acomodar
   // el layout recién visible (al quitar display:none) — deja las gráficas con un tamaño
   // interno equivocado para siempre, aunque los datos que reciben sean correctos (por eso los
@@ -4436,6 +4464,125 @@ function renderReps(){
 
   dc('cRepA');CH.cRepA=new Chart(document.getElementById('cRepA'),{type:'bar',data:{labels:REPS.map(repLabel),datasets:[{label:'Finalizado',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='FINALIZADO').reduce((s,r)=>s+r.v,0)),backgroundColor:B.FIN,stack:'s'},{label:'En ejecución',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='EN EJECUCION').reduce((s,r)=>s+r.v,0)),backgroundColor:B.EJEC,stack:'s'},{label:'Planeación',data:REPS.map(rp=>A.filter(r=>r.r===rp&&r.s==='PLANEACION').reduce((s,r)=>s+r.v,0)),backgroundColor:B.DIM,stack:'s'}]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
   dc('cRepO');CH.cRepO=new Chart(document.getElementById('cRepO'),{type:'bar',data:{labels:REPS.map(repLabel),datasets:[{label:'Oportunidad activa',data:REPS.map(rp=>O.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.GOLD,stack:'s',borderRadius:[4,4,0,0]},{label:'Cancelado',data:REPS.map(rp=>CAN.filter(r=>r.r===rp).reduce((s,r)=>s+r.v,0)),backgroundColor:B.CAN,stack:'s'}]},options:Object.assign(sopts(),{plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:true,color:'#8899B8'}})})});
+}
+
+// ── Análisis por Quarter ──────────────────────────────────────────────────────────────────
+// Selector propio de Q y año (ignora el filtro Mes/Año de la barra superior; sí respeta el
+// filtro de Representante). Solo ASIGNACIONES (t==='A', valor efectivo = valAsignado), igual
+// que el resto del dashboard — las oportunidades se excluyen porque no son un valor fijo.
+// Usa getAllMes() (servicios que cruzan meses prorrateados por día) para que la suma de los
+// 3 meses del Q cuadre con la pestaña Mensual.
+const Q_MESES={1:['enero','febrero','marzo'],2:['abril','mayo','junio'],3:['julio','agosto','septiembre'],4:['octubre','noviembre','diciembre']};
+const LIN_NOMBRE={CT:'Coiled Tubing',TT:'Thru Tubing',ES:'Estimulación',WL:'Wireline',AI:'Abandono Integrado',AZ:'Aislamiento Zonal',WT:'Well Testing',WS:'Well Services',CW:'CW',CAN:'Cañoneo'};
+// Reglas de inferencia (solo cuando la columna de línea viene vacía en el Excel). Se calibraron
+// contra las filas que SÍ traen código (ej. CAÑONEO / PBU / REGISTRO CEMENTO → WL; ABANDONO → AI).
+function qInferirLineas(sv){
+  const t=String(sv||'').toUpperCase();
+  if(!t)return [];
+  if(/ABANDON/.test(t))return ['AI'];
+  const out=[];
+  if(/AISLAMIENTO ZONAL/.test(t))out.push('AZ');
+  if(/ESTIMUL|BULLHEAD|\bN2\b/.test(t))out.push('ES');
+  if(/\bCT\b|COILED|MOLIENDA|SAND JETTING|LIMPIEZA|LIMPEIZA/.test(t))out.push('CT');
+  if(/\bTT\b|THRU/.test(t))out.push('TT');
+  if(/WELL SERVICE|REACTIVACI|PIPE RECOVERY/.test(t))out.push('WS');
+  if(/REGISTRO|WIRELINE|CA[ÑN]ONEO|\bPBU\b|\bPLT\b|\bWL\b|ULTRASONIC|CORRIDA DE EMPAQUE/.test(t))out.push('WL');
+  return out;
+}
+function qLineasDe(r,inferir){
+  if(r.l){
+    const codes=r.l.replace(/\s/g,'').toUpperCase().split(/[,\-\+]+/).filter(function(p){return p&&p.length<6;});
+    if(codes.length)return {codes:codes,origen:'codigo'};
+  }
+  if(inferir){
+    const inf=qInferirLineas(r.sv);
+    if(inf.length)return {codes:inf,origen:'inferido'};
+  }
+  return {codes:['SIN'],origen:'sin'};
+}
+function qEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function qInitSelectores(){
+  const selQ=document.getElementById('q-sel'),selA=document.getElementById('q-anio');
+  if(selA.dataset.init==='1')return;
+  const anios=[...new Set(ALL.map(function(r){return Number(r.anio);}).filter(function(a){return a>0;}))].sort(function(a,b){return b-a;});
+  selA.innerHTML=anios.map(function(a){return '<option value="'+a+'">'+a+'</option>';}).join('');
+  const hoy=new Date();   // Q y año en curso por defecto
+  selQ.value=String(Math.floor(hoy.getMonth()/3)+1);
+  selA.value=anios.indexOf(hoy.getFullYear())>=0?String(hoy.getFullYear()):String(anios[0]);
+  selA.dataset.init='1';
+}
+function renderQuarter(){
+  qInitSelectores();
+  const q=Number(document.getElementById('q-sel').value),anio=Number(document.getElementById('q-anio').value);
+  const inferir=document.getElementById('q-inferir').checked;
+  const meses=Q_MESES[q];
+  const A=getAllMes().filter(function(r){return r.t==='A'&&r.s!=='CANCELADO'&&Number(r.anio)===anio&&meses.indexOf(r.m)>=0&&(!G_REP||r.r===G_REP);})
+    .map(function(r){return Object.assign({},r,{v:valAsignado(r)});});
+  document.getElementById('q-nota').textContent='Q'+q+' '+anio+' ('+meses[0]+' – '+meses[2]+'). Solo asignaciones (excluye oportunidades). Usa su propio selector de Q y año; el filtro Mes/Año de la barra superior no aplica'+(G_REP?'. Filtro de representante activo: '+G_REP:'')+'.';
+
+  const total=A.reduce(function(s,r){return s+r.v;},0);
+  const fin=A.filter(function(r){return r.s==='FINALIZADO';}).reduce(function(s,r){return s+r.v;},0);
+  const eje=A.filter(function(r){return r.s==='EN EJECUCION';}).reduce(function(s,r){return s+r.v;},0);
+
+  // ── Clientes (ECOPETROL agrupa todas sus variantes, con subfilas por gerencia) ──
+  const cli={};
+  A.forEach(function(r){
+    const k=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
+    const o=cli[k]||(cli[k]={v:0,n:0,ger:{}});
+    o.v+=r.v;o.n++;
+    if(k==='ECOPETROL'){const g=(r.ger&&r.ger!=='NA')?r.ger:'Sin gerencia';const og=o.ger[g]||(o.ger[g]={v:0,n:0});og.v+=r.v;og.n++;}
+  });
+  const cliRows=Object.entries(cli).sort(function(a,b){return b[1].v-a[1].v;});
+
+  // ── Líneas de servicio (valor repartido en partes iguales entre las líneas del servicio) ──
+  const lin={},cob={codigo:0,inferido:0,sin:0};
+  A.forEach(function(r){
+    const x=qLineasDe(r,inferir);cob[x.origen]+=r.v;
+    const parte=r.v/x.codes.length;
+    x.codes.forEach(function(c){const o=lin[c]||(lin[c]={v:0,n:0});o.v+=parte;o.n++;});
+  });
+  const linRows=Object.entries(lin).sort(function(a,b){if(a[0]==='SIN')return 1;if(b[0]==='SIN')return -1;return b[1].v-a[1].v;});
+  const linNom=function(c){return c==='SIN'?'Sin clasificar':(LIN_NOMBRE[c]||c);};
+
+  document.getElementById('q-kpi').innerHTML=[
+    {l:'Asignado Q'+q+' '+anio,v:fmt(total),s:A.length+' servicios',cls:'ka',i:'📋'},
+    {l:'Finalizado',v:fmt(fin),s:total>0?Math.round(fin/total*100)+'% del asignado':'—',cls:'ks',i:'✅'},
+    {l:'En ejecución',v:fmt(eje),s:total>0?Math.round(eje/total*100)+'% del asignado':'—',cls:'ko',i:'⚙️'},
+    {l:'Clientes activos',v:String(cliRows.length),s:cliRows.length?'Mayor: '+cliRows[0][0]+' ('+Math.round(cliRows[0][1].v/total*100)+'%)':'—',cls:'kt',i:'🏢'}
+  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
+
+  const th='padding:4px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--light)';
+  const td='padding:5px 8px;border-bottom:1px solid var(--light)';
+  const mono='font-family:JetBrains Mono,monospace;font-weight:700;color:var(--navy)';
+  const vacio='<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">Sin asignaciones en este Q.</div>';
+
+  document.getElementById('q-cli-tbl').innerHTML=!cliRows.length?vacio:
+    '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="'+th+';text-align:left">Cliente</th><th style="'+th+';text-align:right">Asignado</th><th style="'+th+';text-align:right">% Q</th><th style="'+th+';text-align:right">Serv.</th></tr></thead><tbody>'+
+    cliRows.map(function(e){
+      const c=e[0],o=e[1];
+      let h='<tr><td style="'+td+';font-weight:600;color:var(--navy)">'+qEsc(c)+'</td><td style="'+td+';text-align:right"><span style="'+mono+'">'+fmt(o.v)+'</span></td><td style="'+td+';text-align:right">'+Math.round(o.v/total*100)+'%</td><td style="'+td+';text-align:right">'+o.n+'</td></tr>';
+      if(c==='ECOPETROL'){
+        h+=Object.entries(o.ger).sort(function(a,b){return b[1].v-a[1].v;}).map(function(g){
+          return '<tr style="background:var(--pale)"><td style="'+td+';padding-left:22px;font-style:italic;color:var(--muted);font-size:10px">↳ '+qEsc(g[0])+'</td><td style="'+td+';text-align:right;font-size:10px"><span style="font-family:JetBrains Mono,monospace;color:var(--muted);font-weight:600">'+fmt(g[1].v)+'</span></td><td style="'+td+';text-align:right;font-size:10px;color:var(--muted)">'+Math.round(g[1].v/total*100)+'%</td><td style="'+td+';text-align:right;font-size:10px;color:var(--muted)">'+g[1].n+'</td></tr>';
+        }).join('');
+      }
+      return h;
+    }).join('')+'</tbody></table>';
+
+  document.getElementById('q-lin-tbl').innerHTML=!linRows.length?vacio:
+    '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="'+th+';text-align:left">Línea</th><th style="'+th+';text-align:right">Asignado</th><th style="'+th+';text-align:right">% Q</th><th style="'+th+';text-align:right">Serv.</th></tr></thead><tbody>'+
+    linRows.map(function(e){
+      return '<tr><td style="'+td+';font-weight:600;color:'+(e[0]==='SIN'?'var(--muted)':'var(--navy)')+'">'+qEsc(linNom(e[0]))+'</td><td style="'+td+';text-align:right"><span style="'+mono+'">'+fmt(e[1].v)+'</span></td><td style="'+td+';text-align:right">'+Math.round(e[1].v/total*100)+'%</td><td style="'+td+';text-align:right">'+e[1].n+'</td></tr>';
+    }).join('')+'</tbody></table>';
+  document.getElementById('q-lin-cov').textContent=total>0?
+    'Los servicios con varias líneas se reparten en partes iguales. Origen de la línea (por valor): código del Excel '+Math.round(cob.codigo/total*100)+'% · inferido por descripción '+Math.round(cob.inferido/total*100)+'% · sin clasificar '+Math.round(cob.sin/total*100)+'%.':'';
+
+  // ── Gráficas ──
+  const optsBar=function(){return Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'}})});};
+  dc('cQCli');
+  if(cliRows.length)CH.cQCli=new Chart(document.getElementById('cQCli'),{type:'bar',data:{labels:cliRows.slice(0,12).map(function(e){return e[0];}),datasets:[{data:cliRows.slice(0,12).map(function(e){return e[1].v;}),backgroundColor:B.NAVY,borderRadius:4}]},options:optsBar()});
+  dc('cQLin');
+  if(linRows.length)CH.cQLin=new Chart(document.getElementById('cQLin'),{type:'bar',data:{labels:linRows.map(function(e){return linNom(e[0]);}),datasets:[{data:linRows.map(function(e){return e[1].v;}),backgroundColor:linRows.map(function(e){return e[0]==='SIN'?B.DIM:B.GOLD_D;}),borderRadius:4}]},options:optsBar()});
 }
 
 function renderClientes(){
