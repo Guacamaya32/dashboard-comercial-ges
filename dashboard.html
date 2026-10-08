@@ -525,7 +525,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <option value="mayo">Mayo</option><option value="junio">Junio</option>
     <option value="julio">Julio</option><option value="agosto">Agosto</option>
     <option value="septiembre">Septiembre</option><option value="octubre">Octubre</option>
-    <option value="noviembre">Noviembre</option>
+    <option value="noviembre">Noviembre</option><option value="diciembre">Diciembre</option>
   </select>
   <div class="fsep"></div>
   <span class="fl">Rep.</span>
@@ -727,10 +727,22 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 
 <div class="view" id="view-forecast">
   <div class="krow" id="forecast-kpi"></div>
-  <div class="card">
-    <div class="ct">Real vs. Modelo — Holt-Winters (suavizado exponencial triple)</div>
-    <div style="height:420px"><canvas id="cForecast"></canvas></div>
-    <div id="forecast-note" style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5"></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Ingreso acumulado del año vs. zona esperada (según el histórico)</div>
+    <div style="height:380px;position:relative"><canvas id="cForecast"></canvas></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Ingreso mensual vs. zona esperada</div>
+    <div style="height:330px;position:relative"><canvas id="cForecastMes"></canvas></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Seguimiento mensual</div>
+    <div id="forecast-seg" style="overflow-x:auto"></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Base estadística de la zona</div>
+    <div id="forecast-hist" style="overflow-x:auto"></div>
+    <div id="forecast-note" style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.55"></div>
   </div>
 </div>
 
@@ -6245,46 +6257,55 @@ function renderHistorico(){
   });
 }
 
-// ── Forecast 2026: modelo de suavizado exponencial triple (Holt-Winters aditivo) ──────────
-// Se eligió Holt-Winters porque la serie mensual de ingresos tiene, a la vez, tendencia
-// (crecimiento/caída de un año a otro) y estacionalidad marcada de 12 meses (ej. diciembre
-// consistentemente más alto) — es exactamente el escenario para el que este modelo está
-// diseñado, y es el estándar de la industria para pronósticos mensuales con esas dos
-// componentes (más robusto que una regresión lineal simple o un promedio móvil, que no
-// capturan la estacionalidad).
-function holtWinters(y,L,alpha,beta,gamma){
-  var season1=y.slice(0,L),season2=y.slice(L,2*L);
-  var avg1=season1.reduce(function(a,b){return a+b;},0)/L;
-  var avg2=season2.reduce(function(a,b){return a+b;},0)/L;
-  var level=avg1,trend=(avg2-avg1)/L;
-  var seasonal=season1.map(function(v){return v-avg1;});
-  var fitted=[];
-  for(var t=0;t<y.length;t++){
-    var s=seasonal[t%L];
-    fitted.push(level+trend+s);
-    var obs=y[t],prevLevel=level;
-    level=alpha*(obs-s)+(1-alpha)*(level+trend);
-    trend=beta*(level-prevLevel)+(1-beta)*trend;
-    seasonal[t%L]=gamma*(obs-level)+(1-gamma)*s;
+// ── Forecast: "zona esperada" estadística y FIJA ────────────────────────────────────────
+// La zona se calcula UNA sola vez con los años CERRADOS (2022 → año anterior) y no se vuelve a
+// ajustar con los ingresos del año en curso: el año actual solo se va marcando contra ella.
+// Método (pensado para pocos años de historia, validado con backtest 2024 y 2025):
+//   1) Nivel anual esperado A = promedio ponderado de los totales anuales cerrados (los años más
+//      recientes pesan más; vida media 2 años). Su incertidumbre sale de la dispersión histórica
+//      de esos totales.
+//   2) Estacionalidad = participación promedio de cada mes dentro del año (y del acumulado),
+//      con su propia dispersión histórica.
+//   3) Esperado del mes = A × participación; la zona (50% y 80%) combina la incertidumbre del
+//      nivel anual y la de la estacionalidad, usando la t de Student (pocos datos → zona más ancha).
+// Se eligió sobre Holt-Winters porque, con solo 3-4 años, la tendencia de H-W se extrapola de más
+// (en el backtest sobrestimó 2024 en +35% y 2025 en +15%).
+var FC_T80={1:3.078,2:1.886,3:1.638,4:1.533,5:1.476,6:1.440,7:1.415,8:1.397,9:1.383,10:1.372};
+var FC_T50={1:1.000,2:0.816,3:0.765,4:0.741,5:0.727,6:0.718,7:0.711,8:0.706,9:0.703,10:0.700};
+function fcT(tab,df){return df>10?(tab===FC_T80?1.282:0.674):tab[Math.max(df,1)];}
+function fcSum(a){var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s;}
+function fcModelo(hist){
+  var yrs=Object.keys(hist).map(Number).sort(function(a,b){return a-b;});
+  var n=yrs.length,last=yrs[n-1],HL=2;
+  var tot=yrs.map(function(y){return fcSum(hist[y]);});
+  var w=yrs.map(function(y){return Math.pow(.5,(last-y)/HL);});
+  var sw=fcSum(w),A=0,i,m;
+  for(i=0;i<n;i++)A+=w[i]*tot[i];A/=sw;
+  var varA=0;for(i=0;i<n;i++)varA+=Math.pow(tot[i]-A,2);varA/=Math.max(n-1,1);
+  var sdA=Math.sqrt(varA*(1+fcSum(w.map(function(x){return x*x;}))/(sw*sw)));
+  var share=[],cum=[];
+  for(i=0;i<n;i++){var c=0;share.push([]);cum.push([]);for(m=0;m<12;m++){var s=hist[yrs[i]][m]/tot[i];c+=s;share[i].push(s);cum[i].push(c);}}
+  var ms=[],mc=[],sdS=[],sdC=[];
+  for(m=0;m<12;m++){
+    var a1=0,a2=0;for(i=0;i<n;i++){a1+=w[i]*share[i][m];a2+=w[i]*cum[i][m];}a1/=sw;a2/=sw;
+    var v1=0,v2=0;for(i=0;i<n;i++){v1+=Math.pow(share[i][m]-a1,2);v2+=Math.pow(cum[i][m]-a2,2);}
+    ms.push(a1);mc.push(a2);sdS.push(Math.sqrt(v1/Math.max(n-1,1)));sdC.push(Math.sqrt(v2/Math.max(n-1,1)));
   }
-  return {level:level,trend:trend,seasonal:seasonal,fitted:fitted};
-}
-function hwSSE(y,fitted){var s=0;for(var i=0;i<y.length;i++){var d=y[i]-fitted[i];s+=d*d;}return s;}
-// Búsqueda de los parámetros (alpha/beta/gamma) que mejor ajustan el histórico real, en vez
-// de adivinar valores fijos — minimiza el error cuadrático dentro de la misma muestra.
-function ajustarHoltWinters(y,L){
-  var best=null;
-  for(var a=.1;a<=.9;a+=.1){
-    for(var b=.05;b<=.5;b+=.05){
-      for(var g=.1;g<=.9;g+=.1){
-        var r=holtWinters(y,L,a,b,g);
-        var s=hwSSE(y,r.fitted);
-        if(!best||s<best.sse)best={a:a,b:b,g:g,sse:s,fitted:r.fitted,level:r.level,trend:r.trend,seasonal:r.seasonal};
-      }
-    }
+  var E=[],sdM=[],C=[],sdK=[];
+  for(m=0;m<12;m++){
+    E.push(A*ms[m]);sdM.push(Math.sqrt(Math.pow(ms[m]*sdA,2)+Math.pow(A*sdS[m],2)));
+    C.push(A*mc[m]);sdK.push(Math.sqrt(Math.pow(mc[m]*sdA,2)+Math.pow(A*sdC[m],2)));
   }
-  return best;
+  var df=n-1;
+  return {yrs:yrs,n:n,tot:tot,w:w,sw:sw,A:A,sdA:sdA,E:E,sdM:sdM,C:C,sdK:sdK,t80:fcT(FC_T80,df),t50:fcT(FC_T50,df)};
 }
+// 'above' | 'inside' | 'below' respecto a la zona del 80%
+function fcPos(real,exp,sd,M){
+  if(real>exp+M.t80*sd)return 'above';
+  if(real<Math.max(0,exp-M.t80*sd))return 'below';
+  return 'inside';
+}
+function fcNormCdf(z){var t=1/(1+.2316419*Math.abs(z)),d=.3989423*Math.exp(-z*z/2);var p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;}
 
 function renderForecast(){
   function val(r){return r.ir>0?r.ir:r.v;}
@@ -6292,171 +6313,159 @@ function renderForecast(){
   function totalMes(anio,mo){
     return allMes.filter(function(r){return r.anio===anio&&r.m===mo&&(r.s==='FINALIZADO'||r.s==='EN EJECUCION')&&r.t==='A';}).reduce(function(s,r){return s+val(r);},0);
   }
-  // Serie mensual continua desde enero 2022 hasta el último mes con datos reales de 2026.
-  var serie=[],etiquetas=[],mesesAnioActual=0;
-  var anioActualMax=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
-  for(var y0=2022;y0<=anioActualMax;y0++){
-    for(var mi=0;mi<12;mi++){
-      if(y0===anioActualMax){
-        var v=totalMes(y0,MO[mi]);
-        if(v<=0){
-          // ya no hay datos reales de este mes en adelante para el año en curso
-          y0=anioActualMax+1;break;
-        }
-        serie.push(v);etiquetas.push(MO[mi].slice(0,3)+' '+String(y0).slice(2));mesesAnioActual++;
-      }else{
-        serie.push(totalMes(y0,MO[mi]));etiquetas.push(MO[mi].slice(0,3)+' '+String(y0).slice(2));
-      }
-    }
-  }
-  var nHist=serie.length;
-  var mesesRestantes=12-(nHist%12===0?12:nHist%12);
-  if(mesesRestantes===0)mesesRestantes=0;
-
-  if(nHist<24||mesesRestantes===0){
-    document.getElementById('forecast-kpi').innerHTML='<div class="kpi ks"><div class="kpi-l">Forecast</div><div class="kpi-v" style="font-size:14px">No hay suficientes meses históricos o el año ya está completo</div></div>';
-    dc('cForecast');
-    return;
-  }
-
-  var ajuste=ajustarHoltWinters(serie,12);
-  var forecastVals=[];
-  for(var h=1;h<=mesesRestantes;h++){
-    var seasonIdx=(nHist+h-1)%12;
-    forecastVals.push(Math.max(0,ajuste.level+h*ajuste.trend+ajuste.seasonal[seasonIdx]));
-  }
-  // Intervalo de confianza aproximado (±1.28 desviaciones estándar del residuo ≈ 80%), que se
-  // amplía mes a mes (la incertidumbre crece mientras más adelante se proyecta).
-  var residuos=serie.map(function(v,i){return v-ajuste.fitted[i];});
-  var residStd=Math.sqrt(residuos.reduce(function(s,r){return s+r*r;},0)/residuos.length);
-  var forecastLabels=[];
-  for(var h2=1;h2<=mesesRestantes;h2++){
-    var mIdx=(nHist+h2-1)%12,yIdx=Math.floor((nHist+h2-1)/12)+2022;
-    forecastLabels.push(MO[mIdx].slice(0,3)+' '+String(yIdx).slice(2));
-  }
-
-  var actualYTD=serie.slice(-mesesAnioActual).reduce(function(s,v){return s+v;},0);
-  var forecastTotal=forecastVals.reduce(function(s,v){return s+v;},0);
-  var proyeccionCierre=actualYTD+forecastTotal;
+  var anioAct=Math.max.apply(null,ALL_SEED.map(function(r){return r.anio;}));
+  var hoy=new Date();
+  // mesHoy = índice del mes en curso (sus ingresos son parciales y no se juzgan); 12 = año ya terminado
+  var mesHoy=hoy.getFullYear()===anioAct?hoy.getMonth():(hoy.getFullYear()>anioAct?12:0);
+  var hist={};
+  for(var y0=2022;y0<anioAct;y0++){var arr=MO.map(function(mo){return totalMes(y0,mo);});if(fcSum(arr)>0)hist[y0]=arr;}
+  var nYr=Object.keys(hist).length,kpi=document.getElementById('forecast-kpi');
+  if(nYr<2){kpi.innerHTML='<div class="kpi ks"><div class="kpi-l">Forecast</div><div class="kpi-v" style="font-size:14px">Se necesitan al menos 2 años cerrados de histórico</div></div>';dc('cForecast');dc('cForecastMes');return;}
+  var M=fcModelo(hist);
+  var real=MO.map(function(mo){return totalMes(anioAct,mo);});
+  var kc=Math.min(mesHoy,12);                    // meses cerrados (0..kc-1)
+  var hayParcial=mesHoy<12&&real[mesHoy]>0;      // mes en curso con datos parciales
+  var MES3=MO.map(function(m){return m[0].toUpperCase()+m.slice(1,3);});
+  var cumReal=[],c=0;for(var i=0;i<12;i++){c+=real[i];cumReal.push(c);}
+  var realYTD=kc>0?cumReal[kc-1]:0,expYTD=kc>0?M.C[kc-1]:0,sdYTD=kc>0?M.sdK[kc-1]:0;
+  var posYTD=kc>0?fcPos(realYTD,expYTD,sdYTD,M):'inside';
+  var dev=expYTD>0?(realYTD/expYTD-1)*100:0,zYTD=sdYTD>0?(realYTD-expYTD)/sdYTD:0;
+  var loA=Math.max(0,M.A-M.t80*M.sdA),hiA=M.A+M.t80*M.sdA;
   var metaEsp=METAS.filter(function(x){return x.esc==='ESP';}).reduce(function(s,x){return s+x.meta;},0);
-  var pctVsMeta=metaEsp>0?(proyeccionCierre/metaEsp*100):0;
+  var pMeta=metaEsp>0?fcNormCdf((metaEsp-M.A)/M.sdA)*100:0;
+  var posTxt={above:'Por encima de la zona',inside:'Dentro de la zona',below:'Por debajo de la zona'}[posYTD];
+  var posCls={above:'ks',inside:'kt',below:'kr'}[posYTD];
+  var rangoYTD=kc>0?fmtM(Math.max(0,expYTD-M.t80*sdYTD))+' – '+fmtM(expYTD+M.t80*sdYTD):'—';
+  kpi.innerHTML=[
+    {l:'Zona esperada de cierre '+anioAct,v:fmt(M.A),s:'rango 80%: '+fmtM(loA)+' – '+fmtM(hiA),cls:'kt',i:'🎯'},
+    {l:'Real acumulado'+(kc>0?' (ene–'+MES3[kc-1].toLowerCase()+')':''),v:fmt(realYTD),s:'esperado a la fecha '+fmt(expYTD)+' · zona '+rangoYTD,cls:'ks',i:'✅'},
+    {l:'Posición actual',v:posTxt,s:(dev>=0?'+':'')+dev.toFixed(1)+'% vs. esperado · '+(zYTD>=0?'+':'')+zYTD.toFixed(1)+' desv.',cls:posCls,i:posYTD==='above'?'📈':posYTD==='below'?'📉':'📍'},
+    {l:'Meta Esperado vs. zona',v:fmt(metaEsp),s:metaEsp>0?'está en el percentil '+Math.round(pMeta)+' de la zona':'sin meta cargada',cls:pMeta>85?'kr':'ka',i:'🏁'}
+  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v"'+(k.l==='Posición actual'?' style="font-size:17px"':'')+'>'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
-  document.getElementById('forecast-kpi').innerHTML=[
-    {l:'Ingresos reales (a la fecha)',v:fmt(actualYTD),s:mesesAnioActual+' meses de '+anioActualMax+' con datos',cls:'ks',i:'✅'},
-    {l:'Forecast restante '+anioActualMax,v:fmt(forecastTotal),s:mesesRestantes+' meses proyectados',cls:'ko',i:'🔮'},
-    {l:'Proyección cierre '+anioActualMax,v:fmt(proyeccionCierre),s:'real + forecast',cls:'kt',i:'📊'},
-    {l:'vs. Meta Esperado',v:pctVsMeta.toFixed(1)+'%',s:fmt(metaEsp)+' de meta',cls:pctVsMeta>=95?'ka':'kr',i:'🎯'}
-  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
-
-  // El modelo se ajusta con TODO el histórico (más datos = mejor ajuste). Para no perder el
-  // contexto de 2022 en adelante, se muestran DOS gráficas: un panel de contexto arriba con
-  // el histórico completo comprimido (sin ocultar ningún año), y la gráfica principal abajo
-  // con detalle de los últimos meses + el forecast, mucho más grande y legible.
-  var VENTANA=16;
-  var offsetDisp=Math.max(0,nHist-VENTANA);
-  var etiquetasDisp=etiquetas.slice(offsetDisp);
-  var serieDisp=serie.slice(offsetDisp);
-  // Índice donde arranca el año en curso (enero) dentro de la ventana mostrada.
-  var idxInicioAnioActual=etiquetasDisp.length-mesesAnioActual;
-  // Línea de "Modelo": el ajuste del modelo (retrospectivo) para los meses ya pasados de este
-  // año, seguido del forecast propiamente dicho para los meses que faltan — solo existe desde
-  // enero del año en curso en adelante (antes de eso no se dibuja, para no confundir con un
-  // "forecast" de años ya cerrados que no tiene sentido mostrar).
-  var modeloDisp=ajuste.fitted.slice(offsetDisp).concat(forecastVals);
-  for(var mi2=0;mi2<idxInicioAnioActual;mi2++)modeloDisp[mi2]=null;
-
-  var allLabels=etiquetasDisp.concat(forecastLabels);
-  var serieActual=serieDisp.concat(forecastLabels.map(function(){return null;}));
-  // La banda de confianza ahora se ve desde enero del año en curso (no solo desde el inicio
-  // del forecast puro), para poder comparar "Real" contra el rango probabilístico del modelo
-  // en TODO el año: para los meses ya pasados usa un ancho fijo (el error típico del modelo,
-  // un paso a la vez); para los meses que faltan, el ancho crece con el horizonte (más
-  // incertidumbre mientras más adelante se proyecta), igual que antes.
-  var bandaAlta=allLabels.map(function(_,i){
-    if(i<idxInicioAnioActual)return null;
-    if(i<etiquetasDisp.length)return modeloDisp[i]+1.28*residStd;
-    var h=i-etiquetasDisp.length+1;
-    return forecastVals[h-1]+1.28*residStd*Math.sqrt(h);
-  });
-  var bandaBaja=allLabels.map(function(_,i){
-    if(i<idxInicioAnioActual)return null;
-    if(i<etiquetasDisp.length)return Math.max(0,modeloDisp[i]-1.28*residStd);
-    var h=i-etiquetasDisp.length+1;
-    return Math.max(0,forecastVals[h-1]-1.28*residStd*Math.sqrt(h));
-  });
-
+  var C80h=M.C.map(function(v,i){return v+M.t80*M.sdK[i];}),C80l=M.C.map(function(v,i){return Math.max(0,v-M.t80*M.sdK[i]);});
+  var C50h=M.C.map(function(v,i){return v+M.t50*M.sdK[i];}),C50l=M.C.map(function(v,i){return Math.max(0,v-M.t50*M.sdK[i]);});
+  var COL={above:B.FIN,below:B.CAN,inside:B.NAVY};
+  // ── Gráfica 1: acumulado del año vs. zona ──
+  var realAc=cumReal.map(function(v,i){return i<kc?v:null;});
+  var parcial=cumReal.map(function(v,i){return (hayParcial&&(i===mesHoy||i===mesHoy-1&&kc>0))?v:null;});
+  var ptCol=cumReal.map(function(v,i){return i<kc?COL[fcPos(v,M.C[i],M.sdK[i],M)]:B.GOLD_D;});
+  var metaPt=MO.map(function(_,i){return i===11&&metaEsp>0?metaEsp:null;});
   dc('cForecast');CH.cForecast=new Chart(document.getElementById('cForecast'),{
     type:'line',
-    data:{labels:allLabels,datasets:[
-      {label:'Banda de confianza (≈80%)',data:bandaAlta,borderColor:'transparent',pointRadius:0,fill:false,tension:.2},
-      {label:'_bajaBanda',data:bandaBaja,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:'rgba(255,192,0,.18)',tension:.2},
-      {label:'Real',data:serieActual,borderColor:B.NAVY,backgroundColor:function(c){
-        var a=c.chart.chartArea;if(!a)return B.LIGHT;
-        var g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
-        g.addColorStop(0,'rgba(0,32,96,.28)');g.addColorStop(1,'rgba(0,32,96,.02)');
-        return g;
-      },fill:true,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.NAVY,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false},
-      {label:'Modelo (ajuste + forecast)',data:modeloDisp,borderColor:B.GOLD_D,backgroundColor:'transparent',borderDash:[6,4],fill:false,tension:.2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:B.GOLD_D,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2.5,borderCapStyle:'round',spanGaps:false}
+    data:{labels:MES3,datasets:[
+      {label:'_h80',data:C80h,borderColor:'transparent',pointRadius:0,fill:false,tension:.25},
+      {label:'Zona 80%',data:C80l,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:'rgba(255,192,0,.16)',tension:.25},
+      {label:'_h50',data:C50h,borderColor:'transparent',pointRadius:0,fill:false,tension:.25},
+      {label:'Zona 50%',data:C50l,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:'rgba(255,192,0,.30)',tension:.25},
+      {label:'Esperado (histórico)',data:M.C,borderColor:B.GOLD_D,borderDash:[6,4],borderWidth:2,pointRadius:0,fill:false,tension:.25},
+      {label:'Real acumulado',data:realAc,borderColor:B.NAVY,borderWidth:2.5,pointRadius:5,pointBackgroundColor:ptCol,pointBorderColor:'#fff',pointBorderWidth:2,fill:false,tension:.15,spanGaps:false},
+      {label:'Mes en curso (parcial)',data:parcial,borderColor:B.NAVY,borderDash:[3,3],borderWidth:1.5,pointRadius:function(c){return c.dataIndex===mesHoy?6:0;},pointBackgroundColor:'#fff',pointBorderColor:B.NAVY,pointBorderWidth:2,fill:false,spanGaps:false},
+      {label:'Meta Esperado',data:metaPt,borderColor:B.FIN,pointStyle:'rectRot',pointRadius:7,pointBackgroundColor:B.FIN,showLine:false}
+    ]},
+    options:Object.assign(sopts(),{
+      layout:{padding:{right:78}},
+      interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}},
+        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:7},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'6%'}},
+      plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:false},crosshair:{enabled:true},
+        legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',filter:function(it){return it.text.indexOf('_')!==0;}}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,callbacks:{
+          label:function(c){
+            var l=c.dataset.label;if(l.indexOf('_')===0||c.raw===null||c.raw===undefined||l==='Zona 50%')return null;
+            if(l==='Zona 80%')return 'Zona 80%: '+fmtM(c.raw)+' – '+fmtM(C80h[c.dataIndex]);
+            return l+': '+fmt(c.raw);},
+          filter:function(c){return c.dataset.label.indexOf('_')!==0&&c.raw!==null&&c.raw!==undefined;}}}
+      })
+    }),
+    plugins:[{id:'fcRangoCierre',afterDatasetsDraw:function(chart){
+      try{
+        var ctx=chart.ctx,x=chart.scales.x.getPixelForValue(11),y1=chart.scales.y.getPixelForValue(hiA),y2=chart.scales.y.getPixelForValue(loA),ym=chart.scales.y.getPixelForValue(M.A);
+        ctx.save();ctx.strokeStyle=B.GOLD_D;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+14,y1);ctx.lineTo(x+14,y2);ctx.moveTo(x+10,y1);ctx.lineTo(x+18,y1);ctx.moveTo(x+10,y2);ctx.lineTo(x+18,y2);ctx.stroke();
+        ctx.fillStyle=B.GOLD_D;ctx.font='700 10px Inter, sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+        ctx.fillText(fmtM(M.A),x+22,ym);ctx.font='600 9px Inter, sans-serif';ctx.fillText('zona cierre',x+22,ym+11);
+        ctx.restore();
+      }catch(e){}
+    }}],
+  });
+  // ── Gráfica 2: mensual vs. zona ──
+  var E80h=M.E.map(function(v,i){return v+M.t80*M.sdM[i];}),E80l=M.E.map(function(v,i){return Math.max(0,v-M.t80*M.sdM[i]);});
+  var E50h=M.E.map(function(v,i){return v+M.t50*M.sdM[i];}),E50l=M.E.map(function(v,i){return Math.max(0,v-M.t50*M.sdM[i]);});
+  var barVals=real.map(function(v,i){return (i<kc||(i===mesHoy&&hayParcial))?v:null;});
+  var barCol=real.map(function(v,i){return i<kc?COL[fcPos(v,M.E[i],M.sdM[i],M)]:'rgba(204,154,0,.55)';});
+  dc('cForecastMes');CH.cForecastMes=new Chart(document.getElementById('cForecastMes'),{
+    data:{labels:MES3,datasets:[
+      {type:'line',label:'_h80',data:E80h,borderColor:'transparent',pointRadius:0,fill:false,tension:.2,order:6},
+      {type:'line',label:'Zona 80%',data:E80l,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:'rgba(255,192,0,.16)',tension:.2,order:6},
+      {type:'line',label:'_h50',data:E50h,borderColor:'transparent',pointRadius:0,fill:false,tension:.2,order:5},
+      {type:'line',label:'Zona 50%',data:E50l,borderColor:'transparent',pointRadius:0,fill:'-1',backgroundColor:'rgba(255,192,0,.30)',tension:.2,order:5},
+      {type:'line',label:'Esperado (histórico)',data:M.E,borderColor:B.GOLD_D,borderDash:[6,4],borderWidth:2,pointRadius:3,pointBackgroundColor:B.GOLD_D,fill:false,tension:.2,order:2},
+      {type:'bar',label:'Real',data:barVals,backgroundColor:barCol,borderRadius:4,maxBarThickness:34,order:3}
     ]},
     options:Object.assign(sopts(),{
       interaction:{mode:'index',intersect:false},
-      hover:{mode:'index',intersect:false},
-      scales:{
-        x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'},maxRotation:0,autoSkip:true,maxTicksLimit:18},grid:{display:false},border:{display:false},stacked:false},
-        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:6},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'10%',stacked:false}
-      },
-      plugins:Object.assign({},sopts().plugins,{
-        pctLabels:{enabled:false},
-        crosshair:{enabled:true},
-        legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',
-          filter:function(item){return item.text.indexOf('_')!==0&&item.text!=='Banda de confianza (≈80%)';}}},
-        tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'},callbacks:{
-          label:function(c){
-            if(c.dataset.label.indexOf('_')===0||c.dataset.label==='Banda de confianza (≈80%)')return null;
-            if(c.raw===null||c.raw===undefined)return null;
-            return c.dataset.label+': '+fmt(c.raw);
-          },
-          filter:function(c){return c.dataset.label.indexOf('_')!==0&&c.raw!==null&&c.raw!==undefined;}
-        }}
+      scales:{x:{ticks:{color:B.MUTED,font:{size:10,family:'Inter',weight:'700'}},grid:{display:false},border:{display:false}},
+        y:{ticks:{color:B.MUTED,font:{size:9,family:'Inter'},callback:function(v){return fmtM(v);},maxTicksLimit:6},grid:{color:'rgba(232,237,246,.6)',drawTicks:false},border:{display:false},min:0,grace:'12%'}},
+      plugins:Object.assign({},sopts().plugins,{pctLabels:{enabled:false},
+        legend:{display:true,position:'top',align:'end',labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED,boxWidth:10,usePointStyle:true,pointStyle:'circle',filter:function(it){return it.text.indexOf('_')!==0&&it.text!=='Real';}}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:B.NAVY_D,padding:10,cornerRadius:6,callbacks:{
+          label:function(c){var l=c.dataset.label;if(l.indexOf('_')===0||c.raw===null||l==='Zona 50%')return null;
+            if(l==='Zona 80%')return 'Zona 80%: '+fmtM(c.raw)+' – '+fmtM(E80h[c.dataIndex]);return l+': '+fmt(c.raw);},
+          filter:function(c){return c.dataset.label.indexOf('_')!==0&&c.raw!==null&&c.raw!==undefined;}}}
       })
     }),
-    plugins:[{id:'desviacionForecast',afterDatasetsDraw:function(chart){
-      var ctx=chart.ctx;
-      var metaReal=chart.getDatasetMeta(2); // dataset 2 = Real
-      ctx.save();
-      ctx.font='700 9px Inter, sans-serif';
-      ctx.textAlign='center';
-      ctx.textBaseline='bottom';
-      for(var i=idxInicioAnioActual;i<etiquetasDisp.length;i++){
-        var real=serieActual[i];
-        var modelo=modeloDisp[i];
-        if(real===null||real===undefined||!modelo)continue;
-        var pct=(real-modelo)/modelo*100;
-        var bar=metaReal.data[i];
-        if(!bar)continue;
-        var positivo=pct>=0;
-        ctx.fillStyle=positivo?B.FIN:B.CAN;
-        ctx.fillText((positivo?'+':'')+pct.toFixed(0)+'%',bar.x,bar.y-22);
-      }
-      ctx.restore();
+    plugins:[{id:'fcDelta',afterDatasetsDraw:function(chart){
+      try{
+        var ctx=chart.ctx,meta=chart.getDatasetMeta(5);ctx.save();ctx.textAlign='center';ctx.textBaseline='bottom';
+        for(var i=0;i<12;i++){
+          var b=meta.data[i];if(!b||barVals[i]===null)continue;
+          if(i<kc){var p=fcPos(real[i],M.E[i],M.sdM[i],M),d=(real[i]/M.E[i]-1)*100;
+            ctx.fillStyle=COL[p];ctx.font='700 10px Inter, sans-serif';ctx.fillText((d>=0?'+':'')+d.toFixed(0)+'%',b.x,b.y-4);
+            if(p!=='inside'){ctx.font='700 8px Inter, sans-serif';ctx.fillText(p==='above'?'▲ sobre zona':'▼ bajo zona',b.x,b.y-16);}
+          }else{ctx.fillStyle=B.GOLD_D;ctx.font='700 9px Inter, sans-serif';ctx.fillText('en curso',b.x,b.y-4);}
+        }
+        ctx.restore();
+      }catch(e){}
     }}]
   });
-
+  // ── Tablas: seguimiento mensual + histórico usado + validación retrospectiva ──
+  var th='padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--light);text-align:right';
+  var td='padding:5px 8px;border-bottom:1px solid var(--light);text-align:right;font-family:JetBrains Mono,monospace;font-size:11px';
+  var chip=function(p){var m={above:['▲ Sobre la zona',B.FIN,B.FIN_BG],below:['▼ Bajo la zona',B.CAN,B.CAN_BG],inside:['● Dentro',B.NAVY,'#E3E9F5']}[p];return '<span style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9px;color:'+m[1]+';background:'+m[2]+'">'+m[0]+'</span>';};
+  var rows='';
+  for(var m2=0;m2<12;m2++){
+    var cerr=m2<kc,cur=(m2===mesHoy&&hayParcial);
+    rows+='<tr><td style="'+td+';text-align:left;font-family:Inter,sans-serif;font-weight:600;color:var(--navy)">'+MO[m2][0].toUpperCase()+MO[m2].slice(1)+'</td>'+
+      '<td style="'+td+'">'+fmtM(M.E[m2])+'</td><td style="'+td+';color:var(--muted)">'+fmtM(E80l[m2])+' – '+fmtM(E80h[m2])+'</td>'+
+      '<td style="'+td+';font-weight:700;color:var(--navy)">'+((cerr||cur)?fmt(real[m2]):'—')+'</td>'+
+      '<td style="'+td+'">'+(cerr?((real[m2]/M.E[m2]-1)*100>=0?'+':'')+((real[m2]/M.E[m2]-1)*100).toFixed(0)+'%':'—')+'</td>'+
+      '<td style="'+td+';text-align:center">'+(cerr?chip(fcPos(real[m2],M.E[m2],M.sdM[m2],M)):(cur?'<span style="font-family:Inter,sans-serif;font-size:10px;color:var(--gold-d);font-weight:700">en curso (parcial)</span>':'<span style="font-family:Inter,sans-serif;font-size:10px;color:var(--dim)">pendiente</span>'))+'</td></tr>';
+  }
+  var nIn=0,nUp=0,nDn=0;for(var q=0;q<kc;q++){var pp=fcPos(real[q],M.E[q],M.sdM[q],M);if(pp==='inside')nIn++;else if(pp==='above')nUp++;else nDn++;}
+  document.getElementById('forecast-seg').innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+kc+' meses cerrados: <b style="color:var(--navy)">'+nIn+' dentro de la zona</b> · <b style="color:'+B.FIN+'">'+nUp+' por encima</b> · <b style="color:'+B.CAN+'">'+nDn+' por debajo</b>. El mes en curso no se evalúa hasta que cierre.</div>'+
+    '<table style="width:100%;border-collapse:collapse"><thead><tr><th style="'+th+';text-align:left">Mes</th><th style="'+th+'">Esperado</th><th style="'+th+'">Zona 80%</th><th style="'+th+'">Real</th><th style="'+th+'">Desv.</th><th style="'+th+';text-align:center">Posición</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  // histórico usado
+  var hrows='';
+  M.yrs.forEach(function(y,i){var prev=i>0?M.tot[i-1]:null;
+    hrows+='<tr><td style="'+td+';text-align:left;font-family:Inter,sans-serif;font-weight:600;color:var(--navy)">'+y+'</td><td style="'+td+'">'+fmt(M.tot[i])+'</td><td style="'+td+';color:var(--muted)">'+(prev?((M.tot[i]/prev-1)*100>=0?'+':'')+((M.tot[i]/prev-1)*100).toFixed(1)+'%':'—')+'</td><td style="'+td+'">'+Math.round(M.w[i]/M.sw*100)+'%</td></tr>';});
+  // validación retrospectiva
+  var brows='';
+  M.yrs.forEach(function(Y,i){
+    if(i<2)return;var hb={};M.yrs.slice(0,i).forEach(function(y){hb[y]=hist[y];});
+    var Mb=fcModelo(hb),realY=M.tot[i],lo=Math.max(0,Mb.A-Mb.t80*Mb.sdA),hi=Mb.A+Mb.t80*Mb.sdA,dentro=0;
+    for(var mm=0;mm<12;mm++){if(fcPos(hist[Y][mm],Mb.E[mm],Mb.sdM[mm],Mb)==='inside')dentro++;}
+    var ok=realY>=lo&&realY<=hi,err=(realY/Mb.A-1)*100;
+    brows+='<tr><td style="'+td+';text-align:left;font-family:Inter,sans-serif;font-weight:600;color:var(--navy)">'+Y+'</td><td style="'+td+'">'+fmt(Mb.A)+'</td><td style="'+td+';color:var(--muted)">'+fmtM(lo)+' – '+fmtM(hi)+(i<3?' ¹':'')+'</td><td style="'+td+'">'+fmt(realY)+'</td><td style="'+td+'">'+(err>=0?'+':'')+err.toFixed(1)+'%</td><td style="'+td+';text-align:center;font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:'+(ok?B.FIN:B.CAN)+'">'+(ok?'✔ dentro':'✖ fuera')+' · '+dentro+'/12 meses</td></tr>';});
+  document.getElementById('forecast-hist').innerHTML=
+    '<div class="g22" style="gap:18px"><div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--navy);margin-bottom:6px">Histórico usado por el modelo</div>'+
+    '<table style="width:100%;border-collapse:collapse"><thead><tr><th style="'+th+';text-align:left">Año</th><th style="'+th+'">Ejecutado</th><th style="'+th+'">vs. año ant.</th><th style="'+th+'">Peso</th></tr></thead><tbody>'+hrows+'</tbody></table></div>'+
+    '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--navy);margin-bottom:6px">Validación: ¿habría acertado en años pasados?</div>'+
+    (brows?'<table style="width:100%;border-collapse:collapse"><thead><tr><th style="'+th+';text-align:left">Año</th><th style="'+th+'">Esperado*</th><th style="'+th+'">Zona 80%</th><th style="'+th+'">Real</th><th style="'+th+'">Error</th><th style="'+th+';text-align:center">Resultado</th></tr></thead><tbody>'+brows+'</tbody></table><div style="font-size:9px;color:var(--dim);margin-top:4px">* calculado solo con los años anteriores a cada uno. ¹ con solo 2 años de base la zona es muy amplia y poco informativa.</div>':'<div style="font-size:11px;color:var(--muted)">Aún no hay suficientes años para validar.</div>')+'</div></div>';
   document.getElementById('forecast-note').innerHTML=
-    '<b>Metodología:</b> Holt-Winters aditivo (nivel + tendencia + estacionalidad de 12 meses), '
-    +'ajustado sobre '+nHist+' meses reales (enero 2022 - '+etiquetas[etiquetas.length-1]+'; la gráfica muestra '
-    +'desde '+etiquetasDisp[0]+' en adelante para dar más detalle al tramo reciente). '
-    +'Los parámetros del modelo (α='+ajuste.a.toFixed(2)+', β='+ajuste.b.toFixed(2)+', γ='+ajuste.g.toFixed(2)+') '
-    +'se eligieron minimizando el error del modelo sobre el propio histórico. '
-    +'La línea "Modelo" combina dos tramos en una sola curva: para los meses ya pasados de '+anioActualMax+', es lo '
-    +'que el modelo habría dicho en ese momento (ajuste retrospectivo) — con el % en verde/rojo sobre cada mes '
-    +'mostrando cuánto estuvo el real por encima o por debajo de esa expectativa; para los meses que faltan, es '
-    +'el forecast propiamente dicho. La banda sombreada de confianza (≈80%) ahora se ve desde enero de '+anioActualMax+': '
-    +'en los meses ya pasados tiene un ancho fijo (el error típico del modelo, un mes a la vez); en los meses que '
-    +'faltan se amplía mientras más adelante se proyecta (más incertidumbre en diciembre que en el próximo mes) — '
-    +'así se puede ver qué tanto se ha movido "Real" dentro del rango probabilístico del modelo durante todo el año. '
-    +'Este pronóstico es una estimación estadística basada en el comportamiento histórico, '
-    +'no una meta ni un compromiso comercial.';
+    '<b>Cómo leer esta pestaña:</b> la <b>zona esperada</b> se calcula una sola vez con los '+M.n+' años cerrados ('+M.yrs[0]+'–'+M.yrs[M.n-1]+') y <b>no cambia</b> con los ingresos de '+anioAct+'; el año en curso solo se marca contra ella. '+
+    'La franja oscura es el rango donde caería el ingreso el 50% de las veces y la clara el 80%. Los puntos/barras se pintan en <span style="color:'+B.FIN+';font-weight:700">verde</span> si superan la zona, en <span style="color:'+B.CAN+';font-weight:700">rojo</span> si quedan por debajo y en azul si están dentro. '+
+    '<b>Método:</b> nivel anual = promedio ponderado de los totales cerrados (los años recientes pesan más) × participación mensual histórica (estacionalidad); la amplitud de la zona combina la variabilidad histórica del total anual y de la estacionalidad, con distribución t de Student por tratarse de pocos años. '+
+    'Es una referencia estadística de comportamiento histórico, no una meta ni un compromiso comercial; con '+M.n+' años de datos la zona es amplia y se estrecha a medida que haya más historia.';
 }
 </script>
 </body>
