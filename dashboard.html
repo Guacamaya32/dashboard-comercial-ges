@@ -597,6 +597,8 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
       </select>
       <span class="fl">Año</span>
       <select id="q-anio" onchange="qCambio()" autocomplete="off" style="min-width:90px"></select>
+      <span class="fl">Rep.</span>
+      <select id="q-rep" onchange="qCambio()" autocomplete="off" style="min-width:130px"><option value="">Todos</option></select>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:600;cursor:pointer;margin-left:8px">
         <input type="checkbox" id="q-inferir" checked onchange="renderQuarter()"> Inferir línea por descripción del servicio cuando el Excel no la trae
       </label>
@@ -4532,9 +4534,14 @@ function qInitSelectores(){
   const hoy=new Date();   // Q y año en curso por defecto
   selQ.value=String(Math.floor(hoy.getMonth()/3)+1);
   selA.value=anios.indexOf(hoy.getFullYear())>=0?String(hoy.getFullYear()):String(anios[0]);
+  const selR=document.getElementById('q-rep');
+  const reps=[...new Set(ALL.filter(function(r){return r.t==='A'||r.t==='O';}).map(function(r){return r.r;}).filter(Boolean))].sort();
+  selR.innerHTML='<option value="">Todos</option>'+reps.map(function(x){return '<option value="'+qEsc(x)+'">'+qEsc(x)+'</option>';}).join('');
   selA.dataset.init='1';
   // Un solo listener delegado para todas las filas de tabla clicables de la vista.
   document.getElementById('view-quarter').addEventListener('click',function(ev){
+    const hs=ev.target.closest&&ev.target.closest('[data-qs]');
+    if(hs){const c=hs.dataset.qs;Q_SORT=(Q_SORT.col===c)?{col:c,dir:-Q_SORT.dir}:{col:c,dir:(c==='v'?-1:1)};Q_EDIT=null;qRenderOps();return;}
     const bt=ev.target.closest&&ev.target.closest('[data-qa]');
     if(bt){qAccion(bt);return;}
     const el=ev.target.closest&&ev.target.closest('[data-qt]');
@@ -4654,36 +4661,49 @@ function qGrafica(id,rows,onPick,baseTotal,hayFiltro,arbol){
 // como JSON para llevarlos a otro equipo o celular.
 const Q_LS='ges_q_participacion_v1';
 let Q_PART=(function(){try{const j=JSON.parse(localStorage.getItem(Q_LS)||'{}');return (j&&typeof j==='object')?j:{};}catch(e){return {};}})();
-let Q_CTX={ops:[]},Q_EDIT=null,Q_BUSCA='';
+let Q_CTX={ops:[]},Q_EDIT=null,Q_BUSCA='',Q_SORT={col:'v',dir:-1};
 function qKey(r){return [r.c,r.ger,r.t,r.pz,r.sv,r.anio,r.fi].join('|');}
 function qGuardar(){try{localStorage.setItem(Q_LS,JSON.stringify(Q_PART));}catch(e){}}
 const Q_CODS=['CT','TT','ES','WL','AI','AZ','WT','WS','CW','CAN'];
 function qRenderOps(){
   const box=document.getElementById('q-ops');if(!box)return;
   const ops=Q_CTX.ops||[],b=Q_BUSCA.trim().toUpperCase();
+  const mAb=function(m){return m.slice(0,3);};
+  const sk=function(o){
+    switch(Q_SORT.col){
+      case 'k':return (o.k+' '+(o.g||'')).toUpperCase();case 'pz':return String(o.pz||'').toUpperCase();
+      case 'sv':return String(o.sv||'').toUpperCase();case 'rep':return String(o.rep||'').toUpperCase();
+      case 't':return o.t;case 'mes':return (Q_CTX.mesIdx||function(){return 0;})(o);
+      case 'lin':{const c=Object.keys(o.pes).sort(function(a,b){return o.pes[b]-o.pes[a];})[0]||'';return (c==='SIN'?'ZZZ':nom(c)).toUpperCase();}
+      default:return o.v;}
+  };
+  const nom=Q_CTX.linNom||function(c){return c;};
   const vis=ops.map(function(o,i){return {o:o,i:i};}).filter(function(e){
     return !b||[e.o.cli,e.o.g,e.o.pz,e.o.sv,e.o.rep].join(' ').toUpperCase().indexOf(b)>=0;});
+  vis.sort(function(a,b){const x=sk(a.o),y=sk(b.o);return (x<y?-1:x>y?1:0)*Q_SORT.dir||(b.o.v-a.o.v);});
   const nMan=ops.filter(function(o){return o.org==='manual';}).length;
   const tot=vis.reduce(function(s,e){return s+e.o.v;},0);
-  const nom=Q_CTX.linNom||function(c){return c;};
   const th='padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--light);text-align:left;position:sticky;top:0;background:#fff';
   const td='padding:6px 8px;border-bottom:1px solid var(--light);vertical-align:top';
   document.getElementById('q-ops-info').textContent=vis.length+' operaciones · '+fmt(tot)+(nMan?' · '+nMan+' con participación editada ✎':'');
   if(!vis.length){box.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">Sin operaciones para este Q / selección.</div>';return;}
-  let h='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>'+['Cliente / Gerencia','Pozo','Servicio','Rep.','Tipo','Valor Q','Participación por línea',''].map(function(t,i){return '<th style="'+th+(i===5?';text-align:right':'')+'">'+t+'</th>';}).join('')+'</tr></thead><tbody>';
+  let h='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>'+[['k','Cliente / Gerencia'],['pz','Pozo'],['sv','Servicio'],['rep','Rep.'],['mes','Mes'],['t','Tipo'],['v','Valor Q'],['lin','Participación por línea'],['','']].map(function(c){
+    const act=Q_SORT.col===c[0],fl=act?(Q_SORT.dir>0?' ↑':' ↓'):' ↕';
+    return '<th'+(c[0]?' data-qs="'+c[0]+'" title="Ordenar" style="cursor:pointer;'+th.replace(/^/,'')+(c[0]==='v'?';text-align:right':'')+(act?';color:var(--navy)':'')+'"':' style="'+th+'"')+'>'+(c[1]?c[1]+fl:'')+'</th>';}).join('')+'</tr></thead><tbody>';
   vis.forEach(function(e){
     const o=e.o,man=o.org==='manual',ed=Q_EDIT===e.i;
     const chips=Object.keys(o.pes).sort(function(a,b){return o.pes[b]-o.pes[a];}).map(function(c){
       return '<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:600;background:'+(man?'#FFF3C4':'var(--pale)')+';color:var(--navy);white-space:nowrap">'+(c==='SIN'?'Sin clasificar':qEsc(c))+' '+Math.round(o.pes[c]*1000)/10+'%</span>';}).join('');
     h+='<tr style="'+(ed?'background:#FFF8DC':'')+'"><td style="'+td+';font-weight:600;color:var(--navy)">'+qEsc(o.k)+(o.g?'<div style="font-size:9px;font-weight:500;color:var(--muted);font-style:italic">'+qEsc(o.g)+'</div>':'')+'</td>'+
       '<td style="'+td+'">'+qEsc(o.pz)+'</td><td style="'+td+';max-width:230px;white-space:normal">'+qEsc(o.sv)+'</td><td style="'+td+';color:var(--muted)">'+qEsc(o.rep)+'</td>'+
+      '<td style="'+td+';white-space:nowrap;text-transform:capitalize">'+o.ms.map(mAb).join(' · ')+'</td>'+
       '<td style="'+td+'"><span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:9px;'+(o.t==='A'?'background:#E3E9F5;color:#002060':'background:#FFF3C4;color:#8B6800')+'">'+(o.t==='A'?'ASIG':'OPOR')+'</span></td>'+
       '<td style="'+td+';text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:var(--navy)">'+fmt(o.v)+'</td>'+
       '<td style="'+td+'">'+(man?'<span title="Editado manualmente" style="color:#CC9A00;font-weight:700;margin-right:3px">✎</span>':'')+chips+'</td>'+
       '<td style="'+td+';text-align:right"><button class="clr-btn" style="margin:0;color:var(--navy)" data-qa="edit" data-qi="'+e.i+'">'+(ed?'Cerrar':'Editar')+'</button></td></tr>';
     if(ed){
       const cur=o.pes;
-      h+='<tr><td colspan="8" style="padding:10px 14px;background:#FFFBEA;border-bottom:2px solid #FFC000">'+
+      h+='<tr><td colspan="9" style="padding:10px 14px;background:#FFFBEA;border-bottom:2px solid #FFC000">'+
         '<div style="font-size:10px;font-weight:700;color:var(--navy);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Participación del ingreso por línea · '+qEsc(o.pz)+' · '+fmt(o.v)+'</div>'+
         '<div style="display:flex;flex-wrap:wrap;gap:8px">'+Q_CODS.map(function(c){
           const v=cur[c]?Math.round(cur[c]*1000)/10:'';
@@ -4739,9 +4759,9 @@ function renderQuarter(){
   qInitSelectores();
   const q=Number(document.getElementById('q-sel').value),anio=Number(document.getElementById('q-anio').value);
   const inferir=document.getElementById('q-inferir').checked;
-  const meses=Q_MESES[q],F=Q_FILT;
+  const meses=Q_MESES[q],F=Q_FILT,repSel=document.getElementById('q-rep').value;
 
-  const filas=getAllMes().filter(function(r){return (r.t==='A'||r.t==='O')&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO'&&Number(r.anio)===anio&&meses.indexOf(r.m)>=0&&(!G_REP||r.r===G_REP);})
+  const filas=getAllMes().filter(function(r){return (r.t==='A'||r.t==='O')&&r.s!=='CANCELADO'&&r.s!=='RECHAZADO'&&Number(r.anio)===anio&&meses.indexOf(r.m)>=0&&(!repSel||r.r===repSel);})
     .map(function(r){
       // 'ECOPETROL VRC GMA' y 'ECP VRC GMA' son la misma gerencia: se unifican con el prefijo ECP.
       const esE=/^ECOPETROL/i.test(r.c),x=qLineasDe(r,inferir),key=qKey(r);
@@ -4814,7 +4834,7 @@ function renderQuarter(){
   const mesTot=mesRows.reduce(function(s,r){return s+r.a+r.o;},0);
 
   // ── Encabezado: nota + chip de selección ──
-  document.getElementById('q-nota').textContent='Q'+q+' '+anio+' ('+meses[0]+' – '+meses[2]+'). Incluye asignaciones y oportunidades (la oportunidad es un valor estimado, aún no fijo). Usa su propio selector de Q y año; el filtro Mes/Año de la barra superior no aplica'+(G_REP?'. Filtro de representante activo: '+G_REP:'')+'.';
+  document.getElementById('q-nota').textContent='Q'+q+' '+anio+' ('+meses[0]+' – '+meses[2]+'). Incluye asignaciones y oportunidades (la oportunidad es un valor estimado, aún no fijo). Usa sus propios selectores de Q, año y representante; los filtros de la barra superior no aplican'+(repSel?'. Representante: '+repSel:'')+'.';
   const partes=[];
   if(F.cli)partes.push('Cliente: <b>'+qEsc(F.cli)+'</b>'+(F.ger?' › <b>'+qEsc(F.ger)+'</b>':''));
   if(F.lin)partes.push('Línea: <b>'+qEsc(linNom(F.lin))+'</b>');
@@ -4866,10 +4886,10 @@ function renderQuarter(){
   const opm={};
   filas.forEach(function(r){
     if(!wCli(r)||!wMes(r)||!wLin(r))return;
-    const o=opm[r.key]||(opm[r.key]={key:r.key,k:r.k,g:r.g,cli:r.cli,pz:r.pz,sv:r.sv,rep:r.rep,t:r.t,s:r.s,v:0,lc:r.lc,pes:r.pes,org:r.org,n:0});
-    o.v+=r.v;o.n++;
+    const o=opm[r.key]||(opm[r.key]={key:r.key,k:r.k,g:r.g,cli:r.cli,pz:r.pz,sv:r.sv,rep:r.rep,t:r.t,s:r.s,v:0,lc:r.lc,pes:r.pes,org:r.org,n:0,ms:[]});
+    o.v+=r.v;o.n++;if(o.ms.indexOf(r.m)<0)o.ms.push(r.m);
   });
-  Q_CTX={ops:Object.values(opm).sort(function(a,b){return b.v-a.v;}),q:q,anio:anio,linNom:linNom};
+  Q_CTX={ops:Object.values(opm).map(function(o){o.ms.sort(function(a,b){return meses.indexOf(a)-meses.indexOf(b);});return o;}),q:q,anio:anio,linNom:linNom,mesIdx:function(o){return meses.indexOf(o.ms[0])*10+o.ms.length*0+ (10-o.ms.length);}};
   Q_EDIT=null;
   qRenderOps();
 }
