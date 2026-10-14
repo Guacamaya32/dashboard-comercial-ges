@@ -474,6 +474,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
 /* Pestaña Líneas de Servicio */
 .lchip{display:inline-flex;align-items:center;background:var(--gold);color:var(--navy);border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
 #view-lineas td,#view-lineas th{white-space:nowrap}
+table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:nowrap}table.lmx th{font-size:9.5px;letter-spacing:.04em}
 #view-lineas tbody tr[data-ls]:hover td{background:var(--fog,#F8FAFE)}
 #view-lineas .dlr:hover{background:var(--pale);border-radius:8px}
 #view-lineas .tr-tot td{background:var(--navy);color:#fff;border:none}
@@ -588,6 +589,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="card"><div class="ct">Asignado por Rep. — Por Estado</div><div style="height:210px"><canvas id="cRepA"></canvas></div></div>
     <div class="card"><div class="ct">Oportunidades por Rep.</div><div style="height:210px"><canvas id="cRepO"></canvas></div></div>
   </div>
+  <div class="card" style="margin-top:14px"><div class="ct">Representante × Línea de Servicio <span id="rep-lin-sub" style="font-weight:400;color:var(--muted);font-size:11px"></span></div><div id="rep-lin-mx"></div></div>
 </div>
 
 <div class="view" id="view-clientes">
@@ -596,6 +598,7 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="card"><div class="ct">Clientes — Oportunidad</div><div style="height:280px"><canvas id="cCliO"></canvas></div></div>
   </div>
   <div class="card"><div class="ct">Consolidado por Cliente</div><div style="overflow-x:auto" id="cli-tbl"></div></div>
+  <div class="card" style="margin-top:14px"><div class="ct">Cliente × Línea de Servicio <span id="cli-lin-sub" style="font-weight:400;color:var(--muted);font-size:11px"></span></div><div id="cli-lin-mx"></div></div>
 </div>
 
 <div class="view" id="view-quarter">
@@ -658,16 +661,6 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
     <div class="card"><div class="ct">Ingresos por línea de servicio <span style="font-weight:400;color:var(--muted);font-size:11px">· clic en una barra para aislar la línea</span></div><div id="l-bar-empty"></div><div id="l-bar-wrap" style="height:380px"><canvas id="cLinBar"></canvas></div></div>
     <div class="card"><div class="ct">Participación por línea</div><div style="height:240px"><canvas id="cLinDon"></canvas></div><div class="dl" id="l-leg" style="margin-top:14px"></div></div>
   </div>
-  <div class="g22">
-    <div class="card"><div class="ct" id="l-mes-t">Evolución mensual por línea</div><div style="height:320px"><canvas id="cLinMes"></canvas></div></div>
-    <div class="card"><div class="ct">Evolución histórica por año <span style="font-weight:400;color:var(--muted);font-size:11px">· años completos</span></div><div style="height:320px"><canvas id="cLinAnio"></canvas></div></div>
-  </div>
-  <div class="card" style="margin-bottom:16px"><div class="ct">Resumen por línea de servicio</div><div id="l-res"></div></div>
-  <div class="g22">
-    <div class="card"><div class="ct">Cliente × línea</div><div id="l-cli"></div></div>
-    <div class="card"><div class="ct">Representante × línea</div><div id="l-rep"></div></div>
-  </div>
-  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div class="ct" style="margin:0">Detalle de servicios</div><button class="btn-exp" onclick="lExportar()">⬇ CSV</button></div><div class="tbl-meta" id="l-det-meta"></div><div id="l-det"></div></div>
 </div>
 
 <div class="view" id="view-detalle">
@@ -711,6 +704,9 @@ tr.rcan td{opacity:.5;background:var(--can-bg)}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
     <div class="card"><div class="ct">Distribución por Representante</div><div style="height:240px"><canvas id="cFinRep"></canvas></div></div>
     <div class="card"><div class="ct">Distribución por Cliente</div><div style="height:240px"><canvas id="cFinCli"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Ingresos por Línea de Servicio <span style="font-weight:400;color:var(--muted);font-size:11px">· clic en una barra para filtrar la pestaña</span></div><div id="fin-lin-wrap" style="height:320px"><canvas id="cFinLin"></canvas></div>
   </div>
   <div class="card" style="margin-bottom:14px">
     <div class="ct">Ingresos por Gerencia ECP</div><div style="height:240px"><canvas id="cFinGer"></canvas></div>
@@ -4796,10 +4792,7 @@ function renderFinalizados(){
         var cn=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
         if(cn!==FIN_FILTER.cli) return false;
       }
-      if(FIN_FILTER.lin){
-        var ls=r.l?r.l.replace(/\s/g,'').split(/[,\-\+]+/):[];
-        if(!ls.some(function(p){return p.trim()===FIN_FILTER.lin;})) return false;
-      }
+      if(FIN_FILTER.lin&&r.lin!==FIN_FILTER.lin) return false;
       if(FIN_FILTER.mes&&r.m!==FIN_FILTER.mes) return false;
       return true;
     });
@@ -4822,10 +4815,7 @@ function renderFinalizados(){
         var cn=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
         if(cn!==FIN_FILTER.cli) return false;
       }
-      if(FIN_FILTER.lin){
-        var ls=r.l?r.l.replace(/\s/g,'').split(/[,\-\+]+/):[];
-        if(!ls.some(function(p){return p.trim()===FIN_FILTER.lin;})) return false;
-      }
+      if(FIN_FILTER.lin&&r.lin!==FIN_FILTER.lin) return false;
       if(FIN_FILTER.mes&&r.m!==FIN_FILTER.mes) return false;
       return true;
     });
@@ -4838,7 +4828,7 @@ function renderFinalizados(){
   var labels=[];
   if(FIN_FILTER.rep) labels.push('Rep: '+FIN_FILTER.rep);
   if(FIN_FILTER.cli) labels.push('Cliente: '+FIN_FILTER.cli);
-  if(FIN_FILTER.lin) labels.push('Línea: '+FIN_FILTER.lin);
+  if(FIN_FILTER.lin) labels.push('Línea: '+(LIN_TIT[FIN_FILTER.lin]||FIN_FILTER.lin));
   if(FIN_FILTER.mes) labels.push('Mes: '+FIN_FILTER.mes.charAt(0).toUpperCase()+FIN_FILTER.mes.slice(1));
   var lbl=document.getElementById('fin-filter-label');
   if(lbl) lbl.innerHTML=labels.length
@@ -4863,10 +4853,7 @@ function renderFinalizados(){
       var cnH=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;
       if(cnH!==FIN_FILTER.cli) return false;
     }
-    if(FIN_FILTER.lin){
-      var lsH=r.l?r.l.replace(/\s/g,'').split(/[,\-\+]+/):[];
-      if(!lsH.some(function(p){return p.trim()===FIN_FILTER.lin;})) return false;
-    }
+    if(FIN_FILTER.lin&&r.lin!==FIN_FILTER.lin) return false;
     if(FIN_FILTER.mes&&r.m!==FIN_FILTER.mes) return false;
     return true;
   });
@@ -5068,6 +5055,52 @@ function renderFinalizados(){
     FIN_FILTER.cli=FIN_FILTER.cli===cli?null:cli;
     setTimeout(renderFinalizadosSiActiva,0);
   };
+
+
+  // ── CHART: Ingresos por Línea de Servicio (columna F) ─────────────────────
+  // Base = ejecutado (finalizado + en ejecución) con los mismos filtros de la pestaña, salvo el propio
+  // filtro de línea (así se ven todas las líneas y la elegida queda resaltada).
+  var linMap={};
+  ALL.filter(function(r){
+    if(!esEjecutado(r)||r.t!=='A')return false;
+    if(G_ANIO&&String(r.anio)!==String(G_ANIO))return false;
+    if(G_REP&&r.r!==G_REP)return false;if(!linOk(r))return false;
+    if(FIN_FILTER.rep&&r.r!==FIN_FILTER.rep)return false;
+    if(FIN_FILTER.cli){var cnL=/^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;if(cnL!==FIN_FILTER.cli)return false;}
+    if(FIN_FILTER.mes&&r.m!==FIN_FILTER.mes)return false;
+    return true;
+  }).forEach(function(r){var k=r.lin||'SIN';linMap[k]=(linMap[k]||0)+val(r);});
+  var linKeys=Object.keys(linMap).sort(function(a,b){if(a==='SIN')return 1;if(b==='SIN')return -1;return linMap[b]-linMap[a];});
+  var linTot=linKeys.reduce(function(s,k){return s+linMap[k];},0)||1;
+  var linHl=FIN_FILTER.lin;
+  var wrapL=document.getElementById('fin-lin-wrap');
+  dc('cFinLin');
+  if(!linKeys.length){wrapL.innerHTML='<div class="empty-s">Sin ingresos ejecutados para los filtros aplicados</div>';}
+  else{
+    if(!document.getElementById('cFinLin'))wrapL.innerHTML='<canvas id="cFinLin"></canvas>';
+    wrapL.style.height=Math.max(220,linKeys.length*34+60)+'px';
+    CH.cFinLin=new Chart(document.getElementById('cFinLin'),{
+      type:'bar',
+      data:{labels:linKeys.map(function(k){return k==='SIN'?'Sin clasificar':(LIN_TIT[k]||k);}),datasets:[{
+        data:linKeys.map(function(k){return linMap[k];}),
+        backgroundColor:linKeys.map(function(k){var c=LIN_COL[k]||'#A8B4CC';return (linHl&&linHl!==k)?c+'44':c;}),
+        borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',layout:{padding:{right:110}},
+        plugins:{pctLabels:{enabled:false},legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.raw)+' ('+(c.raw/linTot*100).toFixed(1)+'%)';}}}},
+        scales:{x:{ticks:{callback:function(v){return fmtM(v);},font:{size:10}},grid:{color:'#eef1f7'},border:{display:false}},
+                y:{grid:{display:false},ticks:{font:{size:11,weight:'600'}},border:{display:false}}}},
+      plugins:[{id:'linLbl',afterDatasetsDraw:function(ch){
+        var ctx=ch.ctx,m=ch.getDatasetMeta(0);ctx.save();ctx.font='600 11px Inter, sans-serif';ctx.fillStyle='#3D4D63';ctx.textBaseline='middle';
+        m.data.forEach(function(b,i){ctx.fillText(fmt(linMap[linKeys[i]])+' · '+(linMap[linKeys[i]]/linTot*100).toFixed(0)+'%',b.x+6,b.y);});ctx.restore();}}]
+    });
+    document.getElementById('cFinLin').onclick=function(e){
+      var pts=CH.cFinLin.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+      if(!pts.length)return;
+      var k=linKeys[pts[0].index];if(k==='SIN')return;
+      FIN_FILTER.lin=FIN_FILTER.lin===k?null:k;
+      setTimeout(renderFinalizadosSiActiva,0);
+    };
+  }
 
   // ── CHART 4: Ingresos por Gerencia ECP ─────────────────────────────────
   // Solo gerencias reales (se ignora "NA", que es lo que traen los clientes que no son
@@ -5955,14 +5988,6 @@ function lAgg(filas){
 }
 function lOrden(a){return Object.keys(a).sort(function(x,y){if(x==='SIN')return 1;if(y==='SIN')return -1;return (a[y].a+a[y].o)-(a[x].a+a[x].o);});}
 function lSel(k){L_SEL=(L_SEL===k)?null:k;renderLineas();}
-function lExportar(){
-  var base=lBase(),anio=G_ANIO?Number(G_ANIO):null;
-  var f=lFilas(anio,true,base).filter(function(x){return !L_SEL||x.k===L_SEL;});
-  var h=['CLIENTE','POZO','SERVICIO','AÑO','MES','REPRESENTANTE','TIPO','ESTADO','LINEA DE SERVICIO','ORIGEN LINEA','VALOR'];
-  var org={F:'Columna F',hist:'Histórico',cod:'Código LINEA DE SERVICIO2','':'Sin línea'};
-  var rows=[h.join(',')].concat(f.map(function(x){var r=x.r;return [r.c,r.pz,r.sv,r.anio,r.m,repLabel(r.r),r.t==='A'?'ASIGNACION':'OPORTUNIDAD',r.s,LIN_TIT[x.k]||x.k,org[r.linSrc||''],Math.round(x.v)].map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(',');}));
-  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download='Lineas_de_servicio_'+(G_ANIO||'todos')+(L_SEL?'_'+L_SEL.replace(/\s/g,'_'):'')+'.csv';a.click();
-}
 function renderLineas(){
   var base=lBase(),anio=G_ANIO?Number(G_ANIO):null;
   var per=lFilas(anio,true,base),G=lAgg(per),keys=lOrden(G.a),tot=G.tot;
@@ -5972,7 +5997,7 @@ function renderLineas(){
   var tit=function(k){return LIN_TIT[k]||k;},col=function(k){return LIN_COL[k]||'#A8B4CC';};
   if(L_SEL&&!G.a[L_SEL])L_SEL=null;
   document.getElementById('l-chip').innerHTML=L_SEL?'<span class="lchip" data-ls="'+qEsc(L_SEL)+'">✕ Línea: '+qEsc(tit(L_SEL))+'</span>':'';
-  document.getElementById('l-nota').textContent='Período: '+perTxt+' · '+nomBase+' · sin cancelados/rechazados';
+  document.getElementById('l-nota').textContent='Según los filtros aplicados: '+perTxt+' · '+nomBase+' · sin cancelados/rechazados';
 
   // ── KPIs ──
   var kp=[];
@@ -5999,7 +6024,7 @@ function renderLineas(){
 
   // ── Barras por línea (Asignado vs Oportunidad) ──
   var emp='<div class="empty-s">Sin datos para este período y base de cálculo</div>';
-  dc('cLinBar');dc('cLinDon');dc('cLinMes');dc('cLinAnio');
+  dc('cLinBar');dc('cLinDon');
   var hayDatos=keys.length>0;
   document.getElementById('l-bar-wrap').style.display=hayDatos?'block':'none';document.getElementById('l-bar-empty').innerHTML=hayDatos?'':emp;
   if(hayDatos){
@@ -6024,60 +6049,44 @@ function renderLineas(){
   document.getElementById('l-leg').innerHTML=keys.map(function(k){var v=G.a[k].a+G.a[k].o;
     return '<div class="dlr" data-ls="'+qEsc(k)+'" style="cursor:pointer;'+(L_SEL&&L_SEL!==k?'opacity:.45':'')+'"><span class="dln"><span class="dld" style="background:'+col(k)+'"></span>'+tit(k)+'</span><span class="dlv">'+(tot>0?(v/tot*100).toFixed(0):0)+'% · '+fmt(v)+'</span></div>';}).join('');
 
-  // ── Evolución mensual del año (todas las líneas) y evolución histórica por año ──
-  var anios=[...new Set(ALL.map(function(r){return Number(r.anio);}).filter(function(a){return a>0;}))].sort();
-  var aMes=anio||anios[anios.length-1];
-  var mesF=lFilas(aMes,false,base);
-  document.getElementById('l-mes-t').textContent='Evolución mensual '+aMes+' por línea';
-  var lk=LINEAS.concat(['SIN']).filter(function(k){return mesF.some(function(x){return x.k===k;});});
-  var stackOpts=function(){return {responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{labels:{font:{size:10},boxWidth:10}},tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return c.raw>0?c.dataset.label+': '+fmt(c.raw):null;},footer:function(it){return 'Total '+fmt(it.reduce(function(s,i){return s+i.raw;},0));}}}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}},border:{display:false}},y:{stacked:true,ticks:{callback:function(v){return fmtM(v);},font:{size:10}},grid:{color:'#eef1f7'},border:{display:false}}}};};
-  if(lk.length){
-    CH.cLinMes=new Chart(document.getElementById('cLinMes'),{type:'bar',data:{labels:MO.map(function(m){return MS[m];}),
-      datasets:lk.map(function(k){return {label:tit(k),data:MO.map(function(m){return mesF.filter(function(x){return x.k===k&&x.r.m===m;}).reduce(function(s,x){return s+x.v;},0);}),backgroundColor:(!L_SEL||L_SEL===k)?col(k):lAlpha(col(k),.2),stack:'s'};})},options:stackOpts()});
-  }
-  var histA=anios.map(function(a){return {a:a,f:lFilas(a,false,base)};});
-  var lkH=LINEAS.concat(['SIN']).filter(function(k){return histA.some(function(h){return h.f.some(function(x){return x.k===k;});});});
-  if(lkH.length){
-    CH.cLinAnio=new Chart(document.getElementById('cLinAnio'),{type:'bar',data:{labels:anios.map(String),
-      datasets:lkH.map(function(k){return {label:tit(k),data:histA.map(function(h){return h.f.filter(function(x){return x.k===k;}).reduce(function(s,x){return s+x.v;},0);}),backgroundColor:(!L_SEL||L_SEL===k)?col(k):lAlpha(col(k),.2),stack:'s'};})},options:stackOpts()});
-  }
-
-  // ── Resumen por línea ──
-  var th=function(t,al){return '<th style="'+(al?'text-align:right;':'')+'cursor:default">'+t+'</th>';};
-  var tr=keys.map(function(k){var o=G.a[k],v=o.a+o.o,pv=prev?sumK(prev.a,k):0,vr=anio?vsPrev(v,pv):null;
-    return '<tr data-ls="'+qEsc(k)+'" style="cursor:pointer'+(L_SEL===k?';background:var(--gold-bg)':'')+'"><td><span class="dld" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+col(k)+';margin-right:8px"></span><b>'+tit(k)+'</b></td>'+
-      '<td style="text-align:right;font-weight:700">'+fmt(v)+'</td><td style="text-align:right">'+(tot>0?(v/tot*100).toFixed(1):'0.0')+'%</td><td style="text-align:right">'+fmt(o.a)+'</td><td style="text-align:right">'+fmt(o.o)+'</td>'+
-      '<td style="text-align:right">'+o.n+'</td><td style="text-align:right">'+Object.keys(o.cli).length+'</td><td style="text-align:right">'+fmt(o.n?v/o.n:0)+'</td>'+
-      (anio?'<td style="text-align:right;color:var(--muted)">'+(pv>0?fmt(pv):'—')+'</td><td style="text-align:right;font-weight:700;color:'+(vr==null?'var(--muted)':vr>=0?'var(--fin)':'var(--can)')+'">'+fv(vr)+'</td>':'')+'</tr>';}).join('');
-  var totA=keys.reduce(function(s,k){return s+G.a[k].a;},0),totO=keys.reduce(function(s,k){return s+G.a[k].o;},0),totN=keys.reduce(function(s,k){return s+G.a[k].n;},0);
-  document.getElementById('l-res').innerHTML=!keys.length?emp:'<div class="tbl-scroll"><table><thead><tr>'+th('Línea')+th('Ingresos',1)+th('% total',1)+th('Asignado',1)+th('Oportunidad',1)+th('Servicios',1)+th('Clientes',1)+th('Ticket prom.',1)+(anio?th('Año anterior',1)+th('Variación',1):'')+'</tr></thead><tbody>'+tr+
-    '<tr class="tr-tot"><td><b>Total</b></td><td style="text-align:right"><b>'+fmt(tot)+'</b></td><td style="text-align:right">100%</td><td style="text-align:right">'+fmt(totA)+'</td><td style="text-align:right">'+fmt(totO)+'</td><td style="text-align:right">'+totN+'</td><td style="text-align:right"></td><td style="text-align:right">'+fmt(totN?tot/totN:0)+'</td>'+(anio?'<td style="text-align:right">'+(prev.tot>0?fmt(prev.tot):'—')+'</td><td style="text-align:right">'+fv(vsPrev(tot,prev.tot))+'</td>':'')+'</tr></tbody></table></div>';
-
-  // ── Matrices Cliente × Línea y Representante × Línea (sombreado por intensidad) ──
-  var cols=keys;
-  var matriz=function(rowKey,rowsOrden,vacio){
-    var M={};per.forEach(function(x){var rk=rowKey(x.r);if(!rk)return;var o=M[rk]||(M[rk]={t:0,l:{}});o.l[x.k]=(o.l[x.k]||0)+x.v;o.t+=x.v;});
-    var rk=rowsOrden?rowsOrden(M):Object.keys(M).sort(function(a,b){return M[b].t-M[a].t;});
-    if(!rk.length||!cols.length)return emp;
-    var mx=0;rk.forEach(function(r){cols.forEach(function(k){mx=Math.max(mx,(M[r]&&M[r].l[k])||0);});});
-    var head='<th style="cursor:default">'+vacio+'</th>'+cols.map(function(k){return '<th data-ls="'+qEsc(k)+'" style="text-align:right;cursor:pointer;'+(L_SEL===k?'color:var(--navy);box-shadow:inset 0 -2px 0 var(--gold)':'')+'">'+tit(k)+'</th>';}).join('')+'<th style="text-align:right;cursor:default">Total</th>';
-    var body=rk.map(function(r){var o=M[r]||{t:0,l:{}};return '<tr><td style="font-weight:600;white-space:nowrap">'+qEsc(r)+'</td>'+cols.map(function(k){var v=o.l[k]||0;var a=mx>0?Math.min(.85,v/mx*.85):0;return '<td style="text-align:right;'+(v>0?'background:rgba(0,32,96,'+a.toFixed(2)+');color:'+(a>.45?'#fff':'var(--ink)'):'color:var(--dim)')+'">'+(v>0?fmtM(v):'·')+'</td>';}).join('')+'<td style="text-align:right;font-weight:700">'+fmt(o.t)+'</td></tr>';}).join('');
-    return '<div class="tbl-scroll"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>';
-  };
-  document.getElementById('l-cli').innerHTML=matriz(function(r){return /^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;},function(M){return Object.keys(M).sort(function(a,b){return M[b].t-M[a].t;}).slice(0,14);},'Cliente (top 14)');
-  document.getElementById('l-rep').innerHTML=matriz(function(r){return repLabel(r.r);},null,'Representante');
-
-  // ── Detalle ──
-  var det=per.filter(function(x){return !L_SEL||x.k===L_SEL;}).sort(function(a,b){return b.v-a.v;});
-  var org={F:'Columna F',hist:'Histórico',cod:'Código',"":'Sin línea'};
-  var LIM=150;
-  document.getElementById('l-det-meta').textContent=det.length+' registros'+(L_SEL?' de '+tit(L_SEL):'')+(det.length>LIM?' · se muestran los '+LIM+' de mayor valor (el CSV trae todos)':'');
-  document.getElementById('l-det').innerHTML=!det.length?emp:'<div class="tbl-scroll"><table><thead><tr>'+th('Cliente')+th('Pozo')+th('Servicio')+th('Mes')+th('Rep.')+th('Tipo')+th('Estado')+th('Línea')+th('Origen')+th('Valor',1)+'</tr></thead><tbody>'+
-    det.slice(0,LIM).map(function(x){var r=x.r;return '<tr><td style="font-weight:600">'+qEsc(r.c)+'</td><td>'+qEsc(r.pz)+'</td><td style="white-space:normal;min-width:160px">'+qEsc(r.sv)+'</td><td style="text-transform:capitalize">'+r.m+' '+r.anio+'</td><td>'+qEsc(repNombre(r.r))+'</td><td>'+(r.t==='A'?'Asignado':'Oportunidad')+'</td><td>'+qEsc(r.s||'—')+'</td>'+
-      '<td><span class="dld" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+col(x.k)+';margin-right:6px"></span>'+tit(x.k)+'</td><td style="color:var(--muted);font-size:11px">'+org[r.linSrc||'']+'</td><td style="text-align:right;font-weight:700">'+fmt(x.v)+'</td></tr>';}).join('')+'</tbody></table></div>';
 }
+
+// ── Matrices Línea de servicio × Cliente / Representante (pestañas Clientes y Representantes) ──
+// Siguen los filtros globales (Año, Mes, Rep, Línea) y la base de cálculo elegida en "Líneas de Servicio".
+function linMatriz(boxId,subId,rowKey,top,vacio){
+  var box=document.getElementById(boxId);if(!box)return;
+  var base=lBase(),anio=G_ANIO?Number(G_ANIO):null;
+  var per=lFilas(anio,true,base).filter(function(x){return linOk(x.r);});
+  var nomBase={pipe:'Asignado + Oportunidad',asig:'Solo asignado',real:'Ejecutado real'}[base];
+  var sub=document.getElementById(subId);
+  if(sub)sub.textContent='· '+(G_MES?G_MES[0].toUpperCase()+G_MES.slice(1)+' ':'')+(anio||'Todos los años')+' · '+nomBase;
+  var G=lAgg(per),cols=lOrden(G.a);
+  var M={};per.forEach(function(x){var rk=rowKey(x.r);if(!rk)return;var o=M[rk]||(M[rk]={t:0,l:{}});o.l[x.k]=(o.l[x.k]||0)+x.v;o.t+=x.v;});
+  var rk=Object.keys(M).sort(function(a,b){return M[b].t-M[a].t;});
+  if(!rk.length||!cols.length){box.innerHTML='<div class="empty-s">Sin datos para los filtros aplicados</div>';return;}
+  if(top&&rk.length>top){
+    var nOt=rk.length-top,otros={t:0,l:{}};
+    rk.slice(top).forEach(function(r){otros.t+=M[r].t;cols.forEach(function(k){otros.l[k]=(otros.l[k]||0)+(M[r].l[k]||0);});});
+    rk=rk.slice(0,top);var kOt='Otros ('+nOt+')';M[kOt]=otros;rk.push(kOt);
+  }
+  var tit=function(k){return LIN_TIT[k]||k;};
+  var mx=0;rk.forEach(function(r){cols.forEach(function(k){mx=Math.max(mx,(M[r].l[k])||0);});});
+  var tc={};cols.forEach(function(k){tc[k]=per.filter(function(x){return x.k===k;}).reduce(function(s,x){return s+x.v;},0);});
+  var head='<th style="cursor:default">'+vacio+'</th>'+cols.map(function(k){return '<th style="text-align:right;cursor:default"><span class="dld" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(LIN_COL[k]||'#A8B4CC')+';margin-right:5px"></span>'+tit(k)+'</th>';}).join('')+'<th style="text-align:right;cursor:default">Total</th>';
+  var body=rk.map(function(r){var o=M[r];return '<tr><td style="font-weight:600;white-space:nowrap">'+qEsc(r)+'</td>'+cols.map(function(k){var v=o.l[k]||0;var a=mx>0?Math.min(.85,v/mx*.85):0;return '<td style="text-align:right;'+(v>0?'background:rgba(0,32,96,'+a.toFixed(2)+');color:'+(a>.45?'#fff':'var(--ink)'):'color:var(--dim)')+'">'+(v>0?fmtM(v):'·')+'</td>';}).join('')+'<td style="text-align:right;font-weight:700">'+fmt(o.t)+'</td></tr>';}).join('');
+  var foot='<tr class="tr-tot"><td><b>Total</b></td>'+cols.map(function(k){return '<td style="text-align:right">'+fmtM(tc[k])+'</td>';}).join('')+'<td style="text-align:right"><b>'+fmt(G.tot)+'</b></td></tr>';
+  box.innerHTML='<div class="tbl-scroll"><table class="lmx"><thead><tr>'+head+'</tr></thead><tbody>'+body+foot+'</tbody></table></div>';
+}
+function linMatrizClientes(){
+  linMatriz('cli-lin-mx','cli-lin-sub',function(r){
+    if(/^ECOPETROL/i.test(r.c)&&r.ger&&r.ger!=='NA')return 'ECOPETROL - '+r.ger;
+    return /^ECOPETROL/i.test(r.c)?'ECOPETROL':r.c;},15,'Cliente');
+}
+function linMatrizReps(){linMatriz('rep-lin-mx','rep-lin-sub',function(r){return repLabel(r.r);},0,'Representante');}
+(function(){
+  var rc=renderClientes;renderClientes=function(){rc.apply(this,arguments);linMatrizClientes();};
+  var rr=renderReps;renderReps=function(){rr.apply(this,arguments);linMatrizReps();};
+})();
 (function(){
   var v=document.getElementById('view-lineas');if(!v)return;
   v.addEventListener('click',function(ev){
