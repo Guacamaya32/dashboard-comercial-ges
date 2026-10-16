@@ -726,6 +726,7 @@ table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:n
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:10px">
       <div class="ct" style="margin:0">Detalle de lo filtrado</div>
+      <div class="sw"><span class="sico">🔍</span><input type="text" id="fin-tb-q" placeholder="Buscar cliente, pozo, servicio, línea…" oninput="finTabla()"></div>
       <span id="fin-tb-res" style="font-size:11px;color:var(--muted);flex:1 1 260px"></span>
       <button class="btn-exp" onclick="finTablaCSV()">⬇ CSV</button>
     </div>
@@ -6091,19 +6092,26 @@ const FIN_TB_COLS=[
   {k:'val',t:'Ingreso',n:1,g:function(x){return x.val;}}
 ];
 function finTablaSort(k){FIN_TB_SORT=FIN_TB_SORT.k===k?{k:k,d:-FIN_TB_SORT.d}:{k:k,d:(k==='val'||k==='ie'||k==='ir'||k==='anio')?-1:1};finTabla();}
+function finTablaFiltrar(){
+  var el=document.getElementById('fin-tb-q'),q=el?el.value.trim().toLowerCase():'';
+  if(!q)return FIN_TB_ROWS;
+  return FIN_TB_ROWS.filter(function(x){var r=x.r;
+    return [r.c,r.ger,r.r,repLabel(r.r),LIN_TIT[r.lin],r.pz,r.sv,r.s,r.m,r.anio,r.co].some(function(v){return v!=null&&String(v).toLowerCase().indexOf(q)>=0;});});
+}
 function finTablaOrden(){
   var c=FIN_TB_COLS.filter(function(c){return c.k===FIN_TB_SORT.k;})[0]||FIN_TB_COLS[11],d=FIN_TB_SORT.d;
-  return FIN_TB_ROWS.slice().sort(function(a,b){var x=c.g(a),y=c.g(b);
+  return finTablaFiltrar().slice().sort(function(a,b){var x=c.g(a),y=c.g(b);
     if(typeof x==='string'||typeof y==='string')return String(x).localeCompare(String(y),'es')*d;
     return (x-y)*d;});
 }
 function finTabla(){
   var tb=document.getElementById('fin-tb');if(!tb)return;
   var rows=finTablaOrden(),LIM=500,tot=0,est=0,real=0;
-  FIN_TB_ROWS.forEach(function(x){tot+=x.val;est+=x.r.ie||0;real+=x.r.ir||0;});
+  var VIS=finTablaFiltrar(),busca=VIS.length!==FIN_TB_ROWS.length;
+  VIS.forEach(function(x){tot+=x.val;est+=x.r.ie||0;real+=x.r.ir||0;});
   var money=function(v){return '$'+Math.round(v).toLocaleString('en-US');};
-  var cli={};FIN_TB_ROWS.forEach(function(x){cli[x.r.c]=1;});
-  document.getElementById('fin-tb-res').textContent=FIN_TB_ROWS.length+' servicios · '+Object.keys(cli).length+' clientes · Total '+money(tot)+(rows.length>LIM?' · mostrando los '+LIM+' primeros según el orden (el CSV trae todos)':'')+' · ingreso = real si existe, si no estimado';
+  var cli={};VIS.forEach(function(x){cli[x.r.c]=1;});
+  document.getElementById('fin-tb-res').textContent=(busca?VIS.length+' de '+FIN_TB_ROWS.length:FIN_TB_ROWS.length)+' servicios · '+Object.keys(cli).length+' clientes · Total '+money(tot)+(rows.length>LIM?' · mostrando los '+LIM+' primeros según el orden (el CSV trae todos)':'')+' · ingreso = real si existe, si no estimado';
   var h='<thead><tr>'+FIN_TB_COLS.map(function(c){
     var ar=FIN_TB_SORT.k===c.k?(FIN_TB_SORT.d>0?' ▲':' ▼'):' ↕';
     return '<th onclick="finTablaSort(\''+c.k+'\')" style="position:sticky;top:0;z-index:2;background:var(--navy);'+(c.n?'text-align:right;':'')+'" title="Ordenar">'+c.t+ar+'</th>';}).join('')+'</tr></thead>';
@@ -6128,8 +6136,8 @@ function finTabla(){
      +'<td style="text-align:right;min-width:92px"><div style="font-size:12px;font-weight:700;color:var(--navy)">'+fmt(x.val)+'</div><div style="height:3px;background:var(--light);border-radius:2px;margin-top:3px"><div style="height:100%;width:'+pct.toFixed(0)+'%;background:'+lc+';border-radius:2px"></div></div></td>'
      +'</tr>';}).join('');
   var tdf='position:sticky;bottom:0;background:var(--light);font-weight:700;';
-  var foot=rows.length?'<tfoot><tr><td colspan="9" style="'+tdf+'color:var(--navy);text-transform:uppercase;font-size:10px;letter-spacing:.06em">Total · '+FIN_TB_ROWS.length+' servicios</td><td style="'+tdf+'text-align:right">'+fmt(est)+'</td><td style="'+tdf+'text-align:right;color:var(--fin)">'+fmt(real)+'</td><td style="'+tdf+'text-align:right;color:var(--navy);font-size:12px">'+fmt(tot)+'</td></tr></tfoot>':'';
-  tb.innerHTML=h+'<tbody>'+(body||'<tr><td colspan="12"><div class="empty-s">Sin ingresos ejecutados para los filtros aplicados</div></td></tr>')+'</tbody>'+foot;
+  var foot=rows.length?'<tfoot><tr><td colspan="9" style="'+tdf+'color:var(--navy);text-transform:uppercase;font-size:10px;letter-spacing:.06em">Total · '+VIS.length+' servicios'+(busca?' (búsqueda)':'')+'</td><td style="'+tdf+'text-align:right">'+fmt(est)+'</td><td style="'+tdf+'text-align:right;color:var(--fin)">'+fmt(real)+'</td><td style="'+tdf+'text-align:right;color:var(--navy);font-size:12px">'+fmt(tot)+'</td></tr></tfoot>':'';
+  tb.innerHTML=h+'<tbody>'+(body||'<tr><td colspan="12"><div class="empty-s">'+(busca||FIN_TB_ROWS.length?'Sin resultados para la búsqueda':'Sin ingresos ejecutados para los filtros aplicados')+'</div></td></tr>')+'</tbody>'+foot;
 }
 function finTablaCSV(){
   var rows=finTablaOrden();
