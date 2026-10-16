@@ -557,7 +557,7 @@ table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:n
   <div class="fsep"></div>
   <span class="fl">Línea</span>
   <select id="g-lin" onchange="applyFilters()" autocomplete="off"><option value="">Todas</option><option value="COILED TUBING">Coiled Tubing</option><option value="WIRELINE">Wireline</option><option value="INTEGRADOS">Integrados</option><option value="WELL TESTING">Well Testing</option><option value="COMPLETAMIENTO">Completamiento</option><option value="WELL SERVICES">Well Services</option><option value="CEMENTACION">Cementación</option><option value="ESTIMULACION">Estimulación</option><option value="THRU TUBING">Thru Tubing</option><option value="GEOTERMIA">Geotermia</option><option value="__SIN__">Sin clasificar</option></select>
-  <span class="xf-hint">💡 Clic en cualquier gráfica filtra el resto · Ctrl+clic suma · Esc limpia</span>
+  <span class="xf-hint">💡 Clic en una gráfica filtra el resto · Ctrl+clic suma otro filtro · Esc limpia</span>
   <button class="clr-btn" id="clr-btn" onclick="clearFilters()"></button>
 </div>
 
@@ -3927,9 +3927,8 @@ ALL.forEach(function(r){aplicarLinea(r,false);});
 
 // ══ FILTRO CRUZADO (estilo Power BI) ════════════════════════════════════════════════════════
 // Un solo estado compartido por TODAS las pestañas. Clic en una barra, porción, fila, tarjeta o
-// etiqueta lo filtra todo; clic de nuevo la deselecciona; Ctrl/Cmd/Mayús + clic suma varias.
-// Dentro de la misma dimensión el clic reemplaza; entre dimensiones distintas se acumula
-// (p. ej. Representante + Línea). La gráfica donde haces clic NO se filtra a sí misma: muestra
+// etiqueta lo filtra todo; clic de nuevo la deselecciona. Clic normal = nueva selección; Ctrl/Cmd/Mayús + clic
+// suma filtros adicionales (p. ej. Representante + Línea + Mes). La gráfica donde haces clic NO se filtra a sí misma: muestra
 // todas las categorías y atenúa las no elegidas (xfWithout excluye su propia dimensión).
 var XF={rep:[],cli:[],lin:[],mes:[],ger:[],est:[],tip:[]};
 var XF_EXCL='',XF_LBL={};
@@ -3969,17 +3968,29 @@ function xfTexto(d,v){
   if(d==='est')return ({FINALIZADO:'Finalizado','EN EJECUCION':'En ejecución',PLANEACION:'Planeación'})[v]||v;
   return v;
 }
+// Modificador del último clic (lo fija un listener en captura; así también lo ven las gráficas de Metas y Líneas).
+// En pantallas táctiles no hay Ctrl: allí cada clic suma, y se quita con la ✕ del filtro o "Limpiar selección".
+var XF_MOD=false;
+document.addEventListener('click',function(e){
+  XF_MOD=!!(e.ctrlKey||e.metaKey||e.shiftKey)||e.pointerType==='touch'||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
+},true);
+// Clic normal = nueva selección (reemplaza la anterior, como Power BI). Ctrl/Cmd/Mayús + clic = suma otra
+// selección a las existentes (en la misma gráfica agrega otro valor; en otra gráfica agrega otro filtro).
 function xfToggle(sel,multi,lbl){
+  multi=!!(multi||XF_MOD);
   var dims=Object.keys(sel);
   if(lbl)Object.keys(lbl).forEach(function(d){XF_LBL[d+'|'+sel[d]]=lbl[d];});
-  var same=dims.every(function(d){var v=sel[d];return v===''?XF[d].length===0:(XF[d].length===1&&XF[d][0]===v);});
-  dims.forEach(function(d){
-    var v=sel[d];
-    if(v===''||v==null){if(!multi)XF[d]=[];return;}
-    if(multi){var i=XF[d].indexOf(v);if(i>=0)XF[d].splice(i,1);else XF[d].push(v);}
-    else if(same){XF[d]=[];}
-    else{XF[d]=[v];}
-  });
+  if(multi){
+    dims.forEach(function(d){
+      var v=sel[d];if(v===''||v==null)return;
+      var i=XF[d].indexOf(v);if(i>=0)XF[d].splice(i,1);else XF[d].push(v);
+    });
+  }else{
+    var soloEsto=dims.every(function(d){var v=sel[d];return v===''?XF[d].length===0:(XF[d].length===1&&XF[d][0]===v);})
+      &&Object.keys(XF).every(function(d){return dims.indexOf(d)>=0||XF[d].length===0;});
+    xfReset();
+    if(!soloEsto)dims.forEach(function(d){var v=sel[d];if(v!==''&&v!=null)XF[d]=[v];});
+  }
   // El filtro global de Mes y el cruzado de Mes son lo mismo: si eliges un mes en una gráfica, se suelta el del selector.
   if(XF.mes.length&&G_MES){G_MES='';var sm=document.getElementById('g-mes');if(sm)sm.value='';try{MES_STATS=buildMesStats(getAllMes(),G_ANIO);}catch(e){}updateClrBtn();}
   xfChanged();
@@ -3994,7 +4005,7 @@ function xfBarra(){
   for(var d in XF)XF[d].forEach(function(v){
     chips+='<span class="xfchip" data-xq="'+d+'" data-xv="'+encodeURIComponent(v)+'" title="Quitar este filtro">'+XF_NOM[d]+': <b>'+qEsc(xfTexto(d,v))+'</b> ✕</span>';
   });
-  b.innerHTML=chips?'<span class="xf-t">🔎 Filtros cruzados</span>'+chips+'<button class="xf-x" onclick="xfLimpiar()">Limpiar selección</button>':'';
+  b.innerHTML=chips?'<span class="xf-t">🔎 Filtros cruzados</span>'+chips+'<span style="opacity:.7;font-size:11px">Ctrl+clic suma más</span><button class="xf-x" onclick="xfLimpiar()">Limpiar selección</button>':'';
   b.style.display=chips?'flex':'none';
 }
 // Plugin que atenúa las categorías no seleccionadas de la gráfica
@@ -5741,7 +5752,34 @@ function renderFinalizados(){
   var vEcop=fin.filter(function(r){return /^ECOPETROL/i.test(r.c);}).reduce(function(s,r){return s+val(r);},0);
   var vYearAll=ALL.filter(function(r){return esEjecutado(r)&&r.t==='A'&&(!G_ANIO||String(r.anio)===String(G_ANIO))&&(!G_REP||r.r===G_REP)&&linOk(r);}).reduce(function(s,r){return s+val(r);},0);
   var pctEcop=vYearAll>0?Math.round(vEcop/vYearAll*100):0;
-  var mesesConFin=MES.filter(function(m){return fin.some(function(r){return r.m===m;});}).length||1;
+  // Promedio mensual = ingresos de los MESES CERRADOS del período / número de meses cerrados.
+  // - El mes en curso no entra (está incompleto y bajaría el promedio); si es el único mes disponible se usa y se avisa.
+  // - Se divide por meses calendario cerrados, no por "meses con datos" (un segmento con ingresos en pocos meses promedia sobre todos).
+  // - Con año elegido: ese año; sin año: todos los años del histórico. Con meses elegidos en una gráfica: solo esos meses.
+  // - Base prorrateada por día, igual que la gráfica de Evolución Mensual.
+  var prom=(function(){
+    var hoy=new Date(),aH=hoy.getFullYear(),mH=hoy.getMonth();
+    var anios=G_ANIO?[Number(G_ANIO)]:Array.from(new Set(ALL.map(function(r){return Number(r.anio);}).filter(function(a){return a>0;}))).sort();
+    var selM=XF.mes.length?XF.mes:null,cer=[],cur=null;
+    anios.forEach(function(a){MES.forEach(function(m,mi){
+      if(selM&&selM.indexOf(m)<0)return;
+      if(a<aH||(a===aH&&mi<mH))cer.push({a:a,m:m,mi:mi});
+      else if(a===aH&&mi===mH)cur={a:a,m:m,mi:mi};
+    });});
+    var parcial=false;
+    if(!cer.length&&cur){cer.push(cur);parcial=true;cur=null;}
+    var set={};cer.forEach(function(c){set[c.a+'|'+c.m]=1;});
+    var tot=finMes.filter(function(r){return set[Number(r.anio)+'|'+r.m];}).reduce(function(x,r){return x+val(r);},0);
+    var ab=function(m){return m.charAt(0).toUpperCase()+m.slice(1,3);};
+    var rango='';
+    if(!cer.length)rango='Sin meses cerrados en la selección';
+    else if(G_ANIO||new Set(cer.map(function(c){return c.a;})).size===1){
+      var a0=cer[0].a,idx=cer.map(function(c){return c.mi;}),contig=idx.every(function(v,i){return i===0||v===idx[i-1]+1;});
+      rango=(contig?(cer.length===1?ab(cer[0].m):ab(cer[0].m)+'–'+ab(cer[cer.length-1].m)):cer.map(function(c){return ab(c.m);}).join(', '))+' '+a0;
+    }else rango=cer[0].a+'–'+cer[cer.length-1].a;
+    var nota=parcial?'mes en curso (parcial)':(cur?ab(cur.m)+' en curso no incluido':'');
+    return {prom:cer.length?tot/cer.length:0,n:cer.length,rango:rango,nota:nota};
+  })();
   // Total histórico: igual que 'fin' pero SIN el filtro de año (siempre suma 2022-2026),
   // para que siempre haya un total visible que agregue todos los años aunque el filtro
   // de Año esté fijado en uno solo.
@@ -5756,7 +5794,7 @@ function renderFinalizados(){
   document.getElementById('kpi-fin').innerHTML=[
     {l:'Total Ingresos Anuales',v:fmt(vYear),s:nYear+' servicios (finalizado + en ejecución)',cls:'ks',i:'✅'},
     {l:'Ingresos Ecopetrol',v:fmt(vEcop),s:pctEcop+'% del total anual ejecutado',cls:'ka',i:'🛢️'},
-    {l:'Promedio Mensual',v:fmt(vYear/mesesConFin),s:'ingresos finalizados / mes',cls:'kt',i:'📅'},
+    {l:'Promedio Mensual',v:prom.n?fmt(prom.prom):'—',s:prom.rango+(prom.n?' · '+prom.n+(prom.n===1?' mes':' meses')+(prom.parcial?'':' cerrados'):'')+'<br>'+(prom.nota?prom.nota+' · ':'')+'prorrateado por día',cls:'kt',i:'📅'},
     {l:'Total Histórico (todos los años)',v:fmt(vHist),s:finHist.length+' servicios · 2022-2026',cls:'kr',i:'🗂️'},
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-i">'+k.i+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
