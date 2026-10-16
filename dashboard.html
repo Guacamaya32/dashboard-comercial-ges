@@ -7079,21 +7079,35 @@ function linMatriz(boxId,subId,rowKey,top,vacio){
   var sub=document.getElementById(subId);
   if(sub)sub.textContent='· '+(G_MES?G_MES[0].toUpperCase()+G_MES.slice(1)+' ':'')+(anio||'Todos los años')+' · '+nomBase;
   var G=lAgg(per),cols=lOrden(G.a);
-  var M={};per.forEach(function(x){var rk=rowKey(x.r);if(!rk)return;var o=M[rk]||(M[rk]={t:0,l:{}});o.l[x.k]=(o.l[x.k]||0)+x.v;o.t+=x.v;});
-  var rk=Object.keys(M).sort(function(a,b){return M[b].t-M[a].t;});
+  // Cada celda separa Asignado (A) de Oportunidad (O); el color de fondo sigue el total de la celda.
+  var Z=function(){return {a:0,o:0};},tt=function(c){return c?c.a+c.o:0;};
+  var M={};per.forEach(function(x){var rk=rowKey(x.r);if(!rk)return;var o=M[rk]||(M[rk]={a:0,o:0,l:{}});var c=o.l[x.k]||(o.l[x.k]=Z());
+    if(x.r.t==='A'){c.a+=x.v;o.a+=x.v;}else{c.o+=x.v;o.o+=x.v;}});
+  var rk=Object.keys(M).sort(function(a,b){return (M[b].a+M[b].o)-(M[a].a+M[a].o);});
   if(!rk.length||!cols.length){box.innerHTML='<div class="empty-s">Sin datos para los filtros aplicados</div>';return;}
   if(top&&rk.length>top){
-    var nOt=rk.length-top,otros={t:0,l:{}};
-    rk.slice(top).forEach(function(r){otros.t+=M[r].t;cols.forEach(function(k){otros.l[k]=(otros.l[k]||0)+(M[r].l[k]||0);});});
+    var nOt=rk.length-top,otros={a:0,o:0,l:{}};
+    rk.slice(top).forEach(function(r){otros.a+=M[r].a;otros.o+=M[r].o;cols.forEach(function(k){var c=otros.l[k]||(otros.l[k]=Z()),m=M[r].l[k];if(m){c.a+=m.a;c.o+=m.o;}});});
     rk=rk.slice(0,top);var kOt='Otros ('+nOt+')';M[kOt]=otros;rk.push(kOt);
   }
   var tit=function(k){return LIN_TIT[k]||k;};
-  var mx=0;rk.forEach(function(r){cols.forEach(function(k){mx=Math.max(mx,(M[r].l[k])||0);});});
-  var tc={};cols.forEach(function(k){tc[k]=per.filter(function(x){return x.k===k;}).reduce(function(s,x){return s+x.v;},0);});
+  var mx=0;rk.forEach(function(r){cols.forEach(function(k){mx=Math.max(mx,tt(M[r].l[k]));});});
+  var tc={};cols.forEach(function(k){tc[k]=Z();});
+  per.forEach(function(x){var c=tc[x.k];if(!c)return;if(x.r.t==='A')c.a+=x.v;else c.o+=x.v;});
+  var AC='#002060',OC='#8B6800';
+  var two=function(c,big){
+    if(!c||tt(c)<=0)return '·';
+    var f=big?fmt:fmtM,ln=function(l,v,col){return v>0?'<div style="white-space:nowrap;line-height:1.5"><i style="display:inline-block;min-width:13px;text-align:center;font-style:normal;font-size:9px;font-weight:800;border-radius:3px;padding:0 3px;margin-right:5px;text-transform:none;'+(l==='A'?'background:#002060;color:#fff;box-shadow:0 0 0 1px #fff7':'background:#FFC000;color:#002060')+'">'+l+'</i><span style="font-weight:600">'+f(v)+'</span></div>':'';};
+    return ln('A',c.a)+ln('O',c.o);
+  };
   var head='<th style="cursor:default">'+vacio+'</th>'+cols.map(function(k){return '<th style="text-align:right;cursor:default"><span class="dld" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(LIN_COL[k]||'#A8B4CC')+';margin-right:5px"></span>'+tit(k)+'</th>';}).join('')+'<th style="text-align:right;cursor:default">Total</th>';
-  var body=rk.map(function(r){var o=M[r];return '<tr><td style="font-weight:600;white-space:nowrap">'+qEsc(r)+'</td>'+cols.map(function(k){var v=o.l[k]||0;var a=mx>0?Math.min(.85,v/mx*.85):0;return '<td style="text-align:right;'+(v>0?'background:rgba(0,32,96,'+a.toFixed(2)+');color:'+(a>.45?'#fff':'var(--ink)'):'color:var(--dim)')+'">'+(v>0?fmtM(v):'·')+'</td>';}).join('')+'<td style="text-align:right;font-weight:700">'+fmt(o.t)+'</td></tr>';}).join('');
-  var foot='<tr class="tr-tot"><td><b>Total</b></td>'+cols.map(function(k){return '<td style="text-align:right">'+fmtM(tc[k])+'</td>';}).join('')+'<td style="text-align:right"><b>'+fmt(G.tot)+'</b></td></tr>';
-  box.innerHTML='<div class="tbl-scroll"><table class="lmx"><thead><tr>'+head+'</tr></thead><tbody>'+body+foot+'</tbody></table></div>';
+  var body=rk.map(function(r){var o=M[r];return '<tr><td style="font-weight:600;white-space:nowrap">'+qEsc(r)+'</td>'+cols.map(function(k){var c=o.l[k],v=tt(c);var a=mx>0?Math.min(.85,v/mx*.85):0;
+    return '<td style="text-align:right;'+(v>0?'background:rgba(0,32,96,'+a.toFixed(2)+');color:'+(a>.45?'#fff':'var(--ink)'):'color:var(--dim)')+'">'+two(c,false)+'</td>';}).join('')
+    +'<td style="text-align:right;font-weight:700">'+two(o,true)+'<div style="border-top:1px solid var(--light);margin-top:2px;padding-top:1px;color:var(--navy)">'+fmt(o.a+o.o)+'</div></td></tr>';}).join('');
+  var gt=Z();cols.forEach(function(k){gt.a+=tc[k].a;gt.o+=tc[k].o;});
+  var foot='<tr class="tr-tot"><td><b>Total</b></td>'+cols.map(function(k){return '<td style="text-align:right">'+two(tc[k],false)+'</td>';}).join('')+'<td style="text-align:right">'+two(gt,true)+'<div style="border-top:1px solid var(--light);margin-top:2px;padding-top:1px"><b>'+fmt(gt.a+gt.o)+'</b></div></td></tr>';
+  var leyenda='<div style="font-size:10.5px;color:var(--muted);margin:0 0 8px"><i style="display:inline-block;min-width:13px;text-align:center;font-style:normal;font-size:9px;font-weight:800;border-radius:3px;padding:0 3px;background:#002060;color:#fff">A</i> Asignado · <i style="display:inline-block;min-width:13px;text-align:center;font-style:normal;font-size:9px;font-weight:800;border-radius:3px;padding:0 3px;background:#FFC000;color:#002060">O</i> Oportunidad · el tono de la celda indica el total (A + O)'+(base!=='pipe'?' · con esta base solo hay asignado':'')+'</div>';
+  box.innerHTML=leyenda+'<div class="tbl-scroll"><table class="lmx"><thead><tr>'+head+'</tr></thead><tbody>'+body+foot+'</tbody></table></div>';
 }
 function linMatrizClientes(){
   linMatriz('cli-lin-mx','cli-lin-sub',function(r){
