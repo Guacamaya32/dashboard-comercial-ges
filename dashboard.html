@@ -3891,8 +3891,8 @@ const ALL_SEED=ALL.slice();
 // ═══ LÍNEAS DE SERVICIO (columna F "LINEA DE SERVICIO" del Excel) ═══════════════════════════
 // Cada registro trae `lin` con el nombre exacto de la lista del Excel (LISTA!G2:G11). El flujo de
 // Power Automate debe enviarlo en la propiedad "lin" (ver nota de entrega). Si el flujo todavía no
-// la envía, se completa en este orden: 1) el histórico embebido (misma llave cliente+pozo+servicio+
-// periodo+tipo), 2) el primer código de la columna LINEA DE SERVICIO2 (CT→COILED TUBING, etc.).
+// la envía, se completa con el histórico embebido (misma llave cliente+pozo+servicio+periodo+tipo).
+// Nunca se usa la columna "Líneas de servicio adicionales" (antes LINEA DE SERVICIO2).
 const LINEAS=['COILED TUBING','WIRELINE','INTEGRADOS','WELL TESTING','COMPLETAMIENTO','WELL SERVICES','CEMENTACION','ESTIMULACION','THRU TUBING','GEOTERMIA'];
 const LIN_COD={'COILED TUBING':'CT','WIRELINE':'WL','INTEGRADOS':'AI','WELL TESTING':'WT','COMPLETAMIENTO':'CW','WELL SERVICES':'WS','CEMENTACION':'AZ','ESTIMULACION':'ES','THRU TUBING':'TT','GEOTERMIA':'GT'};
 const COD_LIN={};Object.keys(LIN_COD).forEach(function(k){COD_LIN[LIN_COD[k]]=k;});
@@ -3915,11 +3915,11 @@ function aplicarLinea(r,live){
   var raw=(r.lin!=null&&r.lin!=='')?r.lin:(r.ls||r.linea||r.LINEA_SERVICIO||r.lineaServicio||'');
   var n=linNorm(raw),src=n?'F':'';
   if(!n&&live){var a=SEED_LIN[linKey(r)];if(a&&a.length){n=a[0];src='hist';}}
-  if(!n&&r.l){var cs=String(r.l).replace(/\s/g,'').toUpperCase().split(/[,\-\+\/]+/);for(var i=0;i<cs.length;i++){if(COD_LIN[cs[i]]){n=COD_LIN[cs[i]];src='cod';break;}}}
   r.lin=n;r.linSrc=src;
+  // Solo cuenta la columna F (LINEA DE SERVICIO). 'Líneas de servicio adicionales' (antes LINEA DE SERVICIO2) NO se usa.
+  delete r.l;
   // Los análisis por código que ya existían (Mensual, Ingresos Anuales, Quarter, Detalle) ahora
   // también ven la línea de la columna F cuando la columna LINEA DE SERVICIO2 viene vacía.
-  if(!r.l&&n)r.l=LIN_COD[n]||'';
   return r;
 }
 function linOk(r){return (!G_LIN||(G_LIN==='__SIN__'?!r.lin:r.lin===G_LIN))&&xfOk(r);}
@@ -5368,7 +5368,7 @@ function renderTable(){
     if(G_ANIO&&String(r.anio)!==String(G_ANIO))return false;
     if(fSt!=='__a'&&r.s!==fSt)return false;
     if(fTp&&r.t!==fTp)return false;
-    if(q)return[r.c,r.pz,r.sv,r.r,repLabel(r.r),r.l,r.lin,r.ger,r.top,r.co].some(v=>v&&v.toLowerCase().includes(q));
+    if(q)return[r.c,r.pz,r.sv,r.r,repLabel(r.r),LIN_TIT[r.lin],r.lin,r.ger,r.top,r.co].some(v=>v&&v.toLowerCase().includes(q));
     return true;
   }).sort((a,b)=>NUM_COLS.includes(sCol)?((a[sCol]||0)-(b[sCol]||0))*sDir:String(a[sCol]||'').localeCompare(String(b[sCol]||''),undefined,{sensitivity:'base'})*sDir);
 
@@ -5409,7 +5409,7 @@ function renderTable(){
       <td style="font-size:10px;color:var(--muted);font-weight:600;text-transform:capitalize;font-family:'Inter',sans-serif">${r.m}</td>
       <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:130px" title="${r.pz}">${r.pz}</td>
       <td style="color:var(--slate);font-weight:500;white-space:normal;word-break:break-word;max-width:160px" title="${r.sv}">${r.sv}</td>
-      <td style="color:var(--muted);font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.l||''}">${r.lin?(LIN_TIT[r.lin]||r.lin):(r.l||'—')}</td>
+      <td style="color:var(--muted);font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${LIN_TIT[r.lin]||''}">${r.lin?(LIN_TIT[r.lin]||r.lin):'—'}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--dim)">${fmt(r.ie)}</td>
       <td style="text-align:right;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:${r.ir>0?'var(--fin)':'var(--dim)'}">${r.ir>0?fmt(r.ir):'—'}</td>
       <td>${sb(r.s)}</td>
@@ -5423,8 +5423,8 @@ const NUM_COLS=['v','ie','ir'];
 
 function exportCSV(){
   const D=ALL.filter(r=>(!G_MES||r.m===G_MES)&&(!G_REP||r.r===G_REP)&&linOk(r)&&(!G_ANIO||String(r.anio)===String(G_ANIO)));
-  const h=['TIPO','CLIENTE','REPRESENTANTE','MES','POZO','SERVICIO','VALOR_EFECTIVO','INGRESO_ESTIMADO','INGRESO_REAL','LINEA','LINEA_SERVICIO','STATUS','COMENTARIOS'];
-  const rows=[h.join(','),...D.map(r=>[r.t==='A'?'ASIGNACION':'OPORTUNIDAD',r.c,repLabel(r.r),r.m,r.pz,r.sv,r.v,r.ie,r.ir,r.l,(LIN_TIT[r.lin]||''),r.s,r.co].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))];
+  const h=['TIPO','CLIENTE','REPRESENTANTE','MES','POZO','SERVICIO','VALOR_EFECTIVO','INGRESO_ESTIMADO','INGRESO_REAL','LINEA_SERVICIO','STATUS','COMENTARIOS'];
+  const rows=[h.join(','),...D.map(r=>[r.t==='A'?'ASIGNACION':'OPORTUNIDAD',r.c,repLabel(r.r),r.m,r.pz,r.sv,r.v,r.ie,r.ir,(LIN_TIT[r.lin]||''),r.s,r.co].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))];
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`Guacamaya_Pipeline_${G_ANIO||'Todos'}_${G_MES||'anual'}.csv`;a.click();
 }
 
