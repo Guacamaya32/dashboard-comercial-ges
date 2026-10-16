@@ -4192,7 +4192,7 @@ function buildMesStats(all,anio){
     active.forEach(r=>{
       by_cli[r.c]=(by_cli[r.c]||0)+r.v;
       by_rep[r.r]=(by_rep[r.r]||0)+r.v;
-      if(r.l)r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(l=>{if(l&&l.length<6)by_linea[l]=(by_linea[l]||0)+r.v;});
+      {const lk=r.lin||'SIN';by_linea[lk]=(by_linea[lk]||0)+r.v;}
     });
     stats[mes]={total:asig+opor,asig,opor,real,n:active.length,n_asig:asigRows.length,n_opor:oporRows.length,by_cli,by_rep,by_linea};
   });
@@ -4611,7 +4611,7 @@ function renderExecSummary(A, O, D, CAN, mes){
 
   // ── Solo ASIGNADO: mapas directamente desde A[] (registros del mes) ───
   function buildMapA(rows,key){const m={};rows.filter(r=>r.t==='A').forEach(r=>{const k=r[key]||'';if(k)m[k]=(m[k]||0)+r.v;});return m;}
-  function buildLinMapA(rows){const m={};rows.filter(r=>r.t==='A').forEach(r=>{if(!r.l)return;r.l.replace(/\s/g,'').split(/[,\-\+]+/).forEach(p=>{if(p&&p.length<6)m[p]=(m[p]||0)+r.v;});});return m;}
+  function buildLinMapA(rows){const m={};rows.filter(r=>r.t==='A').forEach(r=>{const k=r.lin||'SIN';m[k]=(m[k]||0)+r.v;});return m;}
 
   const curCliA=buildMapA(A,'c'), curRepA=buildMapA(A,'r'), curLinA=buildLinMapA(A);
   // Mes anterior — SOLO Asignación (se excluye Oportunidad porque no es un valor fijo hasta
@@ -4755,14 +4755,14 @@ function renderExecSummary(A, O, D, CAN, mes){
         <div style="flex:1">
           ${(()=>{
             const lineTotal=lineRows.reduce((s,r)=>s+r.cv,0)||1;
-            const LINE_COLORS={'CT':'#002060','ES':'#006B3C','TT':'#b8960a','AZ':'#C0392B','WL':'#1A5276','AI':'#7D3C98','WT':'#CA6F1E','WS':'#566573','CWB':'#0E6655','CW':'#148F77'};
+            const LINE_COLORS=LIN_COL;
             return lineRows.map((r,i)=>{
-              const lc=LINE_COLORS[r.l]||'var(--navy)';
+              const lc=LINE_COLORS[r.l]||'#002060';
               const sharePct=Math.round(r.cv/lineTotal*100);
               const barW=sharePct;
               return `<div style="padding:7px 14px;border-bottom:1px solid var(--light);${i%2===1?'background:var(--pale)':''}">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-                  <span style="font-size:11px;font-weight:700;color:${lc};background:${lc}1A;padding:1px 7px;border-radius:3px">${r.l}</span>
+                  <span style="font-size:11px;font-weight:700;color:${lc};background:${lc}1A;padding:1px 7px;border-radius:3px">${LIN_TIT[r.l]||r.l}</span>
                   <div style="text-align:right;line-height:1.2">
                     <span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--navy)">${fmtS(r.cv)}</span>
                     <span style="font-size:9px;color:var(--muted);margin-left:3px">${sharePct}%</span>
