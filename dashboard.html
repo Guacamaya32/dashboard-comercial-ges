@@ -565,7 +565,7 @@ table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:n
   <button class="mb active" data-view="mensual" onclick="showView('mensual',event)">🗓️ Mensual</button>
   <button class="mb" data-view="representantes" onclick="showView('representantes',event)">👤 Representantes</button>
   <button class="mb" data-view="clientes" onclick="showView('clientes',event)">🏢 Clientes</button>
-  <button class="mb" data-view="lineas" onclick="showView('lineas',event)">Líneas de Servicio</button>
+  <button class="mb" data-view="lineas" onclick="showView('lineas',event)">🔧 Líneas de Servicio</button>
   <button class="mb" data-view="quarter" onclick="showView('quarter',event)">📅 Análisis por Quarter</button>
   <button class="mb" data-view="detalle" onclick="showView('detalle',event)">📋 Detalle</button>
 </div>
@@ -3956,13 +3956,24 @@ function linCampoF(r){
   return '';
 }
 function linKey(r){function n(x){return String(x==null?'':x).trim();}return [n(r.c),n(r.pz),n(r.sv),n(r.anio)+'-'+n(r.m),n(r.t)].join('|').toUpperCase();}
-const SEED_LIN={};
-ALL_SEED.forEach(function(r){var n=linNorm(r.lin);if(n){var k=linKey(r);(SEED_LIN[k]||(SEED_LIN[k]=[])).push(n);}});
+const SEED_LIN={},SEED_LIN_P={},SEED_LIN_C={};
+function linKeyP(r){function n(x){return String(x==null?'':x).trim();}return [n(r.c),n(r.pz),n(r.sv),n(r.t)].join('|').toUpperCase();}
+function linKeyC(r){function n(x){return String(x==null?'':x).trim();}return [n(r.c),n(r.pz),n(r.sv)].join('|').toUpperCase();}
+ALL_SEED.forEach(function(r){var n=linNorm(r.lin);if(n){var k=linKey(r);(SEED_LIN[k]||(SEED_LIN[k]=[])).push(n);
+  var kp=linKeyP(r);(SEED_LIN_P[kp]||(SEED_LIN_P[kp]=[])).push(n);var kc=linKeyC(r);(SEED_LIN_C[kc]||(SEED_LIN_C[kc]=[])).push(n);}});
+// Si una fila llega sin 'lin' (el flujo no la envía, o el registro cambió de mes), se toma la línea que el Excel (columna F)
+// ya tenía para ese mismo cliente+pozo+servicio. Solo se acepta si TODAS las coincidencias dicen la misma línea.
+function linHist(r){
+  var a=SEED_LIN[linKey(r)];if(a&&a.length)return a[0];
+  var c=[SEED_LIN_P[linKeyP(r)],SEED_LIN_C[linKeyC(r)]];
+  for(var i=0;i<c.length;i++){var b=c[i];if(b&&b.length&&b.every(function(x){return x===b[0];}))return b[0];}
+  return '';
+}
 function aplicarLinea(r,live){
   var raw=linCampoF(r);
   var n=linNorm(raw),src=n?'F':'';
   if(live){if(!LIN_DIAG.claves)LIN_DIAG.claves=Object.keys(r).join(', ');LIN_DIAG.vivos++;if(raw===''||raw==null)LIN_DIAG.sinCampo++;else if(!n){var q=String(raw).trim();LIN_DIAG.desconocidos[q]=(LIN_DIAG.desconocidos[q]||0)+1;}}
-  if(!n&&live){var a=SEED_LIN[linKey(r)];if(a&&a.length){n=a[0];src='hist';}}
+  if(!n&&live){var h=linHist(r);if(h){n=h;src='hist';}}
   r.lin=n;r.linSrc=src;
   r.st=stDe(r);if(r._id==null)r._id=++SID_N;
   // Solo cuenta la columna F (LINEA DE SERVICIO). Si el flujo aún enviara la columna adicional (propiedad 'l'), se descarta.
