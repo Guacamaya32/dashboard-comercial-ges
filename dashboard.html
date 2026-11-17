@@ -769,10 +769,6 @@ table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:n
   <div class="card" style="margin-bottom:14px">
     <div class="ct">Ingresos por Gerencia ECP</div><div style="height:240px"><canvas id="cFinGer"></canvas></div>
   </div>
-  <div class="g2" style="margin-bottom:14px">
-    <div class="card"><div class="ct">Ingresos por Departamento</div><div style="height:260px"><canvas id="cFinDep"></canvas></div></div>
-    <div class="card"><div class="ct">Ingresos por Municipio <span style="font-weight:400;color:var(--muted);font-size:11px">· top 10</span></div><div style="height:260px"><canvas id="cFinMun"></canvas></div></div>
-  </div>
   <div class="card" style="margin-bottom:14px">
     <div class="ct">Servicios por Mes <span id="fin-svc-sub" style="font-weight:400;color:var(--muted);font-size:11px"></span></div>
     <div style="height:230px"><canvas id="cFinSvc"></canvas></div>
@@ -6576,18 +6572,6 @@ function renderFinalizados(){
     })})
   });
   xfBind('cFinGer',{n:topGerFin.length,keys:function(i){return {ger:topGerFin[i][0]};}});
-  // ── Ingresos por Departamento / Municipio (columnas nuevas del Excel) ──
-  [['cFinDep','dep','dp',12,'#0B7285'],['cFinMun','mun','mu',10,'#2B8A3E']].forEach(function(c){
-    var base=xfWithout(c[1],finBase),mp={};
-    base.forEach(function(r){var k=r[c[2]];if(k)mp[k]=(mp[k]||0)+val(r);});
-    var top=Object.entries(mp).sort(function(a,b){return b[1]-a[1];}).slice(0,c[3]);
-    dc(c[0]);CH[c[0]]=new Chart(document.getElementById(c[0]),{
-      type:'bar',
-      data:{labels:top.map(function(x){return x[0];}),datasets:[{data:top.map(function(x){return x[1];}),backgroundColor:c[4],borderRadius:4}]},
-      options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'},legend:{display:false}})})
-    });
-    xfBind(c[0],{n:top.length,keys:function(i){var o={};o[c[1]]=top[i][0];return o;}});
-  });
   // ── Mapa de Colombia: participación por Departamento ──
   (function(){
     var box=document.getElementById('mapDep');if(!box)return;
@@ -6625,8 +6609,10 @@ function renderFinalizados(){
     var all=Object.entries(mp).sort(function(a,b){return b[1]-a[1];}),top=all.slice(0,c[3]),n=top.length;
     var otros=all.slice(c[3]).reduce(function(s,x){return s+x[1];},0);
     var items=top.slice();if(otros>0)items.push(['Otros',otros]);if(sinU>0)items.push(['Sin ubicación',sinU]);
+    items.sort(function(a,b){return b[1]-a[1];});
     var tot=items.reduce(function(s,x){return s+x[1];},0)||1;
-    var col=function(i){return i>=n?(items[i][0]==='Otros'?'#9AA5B8':'#CBD2DE'):(CLI_PAL[i]||('hsl('+((i*47)%360)+',45%,45%)'));};
+    var ci=0,cmap=items.map(function(x){if(x[0]==='Otros')return '#9AA5B8';if(x[0]==='Sin ubicación')return '#CBD2DE';var k=ci++;return CLI_PAL[k]||('hsl('+((k*47)%360)+',45%,45%)');});
+    var col=function(i){return cmap[i];};
     var pt=function(v){var q=v/tot*100;return q<0.5?'<1%':Math.round(q)+'%';};
     dc(c[0]);CH[c[0]]=new Chart(document.getElementById(c[0]),{
       type:'pie',
@@ -6641,7 +6627,7 @@ function renderFinalizados(){
         var m=ch.getDatasetMeta(0),x=ch.ctx;x.save();x.font='600 10px Inter';x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';
         m.data.forEach(function(a,i){if(!ch.getDataVisibility(i))return;var f=items[i][1]/tot;if(f<0.05)return;var ang=(a.startAngle+a.endAngle)/2,r=a.outerRadius*0.65;x.fillText(Math.round(f*100)+'%',a.x+Math.cos(ang)*r,a.y+Math.sin(ang)*r);});x.restore();}}]
     });
-    xfBind(c[0],{n:n,keys:function(i){var o={};o[c[1]]=top[i][0];return o;}});
+    xfBind(c[0],{n:items.length,keys:function(i){var o={},t=items[i][0];o[c[1]]=(t==='Otros'||t==='Sin ubicación')?'':t;return o;}});
   });
   // ── Servicios por mes: cada servicio (CODIGO ST) cuenta una vez, en el mes de su primera fila ──
   (function(){
