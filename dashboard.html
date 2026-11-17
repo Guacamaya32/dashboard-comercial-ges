@@ -5900,7 +5900,12 @@ function cmpKey(d,r){
   if(d==='cli')return /^ECOPETROL/i.test(r.c)?'ECOPETROL':String(r.c||'(sin cliente)').replace(/_/g,' ');
   if(d==='rep')return r.r||'(sin rep.)';
   if(d==='lin')return r.lin?(LIN_TIT[r.lin]||r.lin):'Sin clasificar';
-  if(d==='ger')return (r.ger&&r.ger!=='NA')?r.ger:'(sin gerencia)';
+  if(d==='ger'){
+    if(!r.ger||r.ger==='NA')return '(sin gerencia)';
+    // GRI (RIO) y GMA (MARES) se unificaron en GRM (RIO MARES): en el comparativo se agrupan igual para ambos años.
+    if(/^(GRI|GMA)\b/i.test(String(r.ger).trim()))return 'GRM (RIO MARES)';
+    return r.ger;
+  }
   if(d==='top')return r.top||'(sin tipo)';
   if(d==='pz')return r.pz||'(sin pozo)';
   if(d==='sv')return r.sv||'(sin servicio)';
