@@ -776,7 +776,7 @@ table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:n
   </div>
   <div class="g2" style="margin-bottom:14px">
     <div class="card"><div class="ct">Participación por Departamento <span style="font-weight:400;color:var(--muted);font-size:11px">· clic en un departamento para filtrar</span></div><div id="mapDep" style="height:340px;display:flex;gap:10px;align-items:center"></div></div>
-    <div class="card"><div class="ct">Participación por Municipio <span style="font-weight:400;color:var(--muted);font-size:11px">· top 10 + otros</span></div><div style="height:340px"><canvas id="cFinMunPie"></canvas></div></div>
+    <div class="card"><div class="ct">Participación por Municipio <span style="font-weight:400;color:var(--muted);font-size:11px">· todos · con scroll</span></div><div style="height:340px;overflow-y:auto;overflow-x:hidden;border-radius:6px"><div id="munBox" style="position:relative"><canvas id="cFinMunPie"></canvas></div></div></div>
   </div>
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:10px">
@@ -6453,7 +6453,7 @@ function renderFinalizados(){
       borderColor:'#fff',borderWidth:3,hoverOffset:8
     }]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
-      layout:{padding:{top:24,bottom:8,left:24,right:8}},
+      layout:{padding:{top:26,bottom:30,left:30,right:12}},
       plugins:{pctLabels:{enabled:false},
         legend:{display:true,position:'right',labels:{
           font:{size:11,family:'Inter'},color:'#3D4D63',boxWidth:12,padding:10,
@@ -6485,7 +6485,8 @@ function renderFinalizados(){
   var CLI_PAL=DASH_PAL.concat(['#2E86C1','#17A589','#D4AC0D','#AF601A','#884EA0','#5D6D7E','#E74C3C','#1ABC9C','#8E6B00','#34495E','#B03A2E','#117A65','#6C3483','#2874A6','#9C640C','#1B4F72','#7B241C','#0E6655','#4A235A','#797D7F']);
   var cliCol=function(i){return CLI_PAL[i]||('hsl('+((i*47)%360)+',45%,45%)');};
   var cliPctTxt=function(v){var p=v/cliTotal*100;return p<0.5?'<1%':Math.round(p)+'%';};
-  var cliBox=document.getElementById('cFinCli').parentNode;cliBox.style.height=Math.max(240,topCli.length*19+40)+'px';
+  var cliBox=document.getElementById('cFinCli').parentNode;cliBox.style.height=Math.max(300,topCli.length*23+60)+'px';
+  var repBoxEl=document.getElementById('cFinRep').parentNode;repBoxEl.style.height=cliBox.style.height;
   var cliTotal=topCli.reduce(function(s,x){return s+x[1];},0)||1;
   var cliHighlight=null;
 
@@ -6500,7 +6501,7 @@ function renderFinalizados(){
       borderColor:'#fff',borderWidth:3,hoverOffset:8
     }]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
-      layout:{padding:{top:24,bottom:26,left:24,right:8}},
+      layout:{padding:{top:28,bottom:32,left:30,right:12}},
       plugins:{pctLabels:{enabled:false},
         legend:{display:true,position:'right',labels:{
           font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:8,
@@ -6602,33 +6603,27 @@ function renderFinalizados(){
     box.innerHTML=svg+li;
     box.onclick=function(e){var t=e.target.closest&&e.target.closest('[data-k]');if(!t||!nom[t.dataset.k])return;xfToggle({dep:nom[t.dataset.k]},e.ctrlKey||e.metaKey||e.shiftKey);};
   })();
-  // ── Tortas de participación por Departamento / Municipio ──
-  [['cFinMunPie','mun','mu',10]].forEach(function(c){
-    var base=xfWithout(c[1],finBase),mp={},sinU=0;
-    base.forEach(function(r){var k=r[c[2]],v=val(r);if(k)mp[k]=(mp[k]||0)+v;else sinU+=v;});
-    var all=Object.entries(mp).sort(function(a,b){return b[1]-a[1];}),top=all.slice(0,c[3]),n=top.length;
-    var otros=all.slice(c[3]).reduce(function(s,x){return s+x[1];},0);
-    var items=top.slice();if(otros>0)items.push(['Otros',otros]);if(sinU>0)items.push(['Sin ubicación',sinU]);
-    items.sort(function(a,b){return b[1]-a[1];});
+  // ── Participación por Municipio: barras horizontales con todos los municipios (con scroll) ──
+  (function(){
+    var base=xfWithout('mun',finBase),mp={},sinU=0;
+    base.forEach(function(r){var v=val(r);if(r.mu)mp[r.mu]=(mp[r.mu]||0)+v;else sinU+=v;});
+    var all=Object.entries(mp).sort(function(a,b){return b[1]-a[1];}),n=all.length;
+    var items=all.slice();if(sinU>0)items.push(['Sin ubicación',sinU]);
     var tot=items.reduce(function(s,x){return s+x[1];},0)||1;
-    var ci=0,cmap=items.map(function(x){if(x[0]==='Otros')return '#9AA5B8';if(x[0]==='Sin ubicación')return '#CBD2DE';var k=ci++;return CLI_PAL[k]||('hsl('+((k*47)%360)+',45%,45%)');});
-    var col=function(i){return cmap[i];};
-    var pt=function(v){var q=v/tot*100;return q<0.5?'<1%':Math.round(q)+'%';};
-    dc(c[0]);CH[c[0]]=new Chart(document.getElementById(c[0]),{
-      type:'pie',
-      data:{labels:items.map(function(x){return x[0];}),datasets:[{data:items.map(function(x){return x[1];}),backgroundColor:items.map(function(x,i){return col(i);}),borderColor:'#fff',borderWidth:2,hoverOffset:8}]},
-      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:10,bottom:10,left:10,right:8}},
-        plugins:{pctLabels:{enabled:false},
-          legend:{display:true,position:'right',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:7,
-            generateLabels:function(chart){return items.map(function(x,i){var c2=col(i),vis=chart.getDataVisibility(i);return {text:x[0]+'  '+pt(x[1]),fillStyle:c2,strokeStyle:c2,lineWidth:0,hidden:!vis,fontColor:vis?'#3D4D63':'#9AA5B8',index:i};});}}},
-          tooltip:{callbacks:{label:function(q){return q.label+': '+fmt(q.raw)+' ('+pt(q.raw)+')';}}}}
-      },
-      plugins:[{id:c[0]+'Lb',afterDraw:function(ch){
-        var m=ch.getDatasetMeta(0),x=ch.ctx;x.save();x.font='600 10px Inter';x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';
-        m.data.forEach(function(a,i){if(!ch.getDataVisibility(i))return;var f=items[i][1]/tot;if(f<0.05)return;var ang=(a.startAngle+a.endAngle)/2,r=a.outerRadius*0.65;x.fillText(Math.round(f*100)+'%',a.x+Math.cos(ang)*r,a.y+Math.sin(ang)*r);});x.restore();}}]
+    var pt=function(v){var q=v/tot*100;return q<0.5?'<1%':(q<10?q.toFixed(1):Math.round(q))+'%';};
+    document.getElementById('munBox').style.height=Math.max(300,items.length*24+40)+'px';
+    dc('cFinMunPie');CH.cFinMunPie=new Chart(document.getElementById('cFinMunPie'),{
+      type:'bar',
+      data:{labels:items.map(function(x){return x[0];}),datasets:[{data:items.map(function(x){return x[1];}),
+        backgroundColor:items.map(function(x){return x[0]==='Sin ubicación'?'#CBD2DE':'#2B8A3E';}),borderRadius:4}]},
+      options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:false},legend:{display:false},
+        tooltip:{callbacks:{label:function(q){return fmt(q.raw)+' ('+pt(q.raw)+')';}}}})}),
+      plugins:[{id:'munPctLb',afterDatasetsDraw:function(ch){
+        var m=ch.getDatasetMeta(0),x=ch.ctx;x.save();x.font='600 10px Inter';x.fillStyle='#3D4D63';x.textBaseline='middle';
+        m.data.forEach(function(a,i){x.fillText(pt(items[i][1]),a.x+5,a.y);});x.restore();}}]
     });
-    xfBind(c[0],{n:items.length,keys:function(i){var o={},t=items[i][0];o[c[1]]=(t==='Otros'||t==='Sin ubicación')?'':t;return o;}});
-  });
+    xfBind('cFinMunPie',{n:n,keys:function(i){return {mun:items[i][0]};}});
+  })();
   // ── Servicios por mes: cada servicio (CODIGO ST) cuenta una vez, en el mes de su primera fila ──
   (function(){
     var base=xfWithout('mes',finBase),sv=MES.map(function(){return {F:{},E:{}};}),vM=MES.map(function(){return 0;}),uniq={};
@@ -7668,7 +7663,7 @@ function renderLineas0(){
         plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.label+': '+fmt(c.raw)+' ('+(tot>0?(c.raw/tot*100).toFixed(1):0)+'%)';}}}}}});
   }
   document.getElementById('l-leg').innerHTML=keys.map(function(k){var v=G.a[k].a+G.a[k].o;
-    return '<div class="dlr" data-ls="'+qEsc(k)+'" style="cursor:pointer;'+(!xfSel('lin',k==='SIN'?'__SIN__':k)?'opacity:.45':'')+'"><span class="dln"><span class="dld" style="background:'+col(k)+'"></span>'+tit(k)+'</span><span class="dlv">'+(tot>0?(v/tot*100).toFixed(0):0)+'% · '+fmt(v)+'</span></div>';}).join('');
+    return '<div class="dlr" data-ls="'+qEsc(k)+'" style="cursor:pointer;'+(!xfSel('lin',k==='SIN'?'__SIN__':k)?'opacity:.45':'')+'"><span class="dln"><span class="dld" style="background:'+col(k)+'"></span>'+tit(k)+'</span><span class="dlv">'+(tot>0?(v/tot*100<0.5?'<1':(v/tot*100).toFixed(0)):0)+'% · '+fmt(v)+'</span></div>';}).join('');
 
 }
 
