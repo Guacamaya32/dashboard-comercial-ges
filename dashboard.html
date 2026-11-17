@@ -778,6 +778,10 @@ table.lmx{font-size:11px}table.lmx th,table.lmx td{padding:7px 8px;white-space:n
     <div style="height:230px"><canvas id="cFinSvc"></canvas></div>
     <div style="font-size:10.5px;color:var(--muted);margin-top:6px">Cada mes cuenta los servicios que tuvieron ingresos en ese mes (con su ingreso del mes). Un servicio partido en varias filas del mismo mes (mismo CÓDIGO ST) cuenta una sola vez; si abarca dos meses aparece en ambos, así que la suma de las barras puede superar el total de servicios distintos.</div>
   </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="ct">Participación por Departamento</div><div style="height:300px"><canvas id="cFinDepPie"></canvas></div></div>
+    <div class="card"><div class="ct">Participación por Municipio <span style="font-weight:400;color:var(--muted);font-size:11px">· top 10 + otros</span></div><div style="height:300px"><canvas id="cFinMunPie"></canvas></div></div>
+  </div>
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:10px">
       <div class="ct" style="margin:0">Detalle de lo filtrado</div>
@@ -6581,6 +6585,31 @@ function renderFinalizados(){
       options:Object.assign(hopts(),{plugins:Object.assign({},hopts().plugins,{pctLabels:{enabled:true,color:'#3D4D63'},legend:{display:false}})})
     });
     xfBind(c[0],{n:top.length,keys:function(i){var o={};o[c[1]]=top[i][0];return o;}});
+  });
+  // ── Tortas de participación por Departamento / Municipio ──
+  [['cFinDepPie','dep','dp',9],['cFinMunPie','mun','mu',10]].forEach(function(c){
+    var base=xfWithout(c[1],finBase),mp={},sinU=0;
+    base.forEach(function(r){var k=r[c[2]],v=val(r);if(k)mp[k]=(mp[k]||0)+v;else sinU+=v;});
+    var all=Object.entries(mp).sort(function(a,b){return b[1]-a[1];}),top=all.slice(0,c[3]),n=top.length;
+    var otros=all.slice(c[3]).reduce(function(s,x){return s+x[1];},0);
+    var items=top.slice();if(otros>0)items.push(['Otros',otros]);if(sinU>0)items.push(['Sin ubicación',sinU]);
+    var tot=items.reduce(function(s,x){return s+x[1];},0)||1;
+    var col=function(i){return i>=n?(items[i][0]==='Otros'?'#9AA5B8':'#CBD2DE'):(CLI_PAL[i]||('hsl('+((i*47)%360)+',45%,45%)'));};
+    var pt=function(v){var q=v/tot*100;return q<0.5?'<1%':Math.round(q)+'%';};
+    dc(c[0]);CH[c[0]]=new Chart(document.getElementById(c[0]),{
+      type:'pie',
+      data:{labels:items.map(function(x){return x[0];}),datasets:[{data:items.map(function(x){return x[1];}),backgroundColor:items.map(function(x,i){return col(i);}),borderColor:'#fff',borderWidth:2,hoverOffset:8}]},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:10,bottom:10,left:10,right:8}},
+        plugins:{pctLabels:{enabled:false},
+          legend:{display:true,position:'right',labels:{font:{size:10,family:'Inter'},color:'#3D4D63',boxWidth:10,padding:7,
+            generateLabels:function(chart){return items.map(function(x,i){var c2=col(i),vis=chart.getDataVisibility(i);return {text:x[0]+'  '+pt(x[1]),fillStyle:c2,strokeStyle:c2,lineWidth:0,hidden:!vis,fontColor:vis?'#3D4D63':'#9AA5B8',index:i};});}}},
+          tooltip:{callbacks:{label:function(q){return q.label+': '+fmt(q.raw)+' ('+pt(q.raw)+')';}}}}
+      },
+      plugins:[{id:c[0]+'Lb',afterDraw:function(ch){
+        var m=ch.getDatasetMeta(0),x=ch.ctx;x.save();x.font='600 10px Inter';x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';
+        m.data.forEach(function(a,i){if(!ch.getDataVisibility(i))return;var f=items[i][1]/tot;if(f<0.05)return;var ang=(a.startAngle+a.endAngle)/2,r=a.outerRadius*0.65;x.fillText(Math.round(f*100)+'%',a.x+Math.cos(ang)*r,a.y+Math.sin(ang)*r);});x.restore();}}]
+    });
+    xfBind(c[0],{n:n,keys:function(i){var o={};o[c[1]]=top[i][0];return o;}});
   });
   // ── Servicios por mes: cada servicio (CODIGO ST) cuenta una vez, en el mes de su primera fila ──
   (function(){
