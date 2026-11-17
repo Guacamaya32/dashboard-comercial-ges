@@ -4488,7 +4488,7 @@ function refreshActive(){const id=document.querySelector('.view.active')?.id?.re
 const SECTION_OF={mensual:'proy',representantes:'proy',clientes:'proy',lineas:'proy',quarter:'proy',detalle:'proy',finalizados:'ejec',metas:'ejec',historico:'ejec',forecast:'ejec',comparativo:'ejec'};
 const SECTION_DEFAULT={proy:'mensual',ejec:'finalizados'};
 let LAST_TAB={proy:'mensual',ejec:'finalizados'};
-function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados'||id==='comparativo');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');document.body.classList.toggle('mensual-active',id==='mensual');document.body.classList.toggle('representantes-active',id==='representantes');document.body.classList.toggle('clientes-active',id==='clientes');document.body.classList.toggle('quarter-active',id==='quarter');document.body.classList.toggle('lineas-active',id==='lineas');document.body.classList.toggle('comparativo-active',id==='comparativo');LAST_TAB[SECTION_OF[id]]=id;
+function showView(id,e){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');e.currentTarget.classList.add('active');document.body.classList.toggle('detalle-active',id==='detalle'||id==='finalizados'||id==='comparativo');document.body.classList.toggle('metas-active',id==='metas');document.body.classList.toggle('historico-active',id==='historico');document.body.classList.toggle('forecast-active',id==='forecast');document.body.classList.toggle('mensual-active',id==='mensual');document.body.classList.toggle('representantes-active',id==='representantes');document.body.classList.toggle('clientes-active',id==='clientes');document.body.classList.toggle('quarter-active',id==='quarter');document.body.classList.toggle('lineas-active',id==='lineas');document.body.classList.toggle('comparativo-active',id==='comparativo');ajustarBarrasFijas();LAST_TAB[SECTION_OF[id]]=id;
   // iOS/Safari a veces mide el tamaño del canvas ANTES de que el navegador termine de acomodar
   // el layout recién visible (al quitar display:none) — deja las gráficas con un tamaño
   // interno equivocado para siempre, aunque los datos que reciben sean correctos (por eso los
@@ -6001,6 +6001,27 @@ function renderComparativo(){
   if(!CMP.ok){cmpInitCtl();CMP.ok=true;cmpPreset('yoy');return;}
   cmpRender();
 }
+// Etiqueta de variación % (A vs B) sobre cada par de barras/puntos.
+function cmpVarTxt(a,b){
+  if(a==null||b==null)return null;
+  if(!b)return a>0?{t:'Nuevo',c:'#0B6B3A'}:null;
+  var p=(a-b)/b*100;if(Math.abs(p)<0.05)return {t:'0%',c:'#6B7A99'};
+  return {t:(p>0?'▲ +':'▼ −')+Math.abs(p).toFixed(Math.abs(p)>=100?0:1)+'%',c:p>0?'#0B6B3A':'#B03A2E'};
+}
+function cmpPluginVar(horizontal){
+  return {id:'cmpVar',afterDatasetsDraw:function(chart){
+    var m0=chart.getDatasetMeta(0),m1=chart.getDatasetMeta(1),d0=chart.data.datasets[0].data,d1=chart.data.datasets[1].data,ctx=chart.ctx;
+    ctx.save();ctx.font='bold 10px Inter,sans-serif';
+    for(var i=0;i<d0.length;i++){
+      var v=cmpVarTxt(d0[i],d1[i]);if(!v)continue;
+      var e0=m0.data[i],e1=m1.data[i];if(!e0||!e1)continue;
+      ctx.fillStyle=v.c;
+      if(horizontal){ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(v.t,Math.max(e0.x,e1.x)+8,(e0.y+e1.y)/2);}
+      else{ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(v.t,(e0.x+e1.x)/2,Math.min(e0.y,e1.y)-6);}
+    }
+    ctx.restore();
+  }};
+}
 function cmpRender(){
   var fr=getAllMes();
   // opciones de los filtros propios (según los datos actuales)
@@ -6024,7 +6045,6 @@ function cmpRender(){
     {l:'Promedio mensual',k:'prom',f:fmt,m:1,cls:'kt',i:'📅'},
     {l:'Clientes activos',k:'cli',f:function(v){return String(v);},cls:'ka',i:'🏢'},
     {l:'Pozos distintos',k:'pz',f:function(v){return String(v);},cls:'ks',i:'⛽'},
-    {l:'Meses con ingresos',k:'mes',f:function(v){return String(v);},cls:'kt',i:'🗓️'},
     {l:'Participación Ecopetrol',k:'ec',f:function(v){return v.toFixed(1)+'%';},cls:'kg',i:'🛢️',pp:1}
   ];
   document.getElementById('cmp-kpi').innerHTML=ks.map(function(k){
@@ -6052,7 +6072,8 @@ function cmpRender(){
   var o=sopts();o.scales.x.stacked=false;o.scales.y.stacked=false;
   o.plugins.pctLabels={enabled:false};o.plugins.tooltip={callbacks:{label:function(c){return c.dataset.label+': '+(c.raw==null?'—':(srv?c.raw:fmt(c.raw)));}}};
   if(srv)o.scales.y.ticks.callback=function(v){return Number.isInteger(v)?v:'';};
-  CH.cCmpMes=new Chart(document.getElementById('cCmpMes'),{type:acum?'line':'bar',
+  o.layout={padding:{top:22}};
+  CH.cCmpMes=new Chart(document.getElementById('cCmpMes'),{type:acum?'line':'bar',plugins:[cmpPluginVar(false)],
     data:{labels:labs,datasets:[
       {label:'A · '+la,data:sa,backgroundColor:CMP_CA,borderColor:CMP_CA,borderRadius:4,tension:.25,pointRadius:acum?3:0,spanGaps:false},
       {label:'B · '+lb,data:sb,backgroundColor:CMP_CB,borderColor:CMP_CB,borderRadius:4,tension:.25,pointRadius:acum?3:0,spanGaps:false}]},options:o});
@@ -6062,7 +6083,13 @@ function cmpRender(){
   document.querySelectorAll('#cmp-dims button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-d')===d);});
   var ga=cmpAgg(rA,d),gb=cmpAgg(rB,d),keys=Array.from(new Set(Object.keys(ga).concat(Object.keys(gb))));
   var rows=keys.map(function(k){var a=ga[k]||{v:0,n:0},b=gb[k]||{v:0,n:0};return {k:k,a:a.v,b:b.v,na:a.n,nb:b.n,d:a.v-b.v,p:cmpPct(a.v,b.v),pa:mA.tot?a.v/mA.tot*100:0,pb:mB.tot?b.v/mB.tot*100:0,tot:a.v+b.v};});
-  CMP.rows=rows;CMP.la=la;CMP.lb=lb;CMP.mA=mA;CMP.mB=mB;
+  var tA=mA.tot,tB=mB.tot;
+  if(d==='ger'){ // solo gerencias de ECP: se excluye lo que no tiene gerencia
+    rows=rows.filter(function(x){return x.k.indexOf('(sin')!==0;});
+    tA=rows.reduce(function(s,x){return s+x.a;},0);tB=rows.reduce(function(s,x){return s+x.b;},0);
+    rows.forEach(function(x){x.pa=tA?x.a/tA*100:0;x.pb=tB?x.b/tB*100:0;});
+  }
+  CMP.tA=tA;CMP.tB=tB;CMP.rows=rows;CMP.la=la;CMP.lb=lb;CMP.mA=mA;CMP.mB=mB;
   var vk=function(x){return srv?[x.na,x.nb]:[x.a,x.b];};
   var ord=document.getElementById('cmp-ord').value;
   var ch=rows.slice().sort(function(x,y){
@@ -6075,7 +6102,8 @@ function cmpRender(){
   var ho=hopts();ho.plugins.legend={display:true,labels:{font:{size:10,family:'Inter',weight:'600'},color:B.MUTED}};
   ho.plugins.pctLabels={enabled:false};ho.plugins.tooltip={callbacks:{label:function(c){return c.dataset.label+': '+(srv?c.raw:fmt(c.raw));}}};
   if(srv)ho.scales.x.ticks.callback=function(v){return Number.isInteger(v)?v:'';};
-  CH.cCmpDim=new Chart(document.getElementById('cCmpDim'),{type:'bar',data:{labels:ch.map(function(x){return x.k;}),datasets:[
+  ho.layout={padding:{right:78}};
+  CH.cCmpDim=new Chart(document.getElementById('cCmpDim'),{type:'bar',plugins:[cmpPluginVar(true)],data:{labels:ch.map(function(x){return x.k;}),datasets:[
     {label:'A · '+la,data:ch.map(function(x){return vk(x)[0];}),backgroundColor:CMP_CA,borderRadius:3,barPercentage:.85,categoryPercentage:.8},
     {label:'B · '+lb,data:ch.map(function(x){return vk(x)[1];}),backgroundColor:CMP_CB,borderRadius:3,barPercentage:.85,categoryPercentage:.8}]},options:ho});
   // Movimientos
@@ -6089,7 +6117,7 @@ function cmpRender(){
     lst('▼ Mayores caídas · '+nm,dn,li(function(x){return '<b style="color:#B03A2E">−'+fmt(Math.abs(x.d))+'</b> <small>('+x.p.toFixed(0)+'%)</small>';}))+
     lst('★ Nuevos en A (sin ingresos en B)',nw,li(function(x){return '<b>'+fmt(x.a)+'</b>';}))+
     lst('⏸ Sin ingresos en A (sí tenían en B)',lo2,li(function(x){return '<b>'+fmt(x.b)+'</b>';}));
-  document.getElementById('cmp-tb-t').textContent='Detalle por '+nm.toLowerCase()+' · '+rows.length+' registros';
+  document.getElementById('cmp-tb-t').textContent='Detalle por '+nm.toLowerCase()+' · '+rows.length+' registros'+(d==='ger'?' · solo gerencias ECP':'');
   cmpTabla();
 }
 var CMP_COLS=[['k','Nombre'],['a','A · $'],['b','B · $'],['d','Δ $'],['p','Δ %'],['pa','% A'],['pb','% B'],['na','Serv. A'],['nb','Serv. B'],['dn','Δ serv.'],['e','Situación']];
@@ -6106,7 +6134,7 @@ function cmpTabla(){
   var tb='<tbody>'+rows.map(function(x){var st=cmpSit(x);
     return '<tr><td>'+x.k+'</td><td>'+fmt(x.a)+'</td><td>'+fmt(x.b)+'</td><td style="color:'+col(x.d)+';font-weight:600">'+(x.d>0?'+':x.d<0?'−':'')+fmt(Math.abs(x.d))+'</td><td style="color:'+col(x.d)+'">'+(x.p==null?(x.a>0?'Nuevo':'—'):(x.p>0?'+':'')+x.p.toFixed(1)+'%')+'</td><td>'+x.pa.toFixed(1)+'%</td><td>'+x.pb.toFixed(1)+'%</td><td>'+x.na+'</td><td>'+x.nb+'</td><td style="color:'+col(x.na-x.nb)+'">'+(x.na-x.nb>0?'+':'')+(x.na-x.nb)+'</td><td><span class="cmp-tag '+tag[st]+'">'+st+'</span></td></tr>';}).join('')+'</tbody>';
   var T=rows.reduce(function(o,x){o.a+=x.a;o.b+=x.b;return o;},{a:0,b:0}),mA=CMP.mA,mB=CMP.mB;
-  var tf='<tfoot><tr><td>TOTAL'+(q?' (filtrado)':'')+'</td><td>'+fmt(q?T.a:mA.tot)+'</td><td>'+fmt(q?T.b:mB.tot)+'</td><td>'+((q?T.a-T.b:mA.tot-mB.tot)>=0?'+':'−')+fmt(Math.abs(q?T.a-T.b:mA.tot-mB.tot))+'</td><td>'+(function(){var p=q?cmpPct(T.a,T.b):cmpPct(mA.tot,mB.tot);return p==null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()+'</td><td></td><td></td><td>'+(q?'':mA.n)+'</td><td>'+(q?'':mB.n)+'</td><td></td><td></td></tr></tfoot>';
+  var tf='<tfoot><tr><td>TOTAL'+(q?' (filtrado)':'')+'</td><td>'+fmt(q?T.a:CMP.tA)+'</td><td>'+fmt(q?T.b:CMP.tB)+'</td><td>'+((q?T.a-T.b:CMP.tA-CMP.tB)>=0?'+':'−')+fmt(Math.abs(q?T.a-T.b:CMP.tA-CMP.tB))+'</td><td>'+(function(){var p=q?cmpPct(T.a,T.b):cmpPct(CMP.tA,CMP.tB);return p==null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()+'</td><td></td><td></td><td>'+(q||CMP.dim==='ger'?'':mA.n)+'</td><td>'+(q||CMP.dim==='ger'?'':mB.n)+'</td><td></td><td></td></tr></tfoot>';
   document.getElementById('cmp-tb').innerHTML=th+tb+tf;
 }
 function cmpCSV(){
